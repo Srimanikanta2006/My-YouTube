@@ -54,9 +54,11 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
       channelname: formData.name,
       description: formData.description,
     };
+   if (!user) return;
+
     const response = await axiosInstance.patch(
       `/user/update/${user._id}`,
-      payload,
+      payload
     );
     login(response?.data);
     router.push(`/channel/${user?._id}`);
