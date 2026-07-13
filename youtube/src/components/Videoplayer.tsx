@@ -15,7 +15,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
-  const videoSrc = `${backendUrl}/${normalizedPath}`;
+  const videoSrc = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
 
   useEffect(() => {
     if (videoRef.current) {

@@ -10,6 +10,7 @@ import likeroutes from "./Routes/like.js";
 import watchlaterroutes from "./Routes/watchlater.js";
 import historyrroutes from "./Routes/history.js";
 import commentroutes from "./Routes/comment.js";
+import video from "./Modals/video.js";
 dotenv.config();
 const app = express();
 import path from "path";
@@ -45,15 +46,80 @@ const connectWithFallback = async (url) => {
   }
 };
 
+const seedVideos = async () => {
+  try {
+    const count = await video.countDocuments();
+    if (count === 0) {
+      console.log("Seeding default videos...");
+      const defaultVideos = [
+        {
+          videotitle: "Big Buck Bunny - Animated Short Film",
+          filename: "BigBuckBunny.mp4",
+          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          filetype: "video/mp4",
+          filesize: "276MB",
+          videochanel: "Blender Studio",
+          views: 1482030,
+          uploader: "blender_studio",
+          Like: 12540,
+        },
+        {
+          videotitle: "Sintel - Open Movie Project",
+          filename: "Sintel.mp4",
+          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+          filetype: "video/mp4",
+          filesize: "128MB",
+          videochanel: "Blender Studio",
+          views: 928302,
+          uploader: "blender_studio",
+          Like: 8430,
+        },
+        {
+          videotitle: "Tears of Steel - Sci-Fi VFX Short",
+          filename: "TearsOfSteel.mp4",
+          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+          filetype: "video/mp4",
+          filesize: "310MB",
+          videochanel: "Blender Studio",
+          views: 830123,
+          uploader: "blender_studio",
+          Like: 7120,
+        },
+        {
+          videotitle: "Elephants Dream - Surreal CGI Movie",
+          filename: "ElephantsDream.mp4",
+          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+          filetype: "video/mp4",
+          filesize: "140MB",
+          videochanel: "Blender Studio",
+          views: 520481,
+          uploader: "blender_studio",
+          Like: 4500,
+        }
+      ];
+      await video.insertMany(defaultVideos);
+      console.log("Default videos seeded successfully!");
+    }
+  } catch (error) {
+    console.error("Error seeding default videos:", error.message);
+  }
+};
+
 const initDb = async () => {
   if (DBURL) {
     const atlasOk = await connectWithFallback(DBURL);
-    if (atlasOk) return;
+    if (atlasOk) {
+      await seedVideos();
+      return;
+    }
     console.warn("MongoDB Atlas connection failed. Trying local MongoDB fallback...");
   }
 
   const localOk = await connectWithFallback(localDBURL);
-  if (localOk) return;
+  if (localOk) {
+    await seedVideos();
+    return;
+  }
 
   console.warn("Local MongoDB fallback failed. Starting in-memory MongoDB server...");
 
@@ -62,6 +128,7 @@ const initDb = async () => {
   const memoryOk = await connectWithFallback(memoryUri);
   if (memoryOk) {
     console.log("MongoDB in-memory server connected. Data will not persist after restart.");
+    await seedVideos();
     return;
   }
 

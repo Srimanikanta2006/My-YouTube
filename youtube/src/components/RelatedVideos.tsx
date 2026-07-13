@@ -19,7 +19,7 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
     <div className="space-y-2">
       {videos.map((video) => {
         const normalizedPath = video.filepath ? video.filepath.replace(/\\/g, "/") : "";
-        const videoSrc = `${backendUrl}/${normalizedPath}`;
+        const videoSrc = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
         return (
           <Link
             key={video._id}
