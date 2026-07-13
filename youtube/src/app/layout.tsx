@@ -2,7 +2,7 @@
 import "./globals.css";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
-import { AuthProvider } from "@/src/lib/AuthContext";
+import { AuthProvider } from "@/lib/AuthContext";
 
 export default function RootLayout({
   children,

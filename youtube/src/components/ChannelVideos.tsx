@@ -1,4 +1,4 @@
-import VideoCard from "./videocard";
+import VideoCard from "./Videocard";
 export default function ChannelVideos({ videos }: any) {
   if (videos.length === 0) {
     return (

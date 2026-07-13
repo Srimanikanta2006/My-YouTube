@@ -41,7 +41,7 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
         description: "",
       });
     }
-  }, [channeldata]);
+  }, [channeldata, user]);
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -54,19 +54,26 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
       channelname: formData.name,
       description: formData.description,
     };
-   if (!user) return;
+    if (!user) return;
 
-    const response = await axiosInstance.patch(
-      `/user/update/${user._id}`,
-      payload
-    );
-    login(response?.data);
-    router.push(`/channel/${user?._id}`);
-    setFormData({
-      name: "",
-      description: "",
-    });
-    onclose();
+    try {
+      setisSubmitting(true);
+      const response = await axiosInstance.patch(
+        `/user/update/${user._id}`,
+        payload
+      );
+      login(response?.data);
+      router.push(`/channel/${user?._id}`);
+      setFormData({
+        name: "",
+        description: "",
+      });
+      onclose();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setisSubmitting(false);
+    }
   };
   return (
     <Dialog open={isopen} onOpenChange={onclose}>

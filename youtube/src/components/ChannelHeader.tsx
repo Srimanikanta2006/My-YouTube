@@ -14,17 +14,17 @@ const ChannelHeader = ({ channel, user }: any) => {
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <Avatar className="w-20 h-20 md:w-32 md:h-32">
             <AvatarFallback className="text-2xl">
-              {channel?.channelname[0]}
+              {channel?.channelname?.[0] || user?.name?.[0] || "C"}
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 space-y-2">
             <h1 className="text-2xl md:text-4xl font-bold">
-              {channel?.channelname}
+              {channel?.channelname || user?.name || "Channel"}
             </h1>
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <span>
-                @{channel?.channelname.toLowerCase().replace(/\s+/g, "")}
+                @{channel?.channelname ? channel.channelname.toLowerCase().replace(/\s+/g, "") : user?.name?.toLowerCase().replace(/\s+/g, "") || "channel"}
               </span>
             </div>
             {channel?.description && (

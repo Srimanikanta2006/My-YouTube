@@ -11,7 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/src/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import axiosInstance from "@/lib/axiosinstance";
 import { useUser } from "@/lib/AuthContext";
 
@@ -40,20 +40,6 @@ export default function HistoryContent() {
       setLoading(false);
     }
   };
-  if (loading) {
-    return <div>Loading history...</div>;
-  }
-
-  const handleRemoveFromHistory = async (historyId: string) => {
-    try {
-      console.log("Removing from history:", historyId);
-
-      setHistory(history.filter((item) => item._id !== historyId));
-    } catch (error) {
-      console.error("Error removing from history:", error);
-    }
-  };
-
   if (!user) {
     return (
       <div className="text-center py-12">
@@ -67,6 +53,20 @@ export default function HistoryContent() {
       </div>
     );
   }
+
+  if (loading) {
+    return <div>Loading history...</div>;
+  }
+
+  const handleRemoveFromHistory = async (historyId: string) => {
+    try {
+      console.log("Removing from history:", historyId);
+      await axiosInstance.delete(`/history/delete/${historyId}`);
+      setHistory(history.filter((item) => item._id !== historyId));
+    } catch (error) {
+      console.error("Error removing from history:", error);
+    }
+  };
 
   if (history.length === 0) {
     return (
@@ -90,7 +90,7 @@ export default function HistoryContent() {
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
                 <video
-                  src={`${process.env.BACKEND_URL}/${item.videoid?.filepath}`}
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${item.videoid?.filepath}`}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
                 />
               </div>
@@ -115,14 +115,8 @@ export default function HistoryContent() {
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 group-hover:opacity-100"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
+              <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full focus:outline-none flex items-center justify-center cursor-pointer">
+                <MoreVertical className="w-4 h-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem

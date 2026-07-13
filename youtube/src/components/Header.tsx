@@ -13,8 +13,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import Channeldialogue from "./channeldialogue";
-import { useRouter } from "next/navigation";
-import { useUser } from "@/src/lib/AuthContext";
+import { useUser } from "@/lib/AuthContext";
 
 const Header = () => {
   const { user, logout, handlegooglesignin } = useUser();
@@ -26,18 +25,7 @@ const Header = () => {
   // };
   const [searchQuery, setSearchQuery] = useState("");
   const [isdialogeopen, setisdialogeopen] = useState(false);
-  const router = useRouter();
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-  const handleKeypress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch(e as any);
-    }
-  };
+
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-white border-b">
       <div className="flex items-center gap-4">
@@ -55,15 +43,16 @@ const Header = () => {
         </Link>
       </div>
       <form
-        onSubmit={handleSearch}
+        action="/search"
+        method="GET"
         className="flex items-center gap-2 flex-1 max-w-2xl mx-4"
       >
         <div className="flex flex-1">
           <Input
+            name="q"
             type="search"
             placeholder="Search"
             value={searchQuery}
-            onKeyPress={handleKeypress}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="rounded-l-full border-r-0 focus-visible:ring-0"
           />
@@ -88,16 +77,11 @@ const Header = () => {
               <Bell className="w-6 h-6" />
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button
-                  variant="ghost"
-                  className="relative h-8 w-8 rounded-full"
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.image} />
-                    <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
-                  </Avatar>
-                </Button>
+              <DropdownMenuTrigger className="relative h-8 w-8 rounded-full flex items-center justify-center focus:outline-none hover:opacity-90 transition-opacity cursor-pointer">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.image} />
+                  <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
+                </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
                 {user?.channelname ? (

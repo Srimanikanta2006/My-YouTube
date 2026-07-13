@@ -11,7 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/src/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
 
@@ -44,7 +44,8 @@ export default function LikedVideosContent() {
     if (!user) return;
 
     try {
-      console.log("Unliking video:", videoId, "for user:", user.id);
+      console.log("Unliking video:", videoId, "for user:", user._id);
+      await axiosInstance.post(`/like/${videoId}`, { userId: user?._id });
       setLikedVideos(likedVideos.filter((item) => item._id !== likedVideoId));
     } catch (error) {
       console.error("Error unliking video:", error);
@@ -93,7 +94,7 @@ export default function LikedVideosContent() {
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
                 <video
-                  src={`${process.env.BACKEND_URL}/${item.videoid?.filepath}`}
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${item.videoid?.filepath}`}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
                 />
               </div>
@@ -118,14 +119,8 @@ export default function LikedVideosContent() {
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 group-hover:opacity-100"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
+              <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full focus:outline-none flex items-center justify-center cursor-pointer">
+                <MoreVertical className="w-4 h-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem

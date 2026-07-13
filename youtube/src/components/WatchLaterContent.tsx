@@ -40,18 +40,6 @@ export default function WatchLaterContent() {
     }
   };
 
-  if (loading) {
-    return <div>Loading watch later...</div>;
-  }
-  const handleRemoveFromWatchLater = async (watchLaterId: string) => {
-    try {
-      console.log("Removing from history:", watchLaterId);
-      setWatchLater(watchLater.filter((item) => item._id !== watchLaterId));
-    } catch (error) {
-      console.error("Error removing from history:", error);
-    }
-  };
-
   if (!user) {
     return (
       <div className="text-center py-12">
@@ -63,6 +51,19 @@ export default function WatchLaterContent() {
       </div>
     );
   }
+
+  if (loading) {
+    return <div>Loading watch later...</div>;
+  }
+  const handleRemoveFromWatchLater = async (videoId: string, watchLaterId: string) => {
+    try {
+      console.log("Removing from watch later:", videoId);
+      await axiosInstance.post(`/watch/${videoId}`, { userId: user?._id });
+      setWatchLater(watchLater.filter((item) => item._id !== watchLaterId));
+    } catch (error) {
+      console.error("Error removing from watch later:", error);
+    }
+  };
 
   if (watchLater.length === 0) {
     return (
@@ -92,7 +93,7 @@ export default function WatchLaterContent() {
             <Link href={`/watch/${item.videoid._id}`} className="shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
                 <video
-                  src={`${process.env.BACKEND_URL}/${item.videoid?.filepath}`}
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${item.videoid?.filepath}`}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
                 />
               </div>
@@ -117,18 +118,12 @@ export default function WatchLaterContent() {
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 group-hover:opacity-100"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
+              <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full focus:outline-none flex items-center justify-center cursor-pointer">
+                <MoreVertical className="w-4 h-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => handleRemoveFromWatchLater(item._id)}
+                  onClick={() => handleRemoveFromWatchLater(item.videoid._id, item._id)}
                 >
                   <X className="w-4 h-4 mr-2" />
                   Remove from Watch later
