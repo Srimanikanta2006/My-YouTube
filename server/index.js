@@ -48,8 +48,11 @@ const connectWithFallback = async (url) => {
 
 const seedVideos = async () => {
   try {
-    const count = await video.countDocuments();
-    if (count === 0) {
+    // Clean up any old broken video entries containing backslashes
+    await video.deleteMany({ filepath: { $regex: /\\/ } });
+
+    const hasSeed = await video.findOne({ uploader: "blender_studio" });
+    if (!hasSeed) {
       console.log("Seeding default videos...");
       const defaultVideos = [
         {
