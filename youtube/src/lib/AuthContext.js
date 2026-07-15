@@ -60,8 +60,19 @@ export const UserProvider = ({ children }) => {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    if (saved !== null) {
+      setIsSidebarCollapsed(JSON.parse(saved));
+    }
+  }, []);
+
   const toggleSidebar = () => {
-    setIsSidebarCollapsed((prev) => !prev);
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("sidebarCollapsed", JSON.stringify(next));
+      return next;
+    });
   };
 
   return (
