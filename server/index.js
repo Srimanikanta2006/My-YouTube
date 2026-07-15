@@ -51,6 +51,9 @@ const seedVideos = async () => {
     // Clean up any old broken video entries containing backslashes
     await video.deleteMany({ filepath: { $regex: /\\/ } });
 
+    // Clean up any old default seed records to force re-seeding with duration fields
+    await video.deleteMany({ uploader: "blender_studio" });
+
     const hasSeed = await video.findOne({ uploader: "blender_studio" });
     if (!hasSeed) {
       console.log("Seeding default videos...");
@@ -65,6 +68,8 @@ const seedVideos = async () => {
           views: 1482030,
           uploader: "blender_studio",
           Like: 12540,
+          videoduration: "10:07",
+          videocategory: "Comedy",
         },
         {
           videotitle: "Sintel - Open Movie Project",
@@ -76,6 +81,8 @@ const seedVideos = async () => {
           views: 928302,
           uploader: "blender_studio",
           Like: 8430,
+          videoduration: "00:52",
+          videocategory: "Gaming",
         },
         {
           videotitle: "Tears of Steel - Sci-Fi VFX Short",
@@ -87,6 +94,8 @@ const seedVideos = async () => {
           views: 830123,
           uploader: "blender_studio",
           Like: 7120,
+          videoduration: "12:14",
+          videocategory: "Technology",
         },
         {
           videotitle: "Elephants Dream - Surreal CGI Movie",
@@ -98,6 +107,8 @@ const seedVideos = async () => {
           views: 520481,
           uploader: "blender_studio",
           Like: 4500,
+          videoduration: "10:53",
+          videocategory: "Science",
         }
       ];
       await video.insertMany(defaultVideos);

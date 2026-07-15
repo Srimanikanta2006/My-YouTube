@@ -58,12 +58,16 @@ export const UserProvider = ({ children }) => {
     return () => unsubcribe();
   }, []);
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
     if (saved !== null) {
       setIsSidebarCollapsed(JSON.parse(saved));
+    } else {
+      if (typeof window !== "undefined") {
+        setIsSidebarCollapsed(window.innerWidth < 768);
+      }
     }
   }, []);
 
@@ -83,6 +87,7 @@ export const UserProvider = ({ children }) => {
         logout,
         handlegooglesignin,
         isSidebarCollapsed,
+        setIsSidebarCollapsed,
         toggleSidebar,
       }}
     >

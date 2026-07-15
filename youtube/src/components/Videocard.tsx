@@ -38,7 +38,7 @@ export default function VideoCard({ video }: any) {
             onMouseLeave={handleMouseLeave}
           />
           <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
-            10:24
+            {video?.videoduration || "00:00"}
           </div>
         </div>
         <div className="flex gap-3">

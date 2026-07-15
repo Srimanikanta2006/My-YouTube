@@ -8,11 +8,20 @@ const tabs = [
   { id: "community", label: "Community" },
   { id: "about", label: "About" },
 ];
-const Channeltabs = () => {
-  const [activeTab, setActiveTab] = useState("videos");
+interface ChannelTabsProps {
+  activeTab?: string;
+  setActiveTab?: (tab: string) => void;
+}
+
+const Channeltabs = ({ activeTab: propActiveTab, setActiveTab: propSetActiveTab }: ChannelTabsProps) => {
+  const [internalActiveTab, setInternalActiveTab] = useState("videos");
+  
+  const activeTab = propActiveTab !== undefined ? propActiveTab : internalActiveTab;
+  const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setInternalActiveTab;
+
   return (
     <div className="border-b px-4">
-      <div className="flex gap-8 overflow-x-auto">
+      <div className="flex gap-8 overflow-x-auto scrollbar-none">
         {tabs.map((tab) => (
           <Button
             key={tab.id}

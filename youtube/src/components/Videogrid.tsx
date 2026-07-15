@@ -3,9 +3,29 @@ import React, { useEffect, useState } from "react";
 import Videocard from "./Videocard";
 import axiosInstance from "../lib/axiosinstance";
 
-const Videogrid = () => {
+const categoryKeywords: { [key: string]: string[] } = {
+  Music: ["music", "song", "audio", "sing", "concert", "dj", "remix", "beat", "instrumental", "melody", "lofi", "pop", "rock", "jazz", "rap"],
+  Gaming: ["gaming", "game", "play", "xbox", "ps5", "nintendo", "pc", "gameplay", "walkthrough", "stream", "minecraft", "fortnite", "pubg", "sintel"],
+  Movies: ["movie", "film", "short", "teaser", "trailer", "cinema", "animation", "bunny", "sintel", "steel", "dream", "series", "season"],
+  News: ["news", "update", "today", "breaking", "politics", "world", "report", "journal", "current"],
+  Sports: ["sports", "game", "match", "highlights", "football", "soccer", "basketball", "cricket", "tennis", "athlete", "run", "fitness"],
+  Technology: ["technology", "tech", "code", "programming", "developer", "review", "iphone", "android", "software", "hardware", "ai", "web", "steel"],
+  Comedy: ["comedy", "funny", "laugh", "meme", "joke", "prank", "parody", "bunny"],
+  Education: ["education", "learn", "how to", "tutorial", "course", "lecture", "explain", "study", "guide"],
+  Science: ["science", "physics", "chemistry", "space", "biology", "dream", "research", "lab", "nasa", "earth"],
+  Travel: ["travel", "vlog", "trip", "visit", "explore", "tour", "destination", "nature", "world"],
+  Food: ["food", "cooking", "recipe", "chef", "cook", "kitchen", "bake", "taste", "delicious", "restaurant"],
+  Fashion: ["fashion", "style", "outfit", "makeup", "clothing", "wear", "beauty", "haul", "runway"]
+};
+
+interface VideogridProps {
+  selectedCategory?: string;
+}
+
+const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
   const [videos, setvideo] = useState([]);
   const [loading, setloading] = useState(true);
+  
   useEffect(() => {
     const fetchvideo = async () => {
       try {
@@ -20,40 +40,39 @@ const Videogrid = () => {
     fetchvideo();
   }, []);
 
-  // const videos = [
-  //   {
-  //     _id: "1",
-  //     videotitle: "Amazing Nature Documentary",
-  //     filename: "nature-doc.mp4",
-  //     filetype: "video/mp4",
-  //     filepath: "/videos/nature-doc.mp4",
-  //     filesize: "500MB",
-  //     videochanel: "Nature Channel",
-  //     Like: 1250,
-  //     views: 45000,
-  //     uploader: "nature_lover",
-  //     createdAt: new Date().toISOString(),
-  //   },
-  //   {
-  //     _id: "2",
-  //     videotitle: "Cooking Tutorial: Perfect Pasta",
-  //     filename: "pasta-tutorial.mp4",
-  //     filetype: "video/mp4",
-  //     filepath: "/videos/pasta-tutorial.mp4",
-  //     filesize: "300MB",
-  //     videochanel: "Chef's Kitchen",
-  //     Like: 890,
-  //     views: 23000,
-  //     uploader: "chef_master",
-  //     createdAt: new Date(Date.now() - 86400000).toISOString(),
-  //   },
-  // ];
+  const filteredVideos = selectedCategory === "All"
+    ? videos
+    : videos.filter((video: any) => {
+        // 1. Direct database category match
+        if (video.videocategory && video.videocategory !== "All") {
+          return video.videocategory.toLowerCase() === selectedCategory.toLowerCase();
+        }
+
+        // 2. Fallback title keyword matching for older records
+        const titleLower = (video.videotitle || "").toLowerCase();
+        const categoryLower = selectedCategory.toLowerCase();
+        if (titleLower.includes(categoryLower)) return true;
+        
+        const keywords = categoryKeywords[selectedCategory];
+        if (keywords && keywords.some(kw => titleLower.includes(kw))) {
+          return true;
+        }
+        
+        return false;
+      });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {loading ? (
-        <>Loading..</>
+        <div className="col-span-full text-center py-12 text-gray-500 animate-pulse">
+          Loading videos...
+        </div>
+      ) : filteredVideos.length === 0 ? (
+        <div className="col-span-full text-center py-12 text-gray-500 font-medium">
+          No videos found in the "{selectedCategory}" category.
+        </div>
       ) : (
-        videos.map((video: any) => <Videocard key={video._id} video={video} />)
+        filteredVideos.map((video: any) => <Videocard key={video._id} video={video} />)
       )}
     </div>
   );

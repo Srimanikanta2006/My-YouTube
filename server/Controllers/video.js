@@ -17,6 +17,8 @@ export const uploadvideo = async (req, res) => {
         filesize: req.file.size,
         videochanel: req.body.videochanel,
         uploader: req.body.uploader,
+        videoduration: req.body.videoduration,
+        videocategory: req.body.videocategory || "All",
       });
       await file.save();
       return res.status(201).json("file uploaded successfully");

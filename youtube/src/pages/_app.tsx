@@ -1,10 +1,31 @@
 import "@/styles/globals.css";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
-import { AuthProvider } from "@/lib/AuthContext";
+import { AuthProvider, useUser } from "@/lib/AuthContext";
 import type { AppProps } from "next/app";
-
 import { useEffect } from "react";
+import Head from "next/head";
+
+function Layout({ children }: { children: React.ReactNode }) {
+  const { isSidebarCollapsed } = useUser();
+
+  return (
+    <div className="min-h-screen bg-background pt-14">
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </Head>
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <main className={`flex-1 p-4 transition-all duration-200 ${
+          isSidebarCollapsed ? "md:pl-[80px]" : "md:pl-[272px]"
+        }`}>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
 
 export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
@@ -23,13 +44,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <AuthProvider>
-      <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-4">
-          <Component {...pageProps} />
-        </main>
-      </div>
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
     </AuthProvider>
   );
 }

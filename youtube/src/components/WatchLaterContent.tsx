@@ -31,8 +31,8 @@ export default function WatchLaterContent() {
 
     try {
       const watchLaterData = await axiosInstance.get(`/watch/${user?._id}`);
-
-      setWatchLater(watchLaterData.data);
+      const validItems = (watchLaterData.data || []).filter((item: any) => item && item.videoid);
+      setWatchLater(validItems);
     } catch (error) {
       console.error("Error loading history:", error);
     } finally {

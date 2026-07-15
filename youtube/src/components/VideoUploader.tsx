@@ -8,14 +8,17 @@ const toast = {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import Progress from "./ui/progress";
 import axiosInstance from "../lib/axiosinstance";
+import { useUser } from "../lib/AuthContext";
 
-const VideoUploader = ({ channelId, channelName, onUploadSuccess }: any) => {
+const VideoUploader = ({ onUploadSuccess }: any) => {
+  const { user } = useUser();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
+  const [videoDuration, setVideoDuration] = useState("00:00");
+  const [videoCategorySelected, setVideoCategorySelected] = useState("All");
   const [uploadComplete, setUploadComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handlefilechange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -35,11 +38,33 @@ const VideoUploader = ({ channelId, channelName, onUploadSuccess }: any) => {
       if (!videoTitle) {
         setVideoTitle(filename);
       }
+
+      // Calculate video duration on the client side using metadata
+      const videoEl = document.createElement("video");
+      videoEl.preload = "metadata";
+      videoEl.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(videoEl.src);
+        const durationSecs = videoEl.duration;
+        const hours = Math.floor(durationSecs / 3600);
+        const minutes = Math.floor((durationSecs % 3600) / 60);
+        const seconds = Math.floor(durationSecs % 60);
+        
+        let formatted = "";
+        if (hours > 0) {
+          formatted += `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        } else {
+          formatted += `${minutes}:${seconds.toString().padStart(2, "0")}`;
+        }
+        setVideoDuration(formatted);
+      };
+      videoEl.src = URL.createObjectURL(file);
     }
   };
   const resetForm = () => {
     setVideoFile(null);
     setVideoTitle("");
+    setVideoDuration("00:00");
+    setVideoCategorySelected("All");
     setIsUploading(false);
     setUploadProgress(0);
     setUploadComplete(false);
@@ -61,8 +86,10 @@ const VideoUploader = ({ channelId, channelName, onUploadSuccess }: any) => {
     const formdata = new FormData();
     formdata.append("file", videoFile);
     formdata.append("videotitle", videoTitle);
-    formdata.append("videochanel", channelName);
-    formdata.append("uploader", channelId);
+    formdata.append("videochanel", user?.channelname || "Anonymous Channel");
+    formdata.append("uploader", user?._id || "");
+    formdata.append("videoduration", videoDuration);
+    formdata.append("videocategory", videoCategorySelected);
     console.log(formdata);
     try {
       setIsUploading(true);
@@ -154,15 +181,45 @@ const VideoUploader = ({ channelId, channelName, onUploadSuccess }: any) => {
                   className="mt-1"
                 />
               </div>
+
+              <div>
+                <Label htmlFor="category">Category (optional)</Label>
+                <select
+                  id="category"
+                  value={videoCategorySelected}
+                  onChange={(e) => setVideoCategorySelected(e.target.value)}
+                  disabled={isUploading || uploadComplete}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1 cursor-pointer"
+                >
+                  <option value="All">Select a Category (default: All)</option>
+                  <option value="Music">Music</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Movies">Movies</option>
+                  <option value="News">News</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Technology">Technology</option>
+                  <option value="Comedy">Comedy</option>
+                  <option value="Education">Education</option>
+                  <option value="Science">Science</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Food">Food</option>
+                  <option value="Fashion">Fashion</option>
+                </select>
+              </div>
             </div>
 
             {isUploading && (
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uploading...</span>
+                <div className="flex justify-between text-sm font-medium text-gray-700">
+                  <span>Uploading video...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <Progress value={uploadProgress} className="h-2" />
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-blue-600 h-full rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
               </div>
             )}
 

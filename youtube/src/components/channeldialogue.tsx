@@ -63,7 +63,7 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
         payload
       );
       login(response?.data);
-      router.push(`/channel/${user?._id}`);
+      router.push(`/channel/${response?.data?._id}`);
       setFormData({
         name: "",
         description: "",
