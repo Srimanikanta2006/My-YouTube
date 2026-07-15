@@ -10,6 +10,18 @@ const exploreCategories = [
   { id: "news", name: "News", icon: Newspaper, color: "bg-purple-100 text-purple-600" },
 ];
 
+const categoryKeywords: { [key: string]: string[] } = {
+  Music: ["music", "song", "audio", "sing", "concert", "dj", "remix", "beat", "instrumental", "melody", "lofi", "pop", "rock", "jazz", "rap"],
+  Gaming: ["gaming", "game", "play", "xbox", "ps5", "nintendo", "pc", "gameplay", "walkthrough", "stream", "minecraft", "fortnite", "pubg", "sintel"],
+  News: ["news", "update", "today", "breaking", "politics", "world", "report", "journal", "current"],
+};
+
+const idToCategoryMap: { [key: string]: string } = {
+  music: "Music",
+  gaming: "Gaming",
+  news: "News",
+};
+
 export default function ExplorePage() {
   const [videos, setVideos] = useState<any[]>([]);
   const [filteredVideos, setFilteredVideos] = useState<any[]>([]);
@@ -39,11 +51,29 @@ export default function ExplorePage() {
       const sorted = [...videos].sort((a: any, b: any) => (b.views || 0) - (a.views || 0));
       setFilteredVideos(sorted);
     } else {
-      // Filter by category name matching title, channel, or fallback
-      const filtered = videos.filter((vid: any) => {
-        const title = vid.videotitle.toLowerCase();
-        const channel = vid.videochanel.toLowerCase();
-        return title.includes(categoryId) || channel.includes(categoryId);
+      const mappedCategoryName = idToCategoryMap[categoryId];
+      if (!mappedCategoryName) {
+        setFilteredVideos([]);
+        return;
+      }
+      
+      const filtered = videos.filter((video: any) => {
+        // 1. Direct database category match
+        if (video.videocategory && video.videocategory !== "All") {
+          return video.videocategory.toLowerCase() === mappedCategoryName.toLowerCase();
+        }
+
+        // 2. Fallback title keyword matching for older records
+        const titleLower = (video.videotitle || "").toLowerCase();
+        const categoryLower = mappedCategoryName.toLowerCase();
+        if (titleLower.includes(categoryLower)) return true;
+        
+        const keywords = categoryKeywords[mappedCategoryName];
+        if (keywords && keywords.some(kw => titleLower.includes(kw))) {
+          return true;
+        }
+        
+        return false;
       });
       setFilteredVideos(filtered);
     }

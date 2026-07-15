@@ -406,9 +406,62 @@ Secure uploader metadata against spoofing by auto-filling the channel details fr
    * Replaced the standard browser native progress element (which does not support custom styles) with a custom Tailwind CSS progress bar containing progress percentage readouts.
    * Leveraged a smooth CSS width transition class (`transition-all duration-300 ease-out`) that fills the visual track dynamically as Axios tracks chunks uploaded (`onUploadProgress`).
 
-### 🛠️ Code Modified & Involved
 *   **File**: [VideoUploader.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/VideoUploader.tsx)
 *   **Action**: Imported `useUser`, secured the upload parameters, and updated the progress tracker elements in the returned JSX block.
+
+---
+
+## Feature 12: Search Bar Pixel-Precision Alignment
+
+### 🟢 Requirement
+Standardize the visual alignment and sizing of the search bar input and search submit button, as their heights and borders appeared mismatched in size.
+
+### 🔍 Solution & Interactions
+1. **Wrapper Constraint**: Wrapped the input and button inside a fixed-height flex layout block (`h-10`) inside [Header.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/Header.tsx) for both desktop and mobile layouts.
+2. **Explicit Heights**: Standardized both child elements with the `h-full` class to mathematically align their top/bottom edges.
+3. **Coordinated Borders**: Set matching explicit gray borders (`border border-gray-300`) on both controls to ensure uniform thickness and outline coloring.
+
+---
+
+## Feature 13: Functional Subscriptions Feed
+
+### 🟢 Requirement
+Re-wire the Subscriptions page so that it actually filters and shows new videos from channels the user has subscribed to, utilizing the Subscribe toggle feature.
+
+### 🔍 Solution & Interactions
+1. **Filtered Feeds**: Modified `fetchSubscriptionFeed` inside [index.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/subscriptions/index.tsx).
+2. **Active Filter Rule**: Retrieves the array of subscribed channel names from `localStorage` (`subscribedChannels`) on mount. Filters the fetched video files list to render only uploads where the video's channel matches a name in the subscription list.
+3. **Empty States**: If the user hasn't subscribed to any creator, it renders a clean call-to-action advising them to check out channels and click subscribe.
+
+---
+
+## Feature 14: Playlist Video Preview & Dynamic Timestamp Alignment (History, Likes, Watch Later)
+
+### 🔴 Symptoms
+The list views on History, Likes, and Watch Later pages had empty, un-loadable blank video boxes. They were missing the hover-to-play preview interaction, path normalization, and duration badges displayed on the homepage cards.
+
+### 🔍 Solution & Interactions
+1. **Dynamic Path Normalization**: Updated the video source parser inside [HistoryContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/HistoryContent.tsx), [LikedContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/LikedContent.tsx), and [WatchLaterContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchLaterContent.tsx) to standardise backend URL formatting, slash directions, and remove trailing blocks.
+2. **Hover Preview & Timestamp Badge**: Added a local `VideoRowItem` subcomponent to each file. It maps mouse entry/exit triggers to trigger video play/pause events and overlays the formatted `videoduration` badge in the bottom-right corner of the video thumbnail, matching the home page.
+
+---
+
+## Feature 15: Explore Categories Dynamic Filtering
+
+### 🟢 Requirement
+Align the Explore page category cards (Trending, Music, Gaming, News) to filter database uploads dynamically, utilizing the backend `videocategory` properties and fallback keywords.
+
+### 🔍 Solution & Interactions
+1. **Explore Filtering Rules**:
+   * **Trending**: Orders the list of uploads by `views` descending.
+   * **Music / Gaming / News**: Filters video uploads by checking if `video.videocategory === activeCategory`.
+   * **Fallback keywords**: If the video has no direct category assigned, it checks if the video title contains keywords mapping to the category (e.g. concert/dj for Music, gameplay/stream for Gaming), ensuring that old uploads still show up.
+2. **Empty states**: Renders fallback guides if a category has no videos.
+
+### 🛠️ Code Modified & Involved
+*   **Files**: [HistoryContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/HistoryContent.tsx), [LikedContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/LikedContent.tsx), [WatchLaterContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchLaterContent.tsx), [index.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/explore/index.tsx)
+
+
 
 
 

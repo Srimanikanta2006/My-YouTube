@@ -21,8 +21,17 @@ export default function SubscriptionsPage() {
   const fetchSubscriptionFeed = async () => {
     try {
       const res = await axiosInstance.get("/video/getall");
-      // Filter out user's own videos if they have a channel to simulate subscribing to other creators
-      const feed = res.data.filter((vid: any) => vid.uploader !== user?._id);
+      
+      // Load subscribed channels from localStorage
+      let subscribedChannels: string[] = [];
+      if (typeof window !== "undefined") {
+        subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+      }
+      
+      // Filter videos to only show uploads from channels the user has subscribed to
+      const feed = res.data.filter((vid: any) => 
+        subscribedChannels.includes(vid.videochanel)
+      );
       setVideos(feed);
     } catch (error) {
       console.error("Error fetching subscription feed:", error);

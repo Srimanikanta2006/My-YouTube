@@ -36,19 +36,19 @@ const Header = () => {
           method="GET"
           className="flex items-center gap-2 flex-1"
         >
-          <div className="flex flex-1">
+          <div className="flex flex-1 max-w-[600px] h-10">
             <Input
               name="q"
               type="search"
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="rounded-l-full border-r-0 focus-visible:ring-0 w-full"
+              className="rounded-l-full border border-gray-300 border-r-0 focus-visible:ring-0 w-full h-full bg-white text-sm"
               autoFocus
             />
             <Button
               type="submit"
-              className="rounded-r-full px-5 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-l-0"
+              className="rounded-r-full px-5 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-300 border-l-0 h-full flex items-center justify-center"
             >
               <Search className="w-5 h-5" />
             </Button>
@@ -80,18 +80,18 @@ const Header = () => {
         method="GET"
         className="hidden sm:flex items-center gap-2 flex-1 max-w-2xl mx-4"
       >
-        <div className="flex flex-1">
+        <div className="flex flex-1 h-10">
           <Input
             name="q"
             type="search"
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="rounded-l-full border-r-0 focus-visible:ring-0"
+            className="rounded-l-full border border-gray-300 border-r-0 focus-visible:ring-0 w-full h-full bg-white text-sm"
           />
           <Button
             type="submit"
-            className="rounded-r-full px-6 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-l-0"
+            className="rounded-r-full px-6 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-300 border-l-0 h-full flex items-center justify-center"
           >
             <Search className="w-5 h-5" />
           </Button>

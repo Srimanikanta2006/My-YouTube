@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
@@ -78,7 +78,6 @@ export default function HistoryContent() {
       </div>
     );
   }
-  const videos = "/video/vdo.mp4";
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -87,50 +86,86 @@ export default function HistoryContent() {
 
       <div className="space-y-4">
         {history.map((item) => (
-          <div key={item._id} className="flex gap-4 group">
-            <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
-              <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
-                <video
-                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${item.videoid?.filepath}`}
-                  className="object-cover group-hover:scale-105 transition-transform duration-200"
-                />
-              </div>
-            </Link>
-
-            <div className="flex-1 min-w-0">
-              <Link href={`/watch/${item.videoid._id}`}>
-                <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 mb-1">
-                  {item.videoid.videotitle}
-                </h3>
-              </Link>
-              <p className="text-sm text-gray-600">
-                {item.videoid.videochanel}
-              </p>
-              <p className="text-sm text-gray-600">
-                {item.videoid.views.toLocaleString()} views •{" "}
-                {formatDistanceToNow(new Date(item.videoid.createdAt))} ago
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Added {formatDistanceToNow(new Date(item.createdAt))} ago
-              </p>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full focus:outline-none flex items-center justify-center cursor-pointer">
-                <MoreVertical className="w-4 h-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => handleRemoveFromHistory(item._id)}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Remove from watch history
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <VideoRowItem
+            key={item._id}
+            item={item}
+            onRemove={() => handleRemoveFromHistory(item._id)}
+          />
         ))}
       </div>
+    </div>
+  );
+}
+
+function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+  const normalizedPath = item.videoid?.filepath ? item.videoid.filepath.replace(/\\/g, "/") : "";
+  const videoSrc = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
+
+  const handleMouseEnter = () => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => console.log("Hover preview interrupted:", err));
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  return (
+    <div className="flex gap-4 group">
+      <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
+        <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            muted
+            playsInline
+            preload="metadata"
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-200"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          />
+          <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
+            {item.videoid.videoduration || "00:00"}
+          </div>
+        </div>
+      </Link>
+
+      <div className="flex-1 min-w-0">
+        <Link href={`/watch/${item.videoid._id}`}>
+          <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 mb-1">
+            {item.videoid.videotitle}
+          </h3>
+        </Link>
+        <p className="text-sm text-gray-600">
+          {item.videoid.videochanel}
+        </p>
+        <p className="text-sm text-gray-600">
+          {item.videoid.views?.toLocaleString() || 0} views •{" "}
+          {item.videoid.createdAt ? formatDistanceToNow(new Date(item.videoid.createdAt)) : "some time"} ago
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Added {formatDistanceToNow(new Date(item.createdAt))} ago
+        </p>
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full focus:outline-none flex items-center justify-center cursor-pointer">
+          <MoreVertical className="w-4 h-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onRemove}>
+            <X className="w-4 h-4 mr-2" />
+            Remove from watch history
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
