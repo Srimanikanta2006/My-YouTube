@@ -58,8 +58,23 @@ export const UserProvider = ({ children }) => {
     return () => unsubcribe();
   }, []);
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => !prev);
+  };
+
   return (
-    <UserContext.Provider value={{ user, login, logout, handlegooglesignin }}>
+    <UserContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        handlegooglesignin,
+        isSidebarCollapsed,
+        toggleSidebar,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

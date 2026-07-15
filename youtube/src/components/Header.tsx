@@ -16,7 +16,7 @@ import Channeldialogue from "./channeldialogue";
 import { useUser } from "@/lib/AuthContext";
 
 const Header = () => {
-  const { user, logout, handlegooglesignin } = useUser();
+  const { user, logout, handlegooglesignin, toggleSidebar } = useUser();
   // const user: any = {
   //   id: "1",
   //   name: "John Doe",
@@ -29,7 +29,7 @@ const Header = () => {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-white border-b">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <Menu className="w-6 h-6" />
         </Button>
         <Link href="/" className="flex items-center gap-1">
