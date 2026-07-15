@@ -15,22 +15,23 @@ const ChannelDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Fetch the channel creator's videos from the database
+  const fetchChannelVideos = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get("/video/getall");
+      // Filter videos by the uploader's channel ID
+      const channelVids = res.data.filter((vid: any) => vid.uploader === id);
+      setVideos(channelVids);
+    } catch (error) {
+      console.error("Error fetching channel videos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!router.isReady || !id) return;
-
-    const fetchChannelVideos = async () => {
-      setLoading(true);
-      try {
-        const res = await axiosInstance.get("/video/getall");
-        // Filter videos by the uploader's channel ID
-        const channelVids = res.data.filter((vid: any) => vid.uploader === id);
-        setVideos(channelVids);
-      } catch (error) {
-        console.error("Error fetching channel videos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchChannelVideos();
   }, [id, router.isReady]);
@@ -46,7 +47,11 @@ const ChannelDetailPage = () => {
         {/* Only show uploader form if the logged in user is viewing their own channel */}
         {user && user._id === id && (
           <div className="px-4 pb-8">
-            <VideoUploader channelId={id} channelName={channel?.channelname} />
+            <VideoUploader
+              channelId={id}
+              channelName={channel?.channelname}
+              onUploadSuccess={fetchChannelVideos}
+            />
           </div>
         )}
 
