@@ -1,4 +1,4 @@
-import "@/app/globals.css";
+import "@/styles/globals.css";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { AuthProvider } from "@/lib/AuthContext";
