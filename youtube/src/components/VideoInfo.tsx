@@ -8,12 +8,13 @@ import {
   Share,
   ThumbsDown,
   ThumbsUp,
+  Users,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useUser } from "../lib/AuthContext";
 import axiosInstance from "../lib/axiosinstance";
 
-const VideoInfo = ({ video }: any) => {
+const VideoInfo = ({ video, onStartWatchParty }: any) => {
   const [likes, setlikes] = useState(video.Like || 0);
   const [dislikes, setDislikes] = useState(video.Dislike || 0);
   const [isLiked, setIsLiked] = useState(false);

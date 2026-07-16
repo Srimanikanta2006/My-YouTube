@@ -1,5 +1,6 @@
 import { Bell, Menu, Mic, Search, User, VideoIcon, ArrowLeft } from "lucide-react";
 import React, { useState } from "react";
+import { useRouter } from "next/router";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { Input } from "./ui/input";
@@ -16,9 +17,18 @@ import { useUser } from "@/lib/AuthContext";
 
 const Header = () => {
   const { user, logout, handlegooglesignin, toggleSidebar } = useUser();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isdialogeopen, setisdialogeopen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+  const handleHeaderWatchPartyClick = () => {
+    if (user) {
+      router.push("/watch-party");
+    } else {
+      handlegooglesignin();
+    }
+  };
 
   if (isMobileSearchOpen) {
     return (
@@ -113,7 +123,13 @@ const Header = () => {
 
         {user ? (
           <>
-            <Button variant="ghost" size="icon" className="hidden sm:flex">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden sm:flex rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+              onClick={handleHeaderWatchPartyClick}
+              title="Watch Party"
+            >
               <VideoIcon className="w-6 h-6" />
             </Button>
             <Button variant="ghost" size="icon" className="hidden sm:flex">

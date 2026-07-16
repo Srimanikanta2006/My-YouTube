@@ -11,6 +11,7 @@ import watchlaterroutes from "./Routes/watchlater.js";
 import historyrroutes from "./Routes/history.js";
 import commentroutes from "./Routes/comment.js";
 import video from "./Modals/video.js";
+import { initSignalingServer } from "./signaling.js";
 dotenv.config();
 const app = express();
 import path from "path";
@@ -152,7 +153,8 @@ const initDb = async () => {
 };
 
 initDb().finally(() => {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`server running on port ${PORT}`);
   });
+  initSignalingServer(server);
 });

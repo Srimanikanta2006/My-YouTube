@@ -461,6 +461,273 @@ Align the Explore page category cards (Trending, Music, Gaming, News) to filter 
 ### 🛠️ Code Modified & Involved
 *   **Files**: [HistoryContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/HistoryContent.tsx), [LikedContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/LikedContent.tsx), [WatchLaterContent.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchLaterContent.tsx), [index.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/explore/index.tsx)
 
+---
+
+# Real-Time Watch Party & Peer-to-Peer Video Calling
+
+## Milestone 1: WebSockets Signaling Infrastructure (Backend & Setup)
+
+### 🟢 Requirement
+Build a real-time room communication system that allows multiple clients to join the same watch party, exchange chat messages, coordinate video player playback state, and signal peer-to-peer WebRTC connections.
+
+### 🔍 Solution & Code-Level Architecture
+1. **WebSocket Server Binding (`server/index.js`)**:
+   * Attached a native Node.js `ws` server directly to the Node Express server.
+   * `app.listen()` returns the `http.Server` instance, which is passed into our initialization function `initSignalingServer(server)`. This allows WebSockets to operate on the same port (5000) as the REST API without initiating new ports.
+2. **State & Connection Router (`server/signaling.js`)**:
+   * **State Map**: Declared `const rooms = new Map();` where the key is the `partyId` (the room code) and the value is a `Set` containing the WebSockets of all users currently in that party.
+   * **Message Broker Schema**:
+     * `join`: Triggered when a frontend user connects with a `roomId`, `uid` (user ID), and `name`. We store the `roomId` on the socket context, append the socket to the target room set, broadcast a `peer-joined` payload containing user credentials to other participants, and send a `room-users` array list containing other active peers back to the initiator.
+     * `signal`: Acts as a direct tunnel. If Peer A sends a payload targeting Peer B (`targetUid`), the server scans the room's socket Set, finds the connection matching `ws.userId === targetUid`, and transfers the SDP/ICE signal package directly.
+     * `chat-message`: Intercepts and broadcasts message text logs, names, and timestamps to all connected sockets in the room.
+     * `video-control`: Intercepts play, pause, or seek commands, forwarding action triggers and player timestamps to the rest of the clients in the room.
+     * `close`: Triggered when a socket connection closes. Removes the socket from the room set, broadcasts a `peer-left` notification, and deletes the `rooms` map key if the Set becomes empty.
+
+### 🛠️ Code Modified & Involved
+*   **Backend Files**:
+    *   [signaling.js](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/server/signaling.js) (Created, containing signaling routing loops).
+    *   [index.js](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/server/index.js) (Modified, imported and bound signaling server callback to Express listener).
+
+---
+
+## Milestone 2: Video Playback Synchronization (Frontend Connect & Control)
+
+### 🟢 Requirement
+Allow frontend users to launch or join a watch party session. Provide playback synchronization so that the host's video triggers (play, pause, and seek) propagate to all participants.
+
+### 🔍 Solution & Code-Level Architecture
+1. **Ref Refactoring (`components/Videoplayer.tsx`)**:
+   * Wrapped the player component in React's `forwardRef` API, exposing the underlying HTML5 `<video>` tag reference to the parent container.
+2. **Watch Party Controller Interface (`components/WatchPartyPanel.tsx`)**:
+   * **WebSocket Handshake**: On mount, creates a client socket (`new WebSocket(wsUrl)`) dynamically converting the HTTP backend server address (`http` to `ws`, `https` to `wss`). Transmits `join` room registration message containing the query-parsed `roomId`, user id (`_id`), and screen name.
+   * **Receive Events**: Listens to server messages (`onmessage`). On `video-control` frames:
+     * Sets `isIncomingEvent.current = true` to temporarily block trigger loops.
+     * Evaluates `action` string:
+       * `play`: Updates video time (`currentTime = data.time`) and triggers `video.play()`.
+       * `pause`: Triggers `video.pause()` and updates time.
+       * `seek`: Adjusts time directly.
+     * Invokes a `setTimeout` to release the loop blocker flag after 500ms once local browser event cycles execute.
+   * **Broadcast Local Playback**: Attaches action listeners (`play`, `pause`, `seeking`) directly to the HTML5 video element. When local user actions occur, broadcasts `type: "video-control"` containing the event details to other participants via WebSocket.
+3. **Responsive Router split (`pages/watch/[id].tsx`)**:
+   * Registers a callback ref `videoCallbackRef` that stores the player element once mounted.
+   * Pulls the `party` value from the URL query. If present, sets split-column tabs `"Watch Party"` and `"Up Next"` and mounts `<WatchPartyPanel>` inside the sidebar, feeding it the video element state.
+   * Adds the launch action button `"Watch Party"` inside `<VideoInfo>`, mapping it to generate room keys and update URL queries without reloading pages (`shallow: true`).
+
+### 🛠️ Code Modified & Involved
+*   **Frontend Files**:
+    *   [Videoplayer.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/Videoplayer.tsx) (Refactored to support `forwardRef`).
+    *   [VideoInfo.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/VideoInfo.tsx) (Added custom launch button mapping `onStartWatchParty`).
+    *   [WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Created, handles WS lifecycle and player sync).
+    *   [pages/watch/[id].tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/watch/%5Bid%5D.tsx) (Modified, controls tabs routing and split-screen layouts).
+
+---
+
+## Milestone 3: WebRTC Peer-to-Peer Video Call
+
+### 🟢 Requirement
+Integrate full video calling capabilities where watch party participants can capture their camera stream, exchange peer connections, and render dynamic remote video tiles in a grid block.
+
+### 🔍 Solution & Code-Level Architecture
+1. **Local Media Acquisition (`components/WatchPartyPanel.tsx`)**:
+   * Uses `navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true })` on mount to obtain local camera/microphone stream `localStream`.
+   * Maps local stream directly to `localVideoRef` (applying `transform scale-x-[-1]` in CSS to mirror local output).
+   * Ensures that all tracks (`track.stop()`) are closed when the component unmounts.
+2. **P2P Connection Handshakes (Mesh Architecture)**:
+   * **Connection Registry**: Declared a connection reference object `peerConnectionsRef = useRef<{ [uid: string]: RTCPeerConnection }>({})` and remote streams collection `const [remoteStreams, setRemoteStreams] = useState<{ [uid: string]: MediaStream }>({})`.
+   * **Signaling Handshakes**:
+     * **Call Initiator**: When Peer A receives a `"peer-joined"` WebSocket notification about Peer B joining:
+       * Creates a peer connection: `pc = new RTCPeerConnection(servers)`.
+       * Appends local tracks: `localStream.getTracks().forEach(t => pc.addTrack(t, localStream))`.
+       * Creates an offer: `offer = await pc.createOffer()`, sets `pc.setLocalDescription(offer)`, and broadcasts `type: "signal"` containing `{ sdp: offer }` to Peer B.
+     * **Call Receiver**: When Peer B receives `type: "signal"` containing the SDP Offer:
+       * Creates their own corresponding connection `pc = new RTCPeerConnection(servers)` and adds local tracks.
+       * Sets Peer A's offer: `await pc.setRemoteDescription(offer)`.
+       * Creates an answer: `answer = await pc.createAnswer()`, sets `pc.setLocalDescription(answer)`, and returns `type: "signal"` containing `{ sdp: answer }` to Peer A.
+     * **ICE Candidates Mapping**: Both connections register `pc.onicecandidate`. When candidates arrive, sends `type: "signal"` containing `{ candidate }` via WebSocket, which is loaded on the target client using `pc.addIceCandidate()`.
+     * **Track Reception**: Both peer connections register `pc.ontrack`. When a track arrives, maps the incoming stream to `remoteStreams[peerUid]` React state.
+3. **Programmatic Stream Hooking**:
+   * Created a small functional component `<VideoCardKey>` to bypass React's standard element limitations. It takes the dynamically received `MediaStream` prop, binds it programmatically using the `.srcObject` DOM property on mount, and renders the participant video player tile.
+
+*   **Frontend Files**:
+    *   [WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Updated, added getUserMedia loop, RTCPeerConnection handshakes, connection maps, signaling callbacks, and `<VideoCardKey>` video tiles rendering grid).
+
+---
+
+## Milestone 4: Call Controls & Screen Sharing Integration
+
+### 🟢 Requirement
+Equip the watch party interface with Call Control buttons to toggle audio output (mute), toggle video output (camera off), and stream the user's screen (screen share) seamlessly across all participants.
+
+### 🔍 Solution & Code-Level Architecture
+1. **Interactive Audio/Video Toggles (`components/WatchPartyPanel.tsx`)**:
+   * **State Hooks**: Set up `isMuted` and `isVideoOff` hooks.
+   * **Audio Toggle**: `toggleMute` extracts the local audio track: `localStream.getAudioTracks()[0]`. Toggles its enabled state: `audioTrack.enabled = !audioTrack.enabled`. Updates state to sync icons.
+   * **Video Toggle**: `toggleCamera` toggles `localStream.getVideoTracks()[0].enabled`. Updates state. Renders an absolute overlay `Camera Off` visual fallback if the local feed is disabled.
+2. **Dynamic Screen Sharing Capture**:
+   * **Media Capture**: Uses `navigator.mediaDevices.getDisplayMedia({ video: true })` to capture screen stream `screenStream` and stores it in `screenStreamRef`.
+   * **Track Hot-Swapping**:
+     * Stops the camera video track sensor: `activeVideoTrack.stop()` and removes it from `localStreamRef.current`.
+     * Appends the captured screen track to the local stream: `localStreamRef.current.addTrack(screenTrack)`.
+     * Loops through all active connection sockets: `Object.keys(peerConnectionsRef.current)`. Evaluates the senders registry: `pc.getSenders()`. Swaps the video track dynamically without connection renegotiation: `sender.replaceTrack(screenTrack)`. This updates the video feed instantly on the remote clients' grid.
+     * Triggers `setIsScreenSharing(true)`.
+3. **Screen Share Termination**:
+   * **Browser Bubble Detection**: Listens to `screenTrack.onended` to handle users clicking the browser's native "Stop Sharing" bubble.
+   * **Camera Recovery**: Stops screen tracks, calls `getUserMedia` again to re-capture camera inputs, injects the new camera track back into `localStreamRef.current`, calls `sender.replaceTrack(cameraTrack)` on all connections, and updates local preview targets.
+
+*   **Frontend Files**:
+    *   [WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Updated, added audio/video track switches, screen capture loop, track replacement loop, onended listeners, and call controls overlay buttons).
+
+---
+
+## Refactoring: Watch Party Global Launch Button Relocation
+
+### 🟢 Requirement
+Restrict starting the Watch Party features exclusively from the Video/Camera icon in the header's top-right toolbar, removing the trigger button from under the video player.
+
+### 🔍 Solution & Code-Level Architecture
+1. **Global Callback Handshake (`lib/AuthContext.js`)**:
+   * Declared a React ref `startWatchPartyRef = useRef(null)` and a register handler `registerStartWatchParty(fn) => { startWatchPartyRef.current = fn }` in the global `UserContext`. This serves as an event bridge between the layout header and child pages.
+2. **Context Registration (`pages/watch/[id].tsx` & `components/VideoInfo.tsx`)**:
+   * **Button Removal**: Removed the "Watch Party" button from under the video description in `VideoInfo.tsx`.
+   * **Watch Page Binding**: In `WatchPage`, whenever a video is loaded, we call `registerStartWatchParty(handleStartWatchParty)`. This binds the local page's shallow router launcher to the global ref. Cleaned up on unmount.
+3. **Header Event Trigger (`components/Header.tsx`)**:
+   * Retrieved `startWatchPartyRef` from the global `useUser` context hook.
+   * Bound the header's top-right `VideoIcon` button to call `handleHeaderWatchPartyClick`.
+   * If a user is on a watch page (ref is active), it calls the registered function to instantly launch shallow rooms.
+   * If they are on any other page (like Home, where no active player exists), it displays an alert advising them to click on any video first to begin watching and start a party.
+
+*   **Frontend Files**:
+    *   [AuthContext.js](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/lib/AuthContext.js) (Restored to its clean original state).
+    *   [Header.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/Header.tsx) (Routed top-right VideoIcon to redirect users to `/watch-party` if signed in, or open sign-in popup).
+    *   [VideoInfo.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/VideoInfo.tsx) (Restored, removing all watch party action links).
+    *   [pages/watch/[id].tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/watch/%5Bid%5D.tsx) (Restored to clean original layout, removing tabs and mesh sockets).
+    *   [components/Videoplayer.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/Videoplayer.tsx) (Restored, removing forwardRef wrappers).
+
+---
+
+## Architectural Shift: Dedicated Watch Party Portal (/pages/watch-party)
+
+### 🟢 Requirement
+Isolate the entire Watch Party room system from standard YouTube video playing routes. The feature should exist exclusively inside a Discord-like portal accessed when clicking the header's top-right Video Icon (restricted to signed-in users).
+
+### 🔍 Solution & Code-Level Architecture
+1. **Header Entry Gatekeeper (`components/Header.tsx`)**:
+   * clicking the `VideoIcon` calls `handleHeaderWatchPartyClick`.
+   * Checks if user is authenticated. If yes, invokes `router.push("/watch-party")`. If no, launches the Firebase Google login popup.
+2. **Theater Portal Dashboard (`pages/watch-party/index.tsx`)**:
+   * **Authentication Enforcement**: Renders a premium splash screen inviting guest users to login via Google if context `user` is null.
+   * **Dashboard Panels**: If signed in with no room code query, renders a dual action dashboard:
+     * **Create Room**: Generates an instantaneous room ID prefix `WP-` and routes to `/watch-party?room=WP-XXXXXX`.
+     * **Join Room**: An input field processing codes or URLs and routing to them.
+3. **Theater Stage Room Layout (`pages/watch-party/index.tsx`)**:
+   * Rendered if `room` query is active.
+   * **Theater Catalog Selector**: Renders a dropdown select box retrieving all video database rows on mount using `/video/getall`. Changing selections updates `selectedVideo` state.
+   * **Signal Synchronization**: Sends `type: "select-video"` payload via room WebSockets to all clients. When clients receive this payload, they locate the video row in their cached catalog list, updating their active video stage state automatically.
+   * **Inline HTML5 Player**: Employs an inline control `<video>` element binding path normalizations dynamically. Exposes the node ref `videoCallbackRef` to wire play/pause/seek events to the WebRTC sync loops.
+4. **WebSocket Hot Binding (`components/WatchPartyPanel.tsx`)**:
+   * Modified to accept `videosList` and `onSelectVideo` hooks.
+   * Attaches the live socket client to `(window as any).partyWs` on open, making it easily readable to parent action dropdown handlers, and removes it on unmount.
+   * Decodes `select-video` frames and updates target video states.
+
+*   **Frontend Files**:
+    *   [pages/watch-party/index.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/watch-party/index.tsx) (Created, contains portal layout, inline theater players, and selector catalog grids).
+    *   [WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Updated props, exposed window WS hooks, and added select-video handlers).
+    *   [server/signaling.js](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/server/signaling.js) (Added select-video room broadcasts).
+
+---
+
+## Milestone 5: Real-Time Chat & Participant Sidebar Integration
+
+### 🟢 Requirement
+Implement real-time text chat and a members list tab system within the Watch Party side panel, supporting auto-scrolling feeds and room wide text messaging sync.
+
+### 🔍 Solution & Code-Level Architecture
+1. **Tabs Container Layout (`components/WatchPartyPanel.tsx`)**:
+   * Divided the side panel layout under the WebRTC grids into a responsive dual-tab workspace: `activeSideTab === "chat"` and `activeSideTab === "participants"`.
+2. **Text Chat Messaging Loop**:
+   * **Local State Collection**: Maintains a `messages` array storing message structures (`id`, `sender`, `text`, `timestamp`).
+   * **Message Send Handler**: `handleSendMessage` validates `inputText`. If socket is active, sends a JSON frame: `type: "chat-message"` containing `{ text }` to the signaling broker. Appends the message locally with sender `"You"`.
+   * **Backend Routing**: The backend signaling broker (`server/signaling.js`) receives `"chat-message"` and broadcasts it to all other room members, attaching the client's registered session `senderName`.
+   * **Message Receive Handler**: In the frontend socket message listener, a case `"chat-message"` catches the broadcast frame and appends it to local state, translating `data.senderName` as the sender.
+   * **Auto-Scrolling Mechanism**: Binds a ref `messagesEndRef = useRef<HTMLDivElement>(null)` to the bottom of the message log container. We use a `useEffect` hooked to the `messages` array state that calls `messagesEndRef.current.scrollIntoView({ behavior: "smooth" })` to scroll automatically when a new message arrives or tabs switch.
+3. **Members Sidebar Tab**:
+   * Displays the host's details (`user.name`) labeled as "Host" in a highlight pill, followed by list rows of all active participants (`participants`) currently connected via WebSockets.
+
+*   **Frontend Files**:
+    *   [WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Updated, added messages state hooks, text input form handlers, tabs layout selectors, message event listeners, and auto-scroll ref loops).
+
+---
+
+## Milestone 6: Live Session Recording Integration
+
+### 🟢 Requirement
+Incorporate a session recording feature inside the watch party call controls. The recording should compile captured tracks dynamically and download the file locally to the host device as a standard webm video format.
+
+### 🔍 Solution & Code-Level Architecture
+1. **MediaRecorder Handshake API (`components/WatchPartyPanel.tsx`)**:
+   * **State Hooks**: Set up an `isRecording` status boolean hook.
+   * **Reference Registries**: Created `mediaRecorderRef = useRef<MediaRecorder | null>(null)` and `recordedChunksRef = useRef<Blob[]>([]` references.
+2. **Session Recording Loop**:
+   * **Start Recording (`startRecording`)**:
+     * Verifies that the camera media capture stream is active (`localStreamRef.current`).
+     * Resets the raw blob chunks buffer: `recordedChunksRef.current = []`.
+     * Instantiates the MediaRecorder: `new MediaRecorder(localStreamRef.current, options)`. Evaluates native browser codec capabilities sequentially, prioritizing `'video/webm;codecs=vp9,opus'`, falling back to `'vp8'`, and defaulting to raw `'video/webm'`.
+     * Attaches `ondataavailable` callbacks: collects binary media segments as they stream and pushes them to the chunks ref list every 1 second: `recorder.start(1000)`.
+     * Toggles `setIsRecording(true)`.
+   * **Stop Recording (`stopRecording`)**:
+     * Invokes `mediaRecorderRef.current.stop()` and sets `setIsRecording(false)`.
+   * **Download Generation**:
+     * Attaches `onstop` callback: once stopped, compiles the accumulated video chunks ref array into a single binary Blob: `new Blob(recordedChunksRef.current, { type: 'video/webm' })`.
+     * Spawns a temporary browser URL mapping: `const url = URL.createObjectURL(blob)`.
+     * Programmatically constructs and triggers a temporary anchor link download attribute: `a.download = "watchparty-room-date.webm"`, downloading the recorded video file directly to the host's native downloads directory. Revokes the Object URL dynamically.
+3. **Pulsing Indicator Overlay**:
+   * Displays a glowing, red recording badge `"● REC"` next to the top active members header tab when `isRecording` is true, providing clear UX warning cues to active callers.
+
+*   **Frontend Files**:
+    *   [WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Updated, added recording state hooks, MediaRecorder instantiations, blob compilation loops, file download anchors, unmount safety stops, and flashing status Rec indicator badges).
+
+---
+
+## Refactoring: Watch Party Bug Fixes & UX Optimization
+
+### 🟢 Requirement
+Address critical watch party bugs: WebSockets dropping out on video updates, duplicated chat echoes, hardware camera lock rendering remote grids black on Windows, remote screen shares freezing, recording capturing face feeds instead of movie theater stages, and lack of visual sync overrides.
+
+### 🔍 Solution & Code-Level Architecture
+1. **Connection Stabilization (Ref registries)**:
+   * **The Bug**: When changing the theater video, `videosList` or `onSelectVideo` hooks updated, triggering the WebSocket `useEffect` dependency loop, causing constant socket reconnections and closing remote peer call grids.
+   * **The Fix**: Loaded `videosList` and `onSelectVideo` props inside React `useRef` tokens: `videosListRef` and `onSelectVideoRef`, removing them from the `useEffect` dependencies list. This decouples socket lifecycles from stage updates, ensuring a stable connection.
+2. **Duplicate Message Filtering**:
+   * **The Bug**: Sending a text message appended it locally, and also processed the returned socket broadcast, leading to duplicate message rows.
+   * **The Fix**: Added a persistent ID ref `myUidRef.current = user?._id || "guest_random"`. Inside the socket `"chat-message"` parser, we ignore messages where `data.senderUid === myUidRef.current`.
+3. **Webcam Hardware Lock Fallback**:
+   * **The Bug**: On Windows laptops, only one browser window can lock the hardware camera sensor. Opening a second window in incognito caused `getUserMedia` to fail and crashed WebRTC calling.
+   * **The Fix**: Wrapped webcam requests in a try/catch. If it fails due to locking, it captures microphone audio only (`getUserMedia({ audio: true })`), setting the local camera toggle state `isVideoOff` to true automatically.
+4. **Live Screen Share Remote Hook refresh**:
+   * **The Bug**: Hot-swapped video tracks using `replaceTrack` did not trigger remote video element refreshes because the remote `MediaStream` reference itself remained unchanged.
+   * **The Fix**: Registered listener events `addtrack` and `removetrack` inside the remote video card component `<VideoCardKey>`. When track changes are received, it refreshes the `.srcObject` source target.
+5. **Theater Video Screen Recording**:
+   * **The Bug**: Recording captured local camera streams instead of the synchronized movie/video player stream.
+   * **The Fix**: Captured the active HTML5 `<video>` stage node stream using `.captureStream()` (or fallback `.mozCaptureStream()`). Combined the video stream tracks with the local user's microphone track into a single `MediaStream` fed to the `MediaRecorder`. This records both the watch party video and local audio commentary.
+6. **Room Synchronization overrides**:
+   * **The Fix**: Added a **"Sync Room"** button inside `watch-party/index.tsx`. Clicking it forces a room wide WebSocket play seek command set to the current player's exact `currentTime`, aligning all participants.
+7. **Responsive UI grid columns**:
+   * **The Fix**: Dynamically switches grid rendering between single column (`grid-cols-1` when alone) and dual columns (`grid-cols-2` when remote callers connect). Added responsiveness to the container, preventing overlaps on screen resizing.
+
+### 🛠️ Code Modified & Involved
+*   **Frontend Files**:
+    *   [pages/watch-party/index.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/pages/watch-party/index.tsx) (Added Sync Room button and responsive layout adjustments).
+    *   [components/WatchPartyPanel.tsx](file:///C:/Users/srima/Documents/Web%20DEV%20Docs/My%20YouTube/youtube/src/components/WatchPartyPanel.tsx) (Fixed socket reconnect refs, duplicate filters, hardware fallbacks, dynamic grid cols, and screen recorder capture streams).
+
+
+
+
+
+
+
+
+
+
 
 
 
