@@ -5,9 +5,27 @@ import { AuthProvider, useUser } from "@/lib/AuthContext";
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 
 function Layout({ children }: { children: React.ReactNode }) {
   const { isSidebarCollapsed } = useUser();
+  const router = useRouter();
+  
+  // Detect if the user is inside an active Watch Party room (has room query)
+  const isWatchPartyRoom = router.pathname === "/watch-party" && router.query.room;
+
+  if (isWatchPartyRoom) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white w-full overflow-hidden">
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        </Head>
+        <main className="w-full h-screen p-0 flex flex-col">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pt-14">

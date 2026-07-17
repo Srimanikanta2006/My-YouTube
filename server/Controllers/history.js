@@ -5,6 +5,9 @@ export const handlehistory = async (req, res) => {
   const { userId } = req.body;
   const { videoId } = req.params;
   try {
+    // Delete any existing watch history entries for this video by this user to prevent stacking duplicates
+    await history.deleteMany({ viewer: userId, videoid: videoId });
+
     await history.create({ viewer: userId, videoid: videoId });
     await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
     return res.status(200).json({ history: true });

@@ -142,34 +142,51 @@ const Header = () => {
                   <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuContent className="w-56 animate-in slide-in-from-top-2 duration-200" align="end">
                 {user?.channelname ? (
-                  <DropdownMenuItem>
-                    <Link href={`/channel/${user?._id}`}>Your channel</Link>
+                  <DropdownMenuItem 
+                    className="cursor-pointer font-medium hover:bg-gray-100 transition-colors"
+                    onClick={() => router.push(`/channel/${user?._id}`)}
+                  >
+                    Your channel
                   </DropdownMenuItem>
                 ) : (
                   <div className="px-2 py-1.5">
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="w-full"
+                      className="w-full font-bold"
                       onClick={() => setisdialogeopen(true)}
                     >
                       Create Channel
                     </Button>
                   </div>
                 )}
-                <DropdownMenuItem>
-                  <Link href="/history">History</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => router.push("/history")}
+                >
+                  History
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/liked">Liked videos</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => router.push("/liked")}
+                >
+                  Liked videos
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/watch-later">Watch later</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => router.push("/watch-later")}
+                >
+                  Watch later
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>Sign out</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 transition-colors"
+                  onClick={logout}
+                >
+                  Sign out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>

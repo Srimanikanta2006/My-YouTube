@@ -1,10 +1,5 @@
 import { Check, FileVideo, Upload, X } from "lucide-react";
 import React, { ChangeEvent, useRef, useState } from "react";
-// Minimal local fallback for `sonner.toast` when the package isn't installed
-const toast = {
-  error: (msg: string) => console.error(msg),
-  success: (msg: string) => console.log(msg),
-};
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -20,17 +15,20 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
   const [videoDuration, setVideoDuration] = useState("00:00");
   const [videoCategorySelected, setVideoCategorySelected] = useState("All");
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handlefilechange = (e: ChangeEvent<HTMLInputElement>) => {
+    setUploadError("");
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
       if (!file.type.startsWith("video/")) {
-        toast.error("Please upload a valid video file.");
+        setUploadError("Please upload a valid video file format (e.g. MP4, WebM, AVI).");
         return;
       }
       if (file.size > 100 * 1024 * 1024) {
-        toast.error("File size exceeds 100MB limit.");
+        setUploadError("File size exceeds the 100MB limit. Please compress your video or select a smaller file.");
         return;
       }
       setVideoFile(file);
@@ -60,6 +58,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
       videoEl.src = URL.createObjectURL(file);
     }
   };
+
   const resetForm = () => {
     setVideoFile(null);
     setVideoTitle("");
@@ -68,21 +67,23 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
     setIsUploading(false);
     setUploadProgress(0);
     setUploadComplete(false);
+    setUploadError("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
   const cancelUpload = () => {
-    if (isUploading) {
-      toast.error("Your video upload has been cancelled");
-    }
     resetForm();
   };
+
   const handleUpload = async () => {
     if (!videoFile || !videoTitle.trim()) {
-      toast.error("Please provide file and title");
+      setUploadError("Please provide both a video file and a title.");
       return;
     }
+    
+    setUploadError("");
     const formdata = new FormData();
     formdata.append("file", videoFile);
     formdata.append("videotitle", videoTitle);
@@ -90,13 +91,13 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
     formdata.append("uploader", user?._id || "");
     formdata.append("videoduration", videoDuration);
     formdata.append("videocategory", videoCategorySelected);
-    console.log(formdata);
+
     try {
       setIsUploading(true);
       setUploadProgress(0);
-      const res = await axiosInstance.post("/video/upload", formdata, {
+      await axiosInstance.post("/video/upload", formdata, {
         headers: {
-          "Content-Type": "multipart/form-data", // ✅ MUST for FormData
+          "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progresEvent: any) => {
           const progress = Math.round(
@@ -105,30 +106,42 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
           setUploadProgress(progress);
         },
       });
-      toast.success("Upload successfully");
-      resetForm();
-      if (onUploadSuccess) {
-        onUploadSuccess();
-      }
-    } catch (error) {
+      setUploadComplete(true);
+      setTimeout(() => {
+        resetForm();
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
+      }, 1000);
+    } catch (error: any) {
       console.error("Error uploading video:", error);
-      toast.error("There was an error uploading your video. Please try again.");
+      const serverMsg = error.response?.data?.message || "There was an error uploading your video. Check server storage limits.";
+      setUploadError(serverMsg);
     } finally {
       setIsUploading(false);
     }
   };
+
   return (
-    <div className="bg-gray-50 rounded-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Upload a video</h2>
+    <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200/50">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Upload Video</h2>
+
+      {/* Visual Error Message Box */}
+      {uploadError && (
+        <div className="p-3.5 mb-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium flex items-center justify-between">
+          <span>{uploadError}</span>
+          <button onClick={() => setUploadError("")} className="text-red-500 hover:text-red-700 ml-2 font-bold">×</button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {!videoFile ? (
           <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-100 transition-colors"
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:bg-gray-100 hover:border-red-400 transition-all"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-            <p className="text-lg font-medium">
+            <Upload className="w-12 h-12 mx-auto text-gray-400 mb-2 animate-bounce" />
+            <p className="text-lg font-medium text-gray-700">
               Drag and drop video files to upload
             </p>
             <p className="text-sm text-gray-500 mt-1">
@@ -147,49 +160,49 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-              <div className="bg-blue-100 p-2 rounded-md">
-                <FileVideo className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-150">
+              <div className="bg-red-50 p-2 rounded-lg">
+                <FileVideo className="w-6 h-6 text-red-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{videoFile.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-semibold text-sm text-gray-800 truncate">{videoFile.name}</p>
+                <p className="text-xs text-gray-500">
                   {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
                 </p>
               </div>
               {!isUploading && (
-                <Button variant="ghost" size="icon" onClick={cancelUpload}>
-                  <X className="w-5 h-5" />
+                <Button variant="ghost" size="icon" className="rounded-full" onClick={cancelUpload}>
+                  <X className="w-5 h-5 text-gray-500" />
                 </Button>
               )}
               {uploadComplete && (
-                <div className="bg-green-100 p-1 rounded-full">
-                  <Check className="w-5 h-5 text-green-600" />
+                <div className="bg-green-100 p-1.5 rounded-full">
+                  <Check className="w-4 h-4 text-green-600" />
                 </div>
               )}
             </div>
 
             <div className="space-y-3">
               <div>
-                <Label htmlFor="title">Title (required)</Label>
+                <Label htmlFor="title" className="font-semibold text-xs text-gray-600">Title (required)</Label>
                 <Input
                   id="title"
                   value={videoTitle}
                   onChange={(e) => setVideoTitle(e.target.value)}
                   placeholder="Add a title that describes your video"
                   disabled={isUploading || uploadComplete}
-                  className="mt-1"
+                  className="mt-1 border-gray-200"
                 />
               </div>
 
               <div>
-                <Label htmlFor="category">Category (optional)</Label>
+                <Label htmlFor="category" className="font-semibold text-xs text-gray-600">Category (optional)</Label>
                 <select
                   id="category"
                   value={videoCategorySelected}
                   onChange={(e) => setVideoCategorySelected(e.target.value)}
                   disabled={isUploading || uploadComplete}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1 cursor-pointer"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1 cursor-pointer border-gray-200"
                 >
                   <option value="All">Select a Category (default: All)</option>
                   <option value="Music">Music</option>
@@ -210,30 +223,29 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
 
             {isUploading && (
               <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium text-gray-700">
+                <div className="flex justify-between text-xs font-semibold text-gray-700">
                   <span>Uploading video...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
                   <div 
-                    className="bg-blue-600 h-full rounded-full transition-all duration-300 ease-out"
+                    className="bg-red-600 h-full rounded-full transition-all duration-300 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-2">
               {!uploadComplete && (
                 <>
-                  <Button onClick={cancelUpload} disabled={uploadComplete}>
+                  <Button variant="outline" className="rounded-xl" onClick={cancelUpload} disabled={isUploading}>
                     Cancel
                   </Button>
                   <Button
                     onClick={handleUpload}
-                    disabled={
-                      isUploading || !videoTitle.trim() || uploadComplete
-                    }
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 rounded-xl shadow"
+                    disabled={isUploading || !videoTitle.trim() || uploadComplete}
                   >
                     {isUploading ? "Uploading..." : "Upload"}
                   </Button>

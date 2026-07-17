@@ -6,14 +6,41 @@ import { useUser } from "@/lib/AuthContext";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import axiosInstance from "@/lib/axiosinstance";
+import { X, Upload, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const ChannelDetailPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const { user } = useUser();
+  const { user, updateUserData } = useUser();
+
+  const [channel, setChannel] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("videos");
   const [loading, setLoading] = useState(true);
+
+  // Video uploader modal trigger
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+
+  // Edit Settings states for owners in "About" tab
+  const [editChannelName, setEditChannelName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Fetch the channel owner's details from backend
+  const fetchChannelDetails = async () => {
+    if (!id) return;
+    try {
+      const res = await axiosInstance.get(`/user/get/${id}`);
+      setChannel(res.data);
+      setEditChannelName(res.data.channelname || "");
+      setEditDescription(res.data.description || "");
+    } catch (error) {
+      console.error("Error fetching channel details:", error);
+    }
+  };
 
   // Fetch the channel creator's videos from the database
   const fetchChannelVideos = async () => {
@@ -21,7 +48,6 @@ const ChannelDetailPage = () => {
     setLoading(true);
     try {
       const res = await axiosInstance.get("/video/getall");
-      // Filter videos by the uploader's channel ID
       const channelVids = res.data.filter((vid: any) => vid.uploader === id);
       setVideos(channelVids);
     } catch (error) {
@@ -34,8 +60,17 @@ const ChannelDetailPage = () => {
   useEffect(() => {
     if (!router.isReady || !id) return;
 
+    fetchChannelDetails();
     fetchChannelVideos();
   }, [id, router.isReady]);
+
+  // Sync edit settings fields when channel changes
+  useEffect(() => {
+    if (channel) {
+      setEditChannelName(channel.channelname || "");
+      setEditDescription(channel.description || "");
+    }
+  }, [channel]);
 
   const getDurationInSeconds = (durationStr: string): number => {
     if (!durationStr) return 0;
@@ -57,14 +92,12 @@ const ChannelDetailPage = () => {
       return videos;
     }
     if (activeTab === "videos") {
-      // Regular videos: duration is empty/unset OR duration >= 60 seconds
       return videos.filter((vid) => {
         if (!vid.videoduration) return true;
         return getDurationInSeconds(vid.videoduration) >= 60;
       });
     }
     if (activeTab === "shorts") {
-      // Shorts: duration is set AND duration < 60 seconds
       return videos.filter((vid) => {
         if (!vid.videoduration) return false;
         return getDurationInSeconds(vid.videoduration) < 60;
@@ -73,27 +106,61 @@ const ChannelDetailPage = () => {
     return [];
   };
 
+  const handleSaveChannelDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editChannelName.trim()) {
+      alert("Channel name is required.");
+      return;
+    }
+
+    try {
+      setSavingSettings(true);
+      const res = await axiosInstance.patch(`/user/update/${id}`, {
+        channelname: editChannelName.trim(),
+        description: editDescription.trim(),
+      });
+      
+      // Update global context so navbar, sidebar, and uploads sync details instantly
+      if (updateUserData) {
+        updateUserData({
+          channelname: res.data.channelname,
+          description: res.data.description,
+        });
+      }
+
+      setChannel(res.data);
+      alert("Channel details saved successfully!");
+    } catch (err) {
+      console.error("Error saving channel settings:", err);
+      alert("Failed to save channel details.");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   const filteredVideos = getFilteredVideos();
-  let channel = user;
 
   return (
     <div className="flex-1 min-h-screen bg-white">
       <div className="max-w-full mx-auto">
         <ChannelHeader channel={channel} user={user} />
-        <Channeltabs activeTab={activeTab} setActiveTab={setActiveTab} />
         
-        {/* Only show uploader form if the logged in user is viewing their own channel */}
-        {user && user._id === id && (
-          <div className="px-4 pb-8">
-            <VideoUploader
-              channelId={id}
-              channelName={channel?.channelname}
-              onUploadSuccess={fetchChannelVideos}
-            />
-          </div>
-        )}
+        {/* Navigation & Action Header */}
+        <div className="border-b flex items-center justify-between px-4">
+          <Channeltabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          {/* Render video uploader button ONLY on user's own channel */}
+          {user && user._id === id && (
+            <Button
+              onClick={() => setIsUploadOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white rounded-full font-bold text-xs px-4 h-9 shadow flex items-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Upload Video
+            </Button>
+          )}
+        </div>
 
-        <div className="px-4 pb-8">
+        <div className="px-4 py-8">
           {loading ? (
             <div className="text-gray-500 animate-pulse">Loading channel videos...</div>
           ) : activeTab === "playlists" ? (
@@ -105,9 +172,51 @@ const ChannelDetailPage = () => {
               Community posts are not available for this channel.
             </div>
           ) : activeTab === "about" ? (
-            <div className="text-center py-12 border rounded-lg bg-gray-50 text-gray-500">
-              {channel?.channeldescription || "No description provided for this channel."}
-            </div>
+            /* About Tab Content */
+            user && user._id === id ? (
+              /* If owner: Edit channel settings form */
+              <form onSubmit={handleSaveChannelDetails} className="max-w-2xl border rounded-2xl p-6 bg-white shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-gray-800 border-b pb-3 mb-2">
+                  <Settings className="w-5 h-5 text-red-600" />
+                  <h3 className="font-bold text-base">Channel Customization</h3>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="channelName">Channel Name</Label>
+                  <Input
+                    id="channelName"
+                    value={editChannelName}
+                    onChange={(e) => setEditChannelName(e.target.value)}
+                    placeholder="Enter channel display name"
+                    className="border-gray-200"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="channelDesc">Description (About)</Label>
+                  <textarea
+                    id="channelDesc"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Tell viewers about your channel, content schedule, and social links"
+                    rows={4}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-200 focus:border-red-500"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={savingSettings}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-xl text-xs shadow"
+                >
+                  {savingSettings ? "Saving..." : "Save Details"}
+                </Button>
+              </form>
+            ) : (
+              /* If guest: Show static description */
+              <div className="border rounded-2xl p-6 bg-gray-50 text-gray-700 max-w-3xl leading-relaxed text-sm">
+                <h3 className="font-bold text-gray-900 mb-3 text-base">About Channel</h3>
+                <p>{channel?.description || "No description provided for this channel."}</p>
+              </div>
+            )
           ) : filteredVideos.length === 0 ? (
             <div className="text-center py-8 border rounded-lg bg-gray-50 text-gray-500">
               {activeTab === "shorts" 
@@ -122,6 +231,26 @@ const ChannelDetailPage = () => {
           )}
         </div>
       </div>
+
+      {/* Video Uploader Modal Overlay */}
+      {isUploadOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative shadow-2xl animate-in fade-in zoom-in-95 duration-150 border">
+            <button
+              onClick={() => setIsUploadOpen(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 p-1.5 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <VideoUploader
+              onUploadSuccess={() => {
+                setIsUploadOpen(false);
+                fetchChannelVideos();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -41,6 +41,13 @@ const Comments = ({ videoId }: any) => {
   ];
   useEffect(() => {
     loadComments();
+
+    // Set up polling to refresh comments every 5 seconds for real-time visibility across tabs
+    const interval = setInterval(() => {
+      loadComments();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [videoId]);
 
   const loadComments = async () => {

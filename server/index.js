@@ -18,7 +18,13 @@ import path from "path";
 app.use(cors());
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
-app.use("/uploads", express.static(path.join("uploads")));
+app.use("/uploads", express.static(path.join("uploads"), {
+  setHeaders: (res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+  }
+}));
 app.get("/", (req, res) => {
   res.send("You tube backend is working");
 });

@@ -77,6 +77,15 @@ export const UserProvider = ({ children }) => {
     });
   };
 
+  const updateUserData = (updatedFields) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedFields };
+      localStorage.setItem("user", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -87,6 +96,7 @@ export const UserProvider = ({ children }) => {
         isSidebarCollapsed,
         setIsSidebarCollapsed,
         toggleSidebar,
+        updateUserData,
       }}
     >
       {children}

@@ -23,33 +23,43 @@ export function initSignalingServer(server) {
             userId = uid;
             userName = name;
             
-            // Get or create room Set
+            // Get or create room info object
             if (!rooms.has(roomId)) {
-              rooms.set(roomId, new Set());
+              rooms.set(roomId, {
+                clients: new Set(),
+                hostUid: uid, // Set first joining client as the host
+                deleteTimeout: null
+              });
             }
-            const roomClients = rooms.get(roomId);
+            const roomObj = rooms.get(roomId);
+
+            if (roomObj.deleteTimeout) {
+              clearTimeout(roomObj.deleteTimeout);
+              roomObj.deleteTimeout = null;
+              console.log(`User joined empty room ${roomId}. Cancelled deletion timeout.`);
+            }
             
             // Attach user metadata directly to their WebSocket socket connection object
             ws.userId = uid;
             ws.userName = name;
             
-            roomClients.add(ws);
-            console.log(`User ${name} (${uid}) joined Watch Party room ${roomId}. Room size: ${roomClients.size}`);
+            roomObj.clients.add(ws);
+            console.log(`User ${name} (${uid}) joined Watch Party room ${roomId}. Host: ${roomObj.hostUid}. Room size: ${roomObj.clients.size}`);
             
-            // Notify other peers in the room that a new peer has joined
+            // Notify other peers in the room that a new peer has joined, passing hostUid
             broadcastToRoom(roomId, ws, {
               type: "peer-joined",
               uid: uid,
               name: name,
-              peerCount: roomClients.size
+              peerCount: roomObj.clients.size,
+              hostUid: roomObj.hostUid
             });
             
-            // Send the list of existing peers in the room back to the user who just joined
-            // so they can initiate WebRTC handshakes with each of them
-            const existingPeers = [];
-            roomClients.forEach((client) => {
-              if (client !== ws) {
-                existingPeers.push({
+            // Send current list of participants and hostUid to the joining user
+            const usersList = [];
+            roomObj.clients.forEach((client) => {
+              if (client.userId !== uid) {
+                usersList.push({
                   uid: client.userId,
                   name: client.userName
                 });
@@ -58,7 +68,8 @@ export function initSignalingServer(server) {
             
             ws.send(JSON.stringify({
               type: "room-users",
-              users: existingPeers
+              users: usersList,
+              hostUid: roomObj.hostUid
             }));
             break;
           }
@@ -67,8 +78,8 @@ export function initSignalingServer(server) {
             // Forward WebRTC signals (SDP offer/answer, ICE candidate) to a specific target peer in the room
             const { targetUid, signal } = data;
             if (currentRoomId && rooms.has(currentRoomId)) {
-              const roomClients = rooms.get(currentRoomId);
-              roomClients.forEach((client) => {
+              const roomObj = rooms.get(currentRoomId);
+              roomObj.clients.forEach((client) => {
                 if (client.userId === targetUid) {
                   client.send(JSON.stringify({
                     type: "signal",
@@ -76,6 +87,20 @@ export function initSignalingServer(server) {
                     senderName: userName,
                     signal: signal
                   }));
+                }
+              });
+            }
+            break;
+          }
+
+          case "host-sync-state": {
+            // Forward host sync parameters (video ID, time, play status) to a specific target peer
+            const { targetUid } = data;
+            if (currentRoomId && rooms.has(currentRoomId)) {
+              const roomObj = rooms.get(currentRoomId);
+              roomObj.clients.forEach((client) => {
+                if (client.userId === targetUid) {
+                  client.send(JSON.stringify(data));
                 }
               });
             }
@@ -133,22 +158,43 @@ export function initSignalingServer(server) {
 
     ws.on("close", () => {
       if (currentRoomId && rooms.has(currentRoomId)) {
-        const roomClients = rooms.get(currentRoomId);
-        roomClients.delete(ws);
-        console.log(`User ${userName} disconnected from Watch Party room ${currentRoomId}. Room size: ${roomClients.size}`);
+        const roomObj = rooms.get(currentRoomId);
+        roomObj.clients.delete(ws);
+        console.log(`User ${userName} disconnected from Watch Party room ${currentRoomId}. Room size: ${roomObj.clients.size}`);
         
+        // Host transfer logic: if the host left and there are remaining clients, elect a new host
+        if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
+          const nextClient = roomObj.clients.values().next().value;
+          if (nextClient) {
+            roomObj.hostUid = nextClient.userId;
+            console.log(`Host left watch party room ${currentRoomId}. Transferred host role to ${nextClient.userName} (${nextClient.userId})`);
+            broadcastToRoom(currentRoomId, null, {
+              type: "new-host",
+              hostUid: roomObj.hostUid
+            });
+          }
+        }
+
         // Notify others that this peer left
         broadcastToRoom(currentRoomId, null, {
           type: "peer-left",
           uid: userId,
           name: userName,
-          peerCount: roomClients.size
+          peerCount: roomObj.clients.size
         });
         
-        // Clean up empty room
-        if (roomClients.size === 0) {
-          rooms.delete(currentRoomId);
-          console.log(`Watch Party room ${currentRoomId} is empty. Deleted room.`);
+        // Clean up empty room with 1 minute delay
+        if (roomObj.clients.size === 0) {
+          console.log(`Watch Party room ${currentRoomId} is empty. Scheduling deletion in 1 minute...`);
+          roomObj.deleteTimeout = setTimeout(() => {
+            if (rooms.has(currentRoomId)) {
+              const currentRoom = rooms.get(currentRoomId);
+              if (currentRoom.clients.size === 0) {
+                rooms.delete(currentRoomId);
+                console.log(`Watch Party room ${currentRoomId} remained empty for 1 minute. Deleted room.`);
+              }
+            }
+          }, 60000);
         }
       }
     });
@@ -157,10 +203,10 @@ export function initSignalingServer(server) {
 
 function broadcastToRoom(roomId, excludeWs, payload) {
   if (!rooms.has(roomId)) return;
-  const roomClients = rooms.get(roomId);
+  const roomObj = rooms.get(roomId);
   const msgString = JSON.stringify(payload);
   
-  roomClients.forEach((client) => {
+  roomObj.clients.forEach((client) => {
     if (client !== excludeWs && client.readyState === 1) { // 1 = OPEN
       client.send(msgString);
     }

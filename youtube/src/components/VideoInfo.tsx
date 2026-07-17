@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useUser } from "../lib/AuthContext";
+import Link from "next/link";
 import axiosInstance from "../lib/axiosinstance";
 
 const VideoInfo = ({ video, onStartWatchParty }: any) => {
@@ -78,23 +79,44 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   }, [user, video]);
 
   useEffect(() => {
+    if (!video?._id) return;
     const handleviews = async () => {
       try {
         if (user) {
           await axiosInstance.post(`/history/${video._id}`, {
-            userId: user?._id,
+            userId: user._id,
           });
         } else {
-          await axiosInstance.post(`/history/views/${video?._id}`);
+          await axiosInstance.post(`/history/views/${video._id}`);
         }
       } catch (error) {
-        console.error("Error registering view:", error);
+        console.error("Error updating views:", error);
       }
     };
-    if (video?._id) {
-      handleviews();
-    }
-  }, [user, video?._id]);
+    handleviews();
+  }, [video?._id, user?._id]);
+
+  useEffect(() => {
+    if (!video?._id) return;
+    const pollVideoDetails = async () => {
+      try {
+        const res = await axiosInstance.get(`/video/get/${video._id}`);
+        if (res.data) {
+          setlikes(res.data.Like || 0);
+          // Only sync database dislikes if not locally toggling
+          setDislikes(res.data.Dislike || 0);
+        }
+      } catch (err) {
+        console.warn("Error polling video counts:", err);
+      }
+    };
+
+    const interval = setInterval(() => {
+      pollVideoDetails();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [video?._id]);
 
   const handleLike = async () => {
     if (!user) return;
@@ -144,21 +166,22 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   const handleDislike = async () => {
     if (!user) return;
     try {
-      if (isDisliked) {
-        setDislikes((prev: any) => Math.max(0, prev - 1));
-        setIsDisliked(false);
-        if (typeof window !== "undefined") {
-          let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-          dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
-          localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
-        }
-      } else {
+      const currentlyDisliked = !isDisliked;
+      setIsDisliked(currentlyDisliked);
+      
+      // Update database dislike count
+      await axiosInstance.post(`/like/dislike/${video._id}`, {
+        increment: currentlyDisliked
+      });
+
+      if (currentlyDisliked) {
         setDislikes((prev: any) => prev + 1);
-        setIsDisliked(true);
         if (typeof window !== "undefined") {
           const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-          dislikedVids.push(video._id);
-          localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
+          if (!dislikedVids.includes(video._id)) {
+            dislikedVids.push(video._id);
+            localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
+          }
         }
         
         if (isLiked) {
@@ -167,6 +190,13 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           });
           setIsLiked(false);
           setlikes((prev: any) => Math.max(0, prev - 1));
+        }
+      } else {
+        setDislikes((prev: any) => Math.max(0, prev - 1));
+        if (typeof window !== "undefined") {
+          let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
+          dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
+          localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
         }
       }
     } catch (error) {
@@ -264,23 +294,31 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Avatar className="w-10 h-10">
-            <AvatarFallback>{video.videochanel[0]}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-medium">{video.videochanel}</h3>
-            <p className="text-sm text-gray-600">1.2M subscribers</p>
-          </div>
-          <Button
-            onClick={handleSubscribe}
-            className={`ml-4 rounded-full transition-all duration-300 ${
-              isSubscribed
-                ? "bg-gray-200 text-black hover:bg-gray-300 font-medium"
-                : "bg-red-600 text-white hover:bg-red-700 font-semibold"
-            }`}
-          >
-            {isSubscribed ? "Subscribed" : "Subscribe"}
-          </Button>
+          <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer">
+            <Avatar className="w-10 h-10">
+              <AvatarFallback>{video.videochanel?.[0] || "V"}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium hover:text-red-600 transition-colors">{video.videochanel}</h3>
+              <p className="text-sm text-gray-600">1.2M subscribers</p>
+            </div>
+          </Link>
+          {user && user._id === video.uploader ? (
+            <span className="ml-4 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full uppercase tracking-wider">
+              Owner
+            </span>
+          ) : (
+            <Button
+              onClick={handleSubscribe}
+              className={`ml-4 rounded-full transition-all duration-300 ${
+                isSubscribed
+                  ? "bg-gray-200 text-black hover:bg-gray-300 font-medium"
+                  : "bg-red-600 text-white hover:bg-red-700 font-semibold"
+              }`}
+            >
+              {isSubscribed ? "Subscribed" : "Subscribe"}
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-gray-100 rounded-full">

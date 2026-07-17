@@ -41,3 +41,20 @@ export const updateprofile = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const getuser = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+  try {
+    const userDetail = await users.findById(id);
+    if (!userDetail) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json(userDetail);
+  } catch (error) {
+    console.error("Error getting user:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};

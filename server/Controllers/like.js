@@ -40,3 +40,20 @@ export const getallLikedVideo = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const handledislike = async (req, res) => {
+  const { videoId } = req.params;
+  const { increment } = req.body; // true to increment, false to decrement
+  try {
+    const val = increment ? 1 : -1;
+    const updated = await video.findByIdAndUpdate(
+      videoId,
+      { $inc: { Dislike: val } },
+      { new: true }
+    );
+    return res.status(200).json({ dislikeCount: updated ? updated.Dislike : 0 });
+  } catch (error) {
+    console.error("Dislike error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
