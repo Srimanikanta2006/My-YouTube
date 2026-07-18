@@ -38,6 +38,49 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
       }
     };
     fetchvideo();
+
+    // Establish WebSocket listener to refresh video list when a new video is uploaded
+    const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+    const wsUrl = backendUrl.replace(/^http/, "ws");
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+
+    const connectWs = () => {
+      try {
+        ws = new WebSocket(wsUrl);
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "global-video-uploaded") {
+              console.log("WebSocket event: new video uploaded, fetching updated list...");
+              fetchvideo();
+            }
+          } catch (err) {
+            // Ignore format errors
+          }
+        };
+        ws.onclose = () => {
+          reconnectTimeout = setTimeout(connectWs, 5000);
+        };
+        ws.onerror = () => {
+          ws?.close();
+        };
+      } catch (err) {
+        reconnectTimeout = setTimeout(connectWs, 5000);
+      }
+    };
+
+    connectWs();
+
+    return () => {
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
   }, []);
 
   const filteredVideos = selectedCategory === "All"

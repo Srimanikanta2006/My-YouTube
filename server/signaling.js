@@ -196,9 +196,9 @@ export function initSignalingServer(server) {
             }
           }, 60000);
         }
-      }
     });
   });
+  return wss;
 }
 
 function broadcastToRoom(roomId, excludeWs, payload) {

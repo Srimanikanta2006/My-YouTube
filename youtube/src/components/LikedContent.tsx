@@ -105,7 +105,8 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
   
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
   const normalizedPath = item.videoid?.filepath ? item.videoid.filepath.replace(/\\/g, "/") : "";
-  const videoSrc = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
+  const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
+  const videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";
 
   const handleMouseEnter = () => {
     if (videoRef.current) {

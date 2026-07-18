@@ -21,6 +21,15 @@ export const uploadvideo = async (req, res) => {
         videocategory: req.body.videocategory || "All",
       });
       await file.save();
+      // Broadcast live event to all connected WebSockets
+      const wss = req.app.get("wss");
+      if (wss) {
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            client.send(JSON.stringify({ type: "global-video-uploaded" }));
+          }
+        });
+      }
       return res.status(201).json("file uploaded successfully");
     } catch (error) {
       console.error(" error:", error);

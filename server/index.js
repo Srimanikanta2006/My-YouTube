@@ -162,5 +162,6 @@ initDb().finally(() => {
   const server = app.listen(PORT, () => {
     console.log(`server running on port ${PORT}`);
   });
-  initSignalingServer(server);
+  const wss = initSignalingServer(server);
+  app.set("wss", wss);
 });
