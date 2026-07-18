@@ -118,7 +118,7 @@ export default function ExplorePage() {
         </h2>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 animate-pulse">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-3">
                 <div className="aspect-video bg-gray-200 rounded-lg" />
@@ -133,7 +133,7 @@ export default function ExplorePage() {
             <p className="text-sm text-gray-400 mt-1">Upload a video with matching keywords to see it here!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {filteredVideos.map((video) => (
               <VideoCard key={video._id} video={video} />
             ))}

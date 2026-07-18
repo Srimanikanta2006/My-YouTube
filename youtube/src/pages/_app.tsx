@@ -28,14 +28,14 @@ function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-14">
+    <div className="min-h-screen bg-background pt-14 w-full overflow-x-hidden">
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
       <Header />
-      <div className="flex">
+      <div className="flex w-full overflow-x-hidden">
         <Sidebar />
-        <main className={`flex-1 p-4 transition-all duration-200 ${
+        <main className={`flex-1 min-w-0 p-4 transition-all duration-200 ${
           isSidebarCollapsed ? "md:pl-[80px]" : "md:pl-[272px]"
         }`}>
           {children}
