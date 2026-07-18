@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Videocard from "./Videocard";
 import axiosInstance from "../lib/axiosinstance";
+import { getWsUrl } from "../lib/urlHelper";
 
 const categoryKeywords: { [key: string]: string[] } = {
   Music: ["music", "song", "audio", "sing", "concert", "dj", "remix", "beat", "instrumental", "melody", "lofi", "pop", "rock", "jazz", "rap"],
@@ -40,8 +41,7 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
     fetchvideo();
 
     // Establish WebSocket listener to refresh video list when a new video is uploaded
-    const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
-    const wsUrl = backendUrl.replace(/^http/, "ws");
+    const wsUrl = getWsUrl();
     let ws: WebSocket | null = null;
     let reconnectTimeout: any = null;
 

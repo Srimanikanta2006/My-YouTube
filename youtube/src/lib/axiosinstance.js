@@ -1,14 +1,15 @@
 import axios from "axios";
-
-const rawBaseURL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.BACKEND_URL ||
-  "http://localhost:5000";
-
-const baseURL = rawBaseURL.replace(/\/$/, "");
+import { getBackendUrl } from "./urlHelper";
 
 const axiosInstance = axios.create({
-  baseURL,
+  baseURL: getBackendUrl(),
 });
+
+if (typeof window !== "undefined") {
+  axiosInstance.interceptors.request.use((config) => {
+    config.baseURL = getBackendUrl();
+    return config;
+  });
+}
 
 export default axiosInstance;

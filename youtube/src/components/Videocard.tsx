@@ -2,11 +2,12 @@ import React, { useRef, useEffect } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import { getBackendUrl } from "../lib/urlHelper";
 
 export default function VideoCard({ video }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+  const backendUrl = getBackendUrl();
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
   const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
   const videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";

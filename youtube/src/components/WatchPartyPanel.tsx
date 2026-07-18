@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useUser } from "../lib/AuthContext";
+import { getWsUrl, getBackendUrl } from "../lib/urlHelper";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { 
@@ -286,8 +287,7 @@ export default function WatchPartyPanel({
   useEffect(() => {
     if (!localMediaReady) return;
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-    const wsUrl = backendUrl.replace(/^http/, "ws").replace(/\/$/, "");
+    const wsUrl = getWsUrl();
     
     console.log(`Connecting to WebSocket signaling: ${wsUrl}`);
     const socket = new WebSocket(wsUrl);
@@ -1126,7 +1126,7 @@ export default function WatchPartyPanel({
                   src={
                     selectedVideo.filepath.startsWith("http")
                       ? selectedVideo.filepath
-                      : `${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "")}/${selectedVideo.filepath.replace(/\\/g, "/").replace(/^\//, "")}`
+                      : `${getBackendUrl()}/${selectedVideo.filepath.replace(/\\/g, "/").replace(/^\//, "")}`
                   }
                   crossOrigin="anonymous"
                   className="w-full h-full object-contain max-h-full"

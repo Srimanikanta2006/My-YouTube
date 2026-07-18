@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/router";
 import axiosInstance from "../lib/axiosinstance";
 
+import { getBackendUrl } from "../lib/urlHelper";
+
 const SearchResult = () => {
   const router = useRouter();
   const { q } = router.query;
@@ -99,7 +101,7 @@ const SearchResult = () => {
 function SearchVideoRow({ video }: { video: any }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+  const backendUrl = getBackendUrl();
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
   const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
   const videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";

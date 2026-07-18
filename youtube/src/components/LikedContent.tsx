@@ -6,6 +6,7 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { MoreVertical, X, ThumbsUp, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getBackendUrl } from "../lib/urlHelper";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,7 +104,7 @@ export default function LikedVideosContent() {
 function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+  const backendUrl = getBackendUrl();
   const normalizedPath = item.videoid?.filepath ? item.videoid.filepath.replace(/\\/g, "/") : "";
   const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
   const videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";

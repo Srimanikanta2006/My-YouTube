@@ -14,6 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useUser } from "../lib/AuthContext";
 import Link from "next/link";
 import axiosInstance from "../lib/axiosinstance";
+import { getBackendUrl } from "../lib/urlHelper";
 
 const VideoInfo = ({ video, onStartWatchParty }: any) => {
   const [likes, setlikes] = useState(video.Like || 0);
@@ -238,7 +239,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     }
     
     // Strip trailing slash from backend URL
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    const backendUrl = getBackendUrl();
     const cleanBackendUrl = backendUrl.endsWith("/") ? backendUrl.slice(0, -1) : backendUrl;
     
     return `${cleanBackendUrl}/${relativePath}`;

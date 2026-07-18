@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { getBackendUrl } from "../lib/urlHelper";
 
 interface VideoPlayerProps {
   video: {
@@ -13,7 +14,7 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ video }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+  const backendUrl = getBackendUrl();
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
   const videoSrc = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
 

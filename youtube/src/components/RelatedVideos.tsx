@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import { getBackendUrl } from "../lib/urlHelper";
 
 interface RelatedVideosProps {
   videos: Array<{
@@ -13,7 +14,7 @@ interface RelatedVideosProps {
   }>;
 }
 export default function RelatedVideos({ videos }: RelatedVideosProps) {
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+  const backendUrl = getBackendUrl();
 
   return (
     <div className="space-y-2">
