@@ -1,4 +1,4 @@
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { useState, useEffect, useContext, createContext } from "react";
 import { provider, auth } from "./firebase";
 import axiosInstance from "./axiosinstance";
@@ -23,20 +23,43 @@ export const UserProvider = ({ children }) => {
   };
   const handlegooglesignin = async () => {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const firebaseuser = result.user;
-      const payload = {
-        email: firebaseuser.email,
-        name: firebaseuser.displayName,
-        image: firebaseuser.photoURL || "https://github.com/shadcn.png",
-      };
-      const response = await axiosInstance.post("/user/login", payload);
-      login(response.data.result);
+      const isMobile = typeof window !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        const result = await signInWithPopup(auth, provider);
+        const firebaseuser = result.user;
+        const payload = {
+          email: firebaseuser.email,
+          name: firebaseuser.displayName,
+          image: firebaseuser.photoURL || "https://github.com/shadcn.png",
+        };
+        const response = await axiosInstance.post("/user/login", payload);
+        login(response.data.result);
+      }
     } catch (error) {
       console.error(error);
     }
   };
   useEffect(() => {
+    // 1. Process Google auth redirect result on page load
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user) {
+          const firebaseuser = result.user;
+          const payload = {
+            email: firebaseuser.email,
+            name: firebaseuser.displayName,
+            image: firebaseuser.photoURL || "https://github.com/shadcn.png",
+          };
+          const response = await axiosInstance.post("/user/login", payload);
+          login(response.data.result);
+        }
+      })
+      .catch((error) => {
+        console.error("Google Redirect Auth Error:", error);
+      });
+
     const unsubcribe = onAuthStateChanged(auth, async (firebaseuser) => {
       if (firebaseuser) {
         try {
