@@ -23,22 +23,25 @@ export const UserProvider = ({ children }) => {
   };
   const handlegooglesignin = async () => {
     try {
-      const isMobile = typeof window !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
-        const result = await signInWithPopup(auth, provider);
-        const firebaseuser = result.user;
-        const payload = {
-          email: firebaseuser.email,
-          name: firebaseuser.displayName,
-          image: firebaseuser.photoURL || "https://github.com/shadcn.png",
-        };
-        const response = await axiosInstance.post("/user/login", payload);
-        login(response.data.result);
-      }
+      // Try popup first (opens new tab on mobile) to bypass browser storage partitioning blocks
+      const result = await signInWithPopup(auth, provider);
+      const firebaseuser = result.user;
+      const payload = {
+        email: firebaseuser.email,
+        name: firebaseuser.displayName,
+        image: firebaseuser.photoURL || "https://github.com/shadcn.png",
+      };
+      const response = await axiosInstance.post("/user/login", payload);
+      login(response.data.result);
     } catch (error) {
-      console.error(error);
+      console.warn("Popup Sign-in blocked or failed, falling back to redirect:", error);
+      if (error.code === "auth/popup-blocked" || error.code === "auth/cancelled-popup-request" || error.code === "auth/popup-closed-by-user") {
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError) {
+          console.error("Redirect Sign-in failed:", redirectError);
+        }
+      }
     }
   };
   useEffect(() => {
