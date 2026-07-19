@@ -25,6 +25,11 @@ export default function LikedVideosContent() {
     if (user) {
       loadLikedVideos();
     }
+    const handleListChange = () => {
+      if (user) loadLikedVideos();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
   }, [user]);
 
   const loadLikedVideos = async () => {

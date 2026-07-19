@@ -27,6 +27,11 @@ export default function HistoryContent() {
     } else {
       setLoading(true);
     }
+    const handleListChange = () => {
+      if (user) loadHistory();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
   }, [user]);
 
   const loadHistory = async () => {

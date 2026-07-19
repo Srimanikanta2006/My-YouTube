@@ -64,6 +64,14 @@ const ChannelDetailPage = () => {
     fetchChannelVideos();
   }, [id, router.isReady]);
 
+  useEffect(() => {
+    const handleListChange = () => {
+      fetchChannelVideos();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
+  }, [id]);
+
   // Sync edit settings fields when channel changes
   useEffect(() => {
     if (channel) {

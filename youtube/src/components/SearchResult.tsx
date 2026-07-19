@@ -38,6 +38,11 @@ const SearchResult = () => {
     if (router.isReady) {
       fetchSearchVideos();
     }
+    const handleListChange = () => {
+      if (router.isReady) fetchSearchVideos();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
   }, [query, router.isReady]);
 
   if (!router.isReady) {

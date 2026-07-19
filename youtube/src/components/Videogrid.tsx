@@ -40,7 +40,12 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
     };
     fetchvideo();
 
-    // Establish WebSocket listener to refresh video list when a new video is uploaded
+    const handleListChange = () => {
+      fetchvideo();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+
+    // Establish WebSocket listener to refresh video list when a new video is uploaded, deleted, or updated
     const wsUrl = getWsUrl();
     let ws: WebSocket | null = null;
     let reconnectTimeout: any = null;
@@ -51,8 +56,12 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === "global-video-uploaded") {
-              console.log("WebSocket event: new video uploaded, fetching updated list...");
+            if (
+              data.type === "global-video-uploaded" ||
+              data.type === "global-video-deleted" ||
+              data.type === "global-video-updated"
+            ) {
+              console.log(`WebSocket event: ${data.type}, fetching updated list...`);
               fetchvideo();
             }
           } catch (err) {
@@ -73,6 +82,7 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
     connectWs();
 
     return () => {
+      window.removeEventListener("video-list-changed", handleListChange);
       if (ws) {
         ws.onclose = null;
         ws.close();

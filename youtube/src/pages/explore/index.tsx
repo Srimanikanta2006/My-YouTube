@@ -43,6 +43,12 @@ export default function ExplorePage() {
       }
     };
     fetchVideos();
+
+    const handleListChange = () => {
+      fetchVideos();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
   }, []);
 
   const handleCategoryChange = (categoryId: string) => {

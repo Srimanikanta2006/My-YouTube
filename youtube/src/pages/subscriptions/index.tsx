@@ -16,6 +16,12 @@ export default function SubscriptionsPage() {
     } else {
       setLoading(false);
     }
+
+    const handleListChange = () => {
+      if (user) fetchSubscriptionFeed();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
   }, [user]);
 
   const fetchSubscriptionFeed = async () => {

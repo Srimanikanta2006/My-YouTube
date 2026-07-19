@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import video from "../Modals/video.js";
+import fs from "fs";
+import path from "path";
 
 
 export const uploadvideo = async (req, res) => {
@@ -57,6 +59,79 @@ export const getvideoById = async (req, res) => {
       return res.status(404).json({ message: "Video not found" });
     }
     return res.status(200).send(file);
+  } catch (error) {
+    console.error(" error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const deletevideo = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ message: "Video not found" });
+  }
+  try {
+    const file = await video.findById(id);
+    if (!file) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+    
+    // Attempt to delete physical file from server
+    if (file.filepath) {
+      const filePath = path.join(process.cwd(), file.filepath);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (fileErr) {
+          console.error("Failed to delete physical video file:", fileErr);
+        }
+      }
+    }
+
+    await video.findByIdAndDelete(id);
+
+    // Broadcast live event to all connected WebSockets
+    const wss = req.app.get("wss");
+    if (wss) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "global-video-deleted", videoId: id }));
+        }
+      });
+    }
+
+    return res.status(200).json({ message: "Video deleted successfully" });
+  } catch (error) {
+    console.error(" error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const updatevideo = async (req, res) => {
+  const { id } = req.params;
+  const { videotitle } = req.body;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ message: "Video not found" });
+  }
+  try {
+    const file = await video.findById(id);
+    if (!file) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+
+    const updated = await video.findByIdAndUpdate(id, { videotitle }, { new: true });
+
+    // Broadcast live event to all connected WebSockets
+    const wss = req.app.get("wss");
+    if (wss) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "global-video-updated", videoId: id, videotitle }));
+        }
+      });
+    }
+
+    return res.status(200).json(updated);
   } catch (error) {
     console.error(" error:", error);
     return res.status(500).json({ message: "Something went wrong" });

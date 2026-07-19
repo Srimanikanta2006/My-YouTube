@@ -25,6 +25,11 @@ export default function WatchLaterContent() {
     if (user) {
       loadWatchLater();
     }
+    const handleListChange = () => {
+      if (user) loadWatchLater();
+    };
+    window.addEventListener("video-list-changed", handleListChange);
+    return () => window.removeEventListener("video-list-changed", handleListChange);
   }, [user]);
 
   const loadWatchLater = async () => {
