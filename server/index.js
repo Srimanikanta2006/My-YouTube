@@ -55,74 +55,11 @@ const connectWithFallback = async (url) => {
 
 const seedVideos = async () => {
   try {
-    // Clean up any old broken video entries containing backslashes
-    await video.deleteMany({ filepath: { $regex: /\\/ } });
-
-    // Clean up any old default seed records to force re-seeding with duration fields
+    // Delete all default blender_studio videos permanently from the database
     await video.deleteMany({ uploader: "blender_studio" });
-
-    const hasSeed = await video.findOne({ uploader: "blender_studio" });
-    if (!hasSeed) {
-      console.log("Seeding default videos...");
-      const defaultVideos = [
-        {
-          videotitle: "Big Buck Bunny - Animated Short Film",
-          filename: "BigBuckBunny.mp4",
-          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          filetype: "video/mp4",
-          filesize: "276MB",
-          videochanel: "Blender Studio",
-          views: 1482030,
-          uploader: "blender_studio",
-          Like: 12540,
-          videoduration: "10:07",
-          videocategory: "Comedy",
-        },
-        {
-          videotitle: "Sintel - Open Movie Project",
-          filename: "Sintel.mp4",
-          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-          filetype: "video/mp4",
-          filesize: "128MB",
-          videochanel: "Blender Studio",
-          views: 928302,
-          uploader: "blender_studio",
-          Like: 8430,
-          videoduration: "00:52",
-          videocategory: "Gaming",
-        },
-        {
-          videotitle: "Tears of Steel - Sci-Fi VFX Short",
-          filename: "TearsOfSteel.mp4",
-          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-          filetype: "video/mp4",
-          filesize: "310MB",
-          videochanel: "Blender Studio",
-          views: 830123,
-          uploader: "blender_studio",
-          Like: 7120,
-          videoduration: "12:14",
-          videocategory: "Technology",
-        },
-        {
-          videotitle: "Elephants Dream - Surreal CGI Movie",
-          filename: "ElephantsDream.mp4",
-          filepath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-          filetype: "video/mp4",
-          filesize: "140MB",
-          videochanel: "Blender Studio",
-          views: 520481,
-          uploader: "blender_studio",
-          Like: 4500,
-          videoduration: "10:53",
-          videocategory: "Science",
-        }
-      ];
-      await video.insertMany(defaultVideos);
-      console.log("Default videos seeded successfully!");
-    }
+    console.log("Cleaned up default blender_studio videos from database.");
   } catch (error) {
-    console.error("Error seeding default videos:", error.message);
+    console.error("Error cleaning default videos:", error.message);
   }
 };
 

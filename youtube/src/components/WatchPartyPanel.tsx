@@ -84,6 +84,14 @@ export default function WatchPartyPanel({
 
   // Enlarged Webcam Lightbox State
   const [activeEnlargedFeed, setActiveEnlargedFeed] = useState<{ uid: string; name: string; stream: MediaStream | null; videoOff: boolean } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [lastTap, setLastTap] = useState<{ [uid: string]: number }>({});
+
+  // Panning references & states
+  const lightboxContainerRef = useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
 
   const socketRef = useRef<WebSocket | null>(null);
   const isIncomingEvent = useRef(false);
@@ -122,6 +130,40 @@ export default function WatchPartyPanel({
   useEffect(() => {
     isHostRef.current = isHost;
   }, [isHost]);
+
+  const handleTap = (uid: string, name: string, stream: MediaStream | null, videoOff: boolean) => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+    if (lastTap[uid] && (now - lastTap[uid]) < DOUBLE_PRESS_DELAY) {
+      setActiveEnlargedFeed({ uid, name, stream, videoOff });
+      setZoomLevel(1);
+    } else {
+      setLastTap(prev => ({ ...prev, [uid]: now }));
+    }
+  };
+
+  const handlePanMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel <= 1 || !lightboxContainerRef.current) return;
+    setIsPanning(true);
+    setPanStart({ x: e.clientX, y: e.clientY });
+    setScrollStart({
+      left: lightboxContainerRef.current.scrollLeft,
+      top: lightboxContainerRef.current.scrollTop
+    });
+  };
+
+  const handlePanMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning || zoomLevel <= 1 || !lightboxContainerRef.current) return;
+    e.preventDefault();
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+    lightboxContainerRef.current.scrollLeft = scrollStart.left - dx;
+    lightboxContainerRef.current.scrollTop = scrollStart.top - dy;
+  };
+
+  const handlePanMouseUpOrLeave = () => {
+    setIsPanning(false);
+  };
 
   // Set persistent UID for this session
   if (!myUidRef.current) {
@@ -682,51 +724,60 @@ export default function WatchPartyPanel({
           isScreenSharing: false
         }));
       } else {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenStreamRef.current = screenStream;
-        const screenTrack = screenStream.getVideoTracks()[0];
-        
-        Object.keys(peerConnectionsRef.current).forEach(uid => {
-          const pc = peerConnectionsRef.current[uid];
-          const sender = pc.getSenders().find(s => s.track?.kind === "video" || s.track === null);
-          if (sender) {
-            sender.replaceTrack(screenTrack);
-          } else {
-            pc.addTrack(screenTrack, screenStream);
-          }
-        });
-        
-        screenTrack.onended = () => {
-          if (screenStreamRef.current) {
-            screenStreamRef.current.getTracks().forEach(t => t.stop());
-            screenStreamRef.current = null;
-          }
-          const camTrack = localStreamRef.current?.getVideoTracks()[0];
-          if (camTrack) {
-            Object.keys(peerConnectionsRef.current).forEach(uid => {
-              const pc = peerConnectionsRef.current[uid];
-              const sender = pc.getSenders().find(s => s.track?.kind === "video" || s.track === null);
-              if (sender) sender.replaceTrack(camTrack);
-            });
-          }
-          setIsScreenSharing(false);
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+          alert("Screen sharing is not supported by mobile web browsers due to device security restrictions. Please use a laptop or desktop computer to share your screen.");
+          return;
+        }
+        try {
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+          screenStreamRef.current = screenStream;
+          const screenTrack = screenStream.getVideoTracks()[0];
+          
+          Object.keys(peerConnectionsRef.current).forEach(uid => {
+            const pc = peerConnectionsRef.current[uid];
+            const sender = pc.getSenders().find(s => s.track?.kind === "video" || s.track === null);
+            if (sender) {
+              sender.replaceTrack(screenTrack);
+            } else {
+              pc.addTrack(screenTrack, screenStream);
+            }
+          });
+          
+          screenTrack.onended = () => {
+            if (screenStreamRef.current) {
+              screenStreamRef.current.getTracks().forEach(t => t.stop());
+              screenStreamRef.current = null;
+            }
+            const camTrack = localStreamRef.current?.getVideoTracks()[0];
+            if (camTrack) {
+              Object.keys(peerConnectionsRef.current).forEach(uid => {
+                const pc = peerConnectionsRef.current[uid];
+                const sender = pc.getSenders().find(s => s.track?.kind === "video" || s.track === null);
+                if (sender) sender.replaceTrack(camTrack);
+              });
+            }
+            setIsScreenSharing(false);
+            socketRef.current?.send(JSON.stringify({
+              type: "user-media-state",
+              uid: myUidRef.current,
+              videoOff: isVideoOff,
+              muted: isMuted,
+              isScreenSharing: false
+            }));
+          };
+
+          setIsScreenSharing(true);
           socketRef.current?.send(JSON.stringify({
             type: "user-media-state",
             uid: myUidRef.current,
             videoOff: isVideoOff,
             muted: isMuted,
-            isScreenSharing: false
+            isScreenSharing: true
           }));
-        };
-
-        setIsScreenSharing(true);
-        socketRef.current?.send(JSON.stringify({
-          type: "user-media-state",
-          uid: myUidRef.current,
-          videoOff: isVideoOff,
-          muted: isMuted,
-          isScreenSharing: true
-        }));
+        } catch (screenErr: any) {
+          console.error("Screen sharing activation failed:", screenErr);
+          alert("Could not start screen sharing: " + (screenErr.message || "Permission denied or cancelled"));
+        }
       }
     } catch (err) {
       console.error("Screen share error:", err);
@@ -1042,7 +1093,10 @@ export default function WatchPartyPanel({
           <div className="flex justify-start lg:justify-center gap-2 overflow-x-auto min-h-[140px] items-stretch pb-1 px-4 md:px-0 no-scrollbar flex-shrink-0 max-w-[1000px] mx-auto w-full">
             
             {/* Local participant webcam tile */}
-            <div className="relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center">
+            <div 
+              className="relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
+              onClick={() => handleTap("local", "You", localStreamRef.current || null, !!isVideoOff)}
+            >
               {(!isVideoOff || isScreenSharing) ? (
                 <video
                   ref={localVideoRef}
@@ -1069,7 +1123,7 @@ export default function WatchPartyPanel({
                 <div 
                   key={p.uid} 
                   className="relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
-                  onDoubleClick={() => setActiveEnlargedFeed({ uid: p.uid, name: p.name, stream: stream || null, videoOff: !!p.videoOff })}
+                  onClick={() => handleTap(p.uid, p.name, stream || null, !!p.videoOff)}
                 >
                   {(!p.videoOff || p.isScreenSharing) && stream ? (
                     <VideoCardKey stream={stream} name={p.name} uid={p.uid} isScreenSharing={!!p.isScreenSharing} />
@@ -1557,14 +1611,53 @@ export default function WatchPartyPanel({
       {activeEnlargedFeed && (
         <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in duration-200">
           <button 
-            onClick={() => setActiveEnlargedFeed(null)} 
-            className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full cursor-pointer transition-colors"
+            onClick={() => {
+              setActiveEnlargedFeed(null);
+              setZoomLevel(1);
+            }} 
+            className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full cursor-pointer transition-colors z-50"
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-white/10 flex items-center justify-center">
+          
+          {/* Zoom Controls Overlay */}
+          {!activeEnlargedFeed.videoOff && activeEnlargedFeed.stream && (
+            <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/60 backdrop-blur border border-white/10 p-1.5 rounded-xl z-50 text-white select-none">
+              <button 
+                onClick={() => setZoomLevel(prev => Math.max(1, prev - 0.5))} 
+                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center font-bold text-lg cursor-pointer transition-colors"
+                title="Zoom Out"
+              >
+                -
+              </button>
+              <span className="text-xs font-mono font-bold px-1.5">{zoomLevel.toFixed(1)}x</span>
+              <button 
+                onClick={() => setZoomLevel(prev => Math.min(5, prev + 0.5))} 
+                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center font-bold text-lg cursor-pointer transition-colors"
+                title="Zoom In"
+              >
+                +
+              </button>
+              <button 
+                onClick={() => setZoomLevel(1)} 
+                className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-white/10 cursor-pointer transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          )}
+
+          <div 
+            ref={lightboxContainerRef}
+            onMouseDown={handlePanMouseDown}
+            onMouseMove={handlePanMouseMove}
+            onMouseUp={handlePanMouseUpOrLeave}
+            onMouseLeave={handlePanMouseUpOrLeave}
+            className="w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-auto shadow-2xl relative border border-white/10 flex items-center justify-center select-none"
+            style={{ cursor: zoomLevel > 1 ? (isPanning ? "grabbing" : "grab") : "default" }}
+          >
             {activeEnlargedFeed.videoOff || !activeEnlargedFeed.stream ? (
-              <div className="w-32 h-32 rounded-full bg-gray-700 text-white flex items-center justify-center font-bold text-5xl border border-gray-600 select-none">
+              <div className="w-32 h-32 rounded-full bg-gray-700 text-white flex items-center justify-center font-bold text-5xl border border-gray-600 select-none flex-shrink-0">
                 {activeEnlargedFeed.name?.[0]?.toUpperCase() || "G"}
               </div>
             ) : (
@@ -1578,10 +1671,17 @@ export default function WatchPartyPanel({
                 }}
                 autoPlay 
                 playsInline 
-                className="w-full h-full object-contain"
+                className="object-contain transition-transform duration-200 origin-center flex-shrink-0"
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  maxHeight: zoomLevel > 1 ? "none" : "100%",
+                  maxWidth: zoomLevel > 1 ? "none" : "100%",
+                  width: zoomLevel > 1 ? `${zoomLevel * 100}%` : "100%",
+                  height: zoomLevel > 1 ? `${zoomLevel * 100}%` : "100%",
+                }}
               />
             )}
-            <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-xl text-white font-bold text-sm">
+            <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-xl text-white font-bold text-sm pointer-events-none z-10">
               {activeEnlargedFeed.name}
             </div>
           </div>
