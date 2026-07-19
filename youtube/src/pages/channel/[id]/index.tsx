@@ -154,13 +154,15 @@ const ChannelDetailPage = () => {
         <ChannelHeader channel={channel} user={user} />
         
         {/* Navigation & Action Header */}
-        <div className="border-b flex items-center justify-between px-4">
-          <Channeltabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="border-b flex flex-col md:flex-row md:items-center md:justify-between px-4 gap-2 md:gap-4 pb-2 md:pb-0">
+          <div className="w-full md:max-w-3xl overflow-x-auto scrollbar-none">
+            <Channeltabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          </div>
           {/* Render video uploader button ONLY on user's own channel */}
           {user && user._id === id && (
             <Button
               onClick={() => setIsUploadOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-full font-bold text-xs px-4 h-9 shadow flex items-center gap-1.5"
+              className="bg-red-600 hover:bg-red-700 text-white rounded-full font-bold text-xs px-4 h-9 shadow flex items-center gap-1.5 self-end md:self-auto mb-2 md:mb-0 flex-shrink-0"
             >
               <Upload className="w-3.5 h-3.5" />
               Upload Video

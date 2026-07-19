@@ -20,8 +20,8 @@ const Channeltabs = ({ activeTab: propActiveTab, setActiveTab: propSetActiveTab 
   const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setInternalActiveTab;
 
   return (
-    <div className="border-b px-4">
-      <div className="flex gap-8 overflow-x-auto scrollbar-none">
+    <div className="w-full">
+      <div className="flex gap-6 overflow-x-auto scrollbar-none">
         {tabs.map((tab) => (
           <Button
             key={tab.id}
