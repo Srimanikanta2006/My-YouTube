@@ -126,13 +126,13 @@ const Header = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="hidden sm:flex rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+              className="rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
               onClick={handleHeaderWatchPartyClick}
               title="Watch Party"
             >
               <VideoIcon className="w-6 h-6" />
             </Button>
-            <Button variant="ghost" size="icon" className="hidden sm:flex">
+            <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="w-6 h-6" />
             </Button>
             <DropdownMenu>

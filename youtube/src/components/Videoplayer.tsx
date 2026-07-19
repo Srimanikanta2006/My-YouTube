@@ -16,7 +16,11 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
   const backendUrl = getBackendUrl();
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
-  const videoSrc = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
+  const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
+  let videoSrc = videoSrcBase || "";
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    videoSrc = videoSrc.replace(/^http:/, "https:");
+  }
 
   useEffect(() => {
     if (videoRef.current) {

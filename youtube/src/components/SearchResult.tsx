@@ -104,7 +104,10 @@ function SearchVideoRow({ video }: { video: any }) {
   const backendUrl = getBackendUrl();
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
   const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
-  const videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";
+  let videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    videoSrc = videoSrc.replace(/^http:/, "https:");
+  }
 
   const handleMouseEnter = () => {
     if (videoRef.current) {

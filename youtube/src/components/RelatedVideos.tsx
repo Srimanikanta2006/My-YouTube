@@ -21,7 +21,10 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
       {videos.map((video) => {
         const normalizedPath = video.filepath ? video.filepath.replace(/\\/g, "/") : "";
         const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
-        const videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";
+        let videoSrc = videoSrcBase ? `${videoSrcBase}#t=0.1` : "";
+        if (typeof window !== "undefined" && window.location.protocol === "https:") {
+          videoSrc = videoSrc.replace(/^http:/, "https:");
+        }
         return (
           <Link
             key={video._id}

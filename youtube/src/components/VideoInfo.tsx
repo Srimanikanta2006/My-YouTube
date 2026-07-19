@@ -293,36 +293,38 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{video.videotitle}</h1>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer">
-            <Avatar className="w-10 h-10">
-              <AvatarFallback>{video.videochanel?.[0] || "V"}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-medium hover:text-red-600 transition-colors">{video.videochanel}</h3>
-              <p className="text-sm text-gray-600">1.2M subscribers</p>
-            </div>
-          </Link>
-          {user && user._id === video.uploader ? (
-            <span className="ml-4 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full uppercase tracking-wider">
-              Owner
-            </span>
-          ) : (
-            <Button
-              onClick={handleSubscribe}
-              className={`ml-4 rounded-full transition-all duration-300 ${
-                isSubscribed
-                  ? "bg-gray-200 text-black hover:bg-gray-300 font-medium"
-                  : "bg-red-600 text-white hover:bg-red-700 font-semibold"
-              }`}
-            >
-              {isSubscribed ? "Subscribed" : "Subscribe"}
-            </Button>
-          )}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-4">
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div className="flex items-center gap-4">
+            <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer">
+              <Avatar className="w-10 h-10">
+                <AvatarFallback>{video.videochanel?.[0] || "V"}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className="font-medium hover:text-red-600 transition-colors">{video.videochanel}</h3>
+                <p className="text-sm text-gray-600">1.2M subscribers</p>
+              </div>
+            </Link>
+            {user && user._id === video.uploader ? (
+              <span className="ml-4 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full uppercase tracking-wider">
+                Owner
+              </span>
+            ) : (
+              <Button
+                onClick={handleSubscribe}
+                className={`ml-4 rounded-full transition-all duration-300 ${
+                  isSubscribed
+                    ? "bg-gray-200 text-black hover:bg-gray-300 font-medium"
+                    : "bg-red-600 text-white hover:bg-red-700 font-semibold"
+                }`}
+              >
+                {isSubscribed ? "Subscribed" : "Subscribe"}
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-gray-100 rounded-full">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none w-full md:overflow-x-visible md:pb-0 md:w-auto flex-shrink-0">
+          <div className="flex items-center bg-gray-100 rounded-full flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
@@ -354,7 +356,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-gray-100 rounded-full ${
+            className={`bg-gray-100 rounded-full flex-shrink-0 ${
               isWatchLater ? "text-primary" : ""
             }`}
             onClick={handleWatchLater}
@@ -365,7 +367,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-gray-100 rounded-full"
+            className="bg-gray-100 rounded-full flex-shrink-0"
             onClick={handleShare}
           >
             <Share className="w-5 h-5 mr-2" />
@@ -374,7 +376,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-gray-100 rounded-full transition-all duration-300 ${
+            className={`bg-gray-100 rounded-full flex-shrink-0 transition-all duration-300 ${
               downloadState === "success" ? "bg-green-100 text-green-800 hover:bg-green-150" : ""
             }`}
             onClick={handleDownload}
@@ -402,7 +404,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="icon"
-            className="bg-gray-100 rounded-full"
+            className="bg-gray-100 rounded-full flex-shrink-0"
           >
             <MoreHorizontal className="w-5 h-5" />
           </Button>

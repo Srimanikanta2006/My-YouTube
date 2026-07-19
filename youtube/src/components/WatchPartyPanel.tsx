@@ -1124,9 +1124,14 @@ export default function WatchPartyPanel({
                 <video
                   ref={videoRef}
                   src={
-                    selectedVideo.filepath.startsWith("http")
-                      ? selectedVideo.filepath
-                      : `${getBackendUrl()}/${selectedVideo.filepath.replace(/\\/g, "/").replace(/^\//, "")}`
+                    (() => {
+                      const baseSrc = selectedVideo.filepath.startsWith("http")
+                        ? selectedVideo.filepath
+                        : `${getBackendUrl()}/${selectedVideo.filepath.replace(/\\/g, "/").replace(/^\//, "")}`;
+                      return typeof window !== "undefined" && window.location.protocol === "https:"
+                        ? baseSrc.replace(/^http:/, "https:")
+                        : baseSrc;
+                    })()
                   }
                   crossOrigin="anonymous"
                   className="w-full h-full object-contain max-h-full"

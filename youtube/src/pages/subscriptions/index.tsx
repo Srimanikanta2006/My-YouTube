@@ -76,7 +76,7 @@ export default function SubscriptionsPage() {
         <h2 className="text-xl font-semibold">Latest Videos</h2>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 animate-pulse">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-3">
                 <div className="aspect-video bg-gray-200 rounded-lg" />
@@ -91,7 +91,7 @@ export default function SubscriptionsPage() {
             <p className="text-sm text-gray-400 mt-1">Explore and check out channels on the home page!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {videos.map((video) => (
               <VideoCard key={video._id} video={video} />
             ))}
