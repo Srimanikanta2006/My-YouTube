@@ -72,9 +72,10 @@ export default function VideoCard({ video }: any) {
       });
       setIsEditing(false);
       window.dispatchEvent(new CustomEvent("video-list-changed"));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update video title");
+    } catch (err: any) {
+      console.error("Save title error:", err);
+      const errMsg = err.response?.data?.message || err.message || "Unknown error";
+      alert("Failed to update video title: " + errMsg);
     } finally {
       setLoadingAction(false);
     }
@@ -88,9 +89,10 @@ export default function VideoCard({ video }: any) {
       await axiosInstance.delete(`/video/delete/${video._id}`);
       setIsDeleting(false);
       window.dispatchEvent(new CustomEvent("video-list-changed"));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete video");
+    } catch (err: any) {
+      console.error("Delete video error:", err);
+      const errMsg = err.response?.data?.message || err.message || "Unknown error";
+      alert("Failed to delete video: " + errMsg);
     } finally {
       setLoadingAction(false);
     }

@@ -76,15 +76,15 @@ export const deletevideo = async (req, res) => {
       return res.status(404).json({ message: "Video not found" });
     }
     
-    // Attempt to delete physical file from server
-    if (file.filepath) {
-      const filePath = path.join(process.cwd(), file.filepath);
-      if (fs.existsSync(filePath)) {
-        try {
+    // Attempt to delete physical file from server (only if it is a local upload)
+    if (file.filepath && !file.filepath.startsWith("http") && !file.filepath.startsWith("https")) {
+      try {
+        const filePath = path.join(process.cwd(), file.filepath);
+        if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
-        } catch (fileErr) {
-          console.error("Failed to delete physical video file:", fileErr);
         }
+      } catch (fileErr) {
+        console.error("Failed to delete physical video file:", fileErr);
       }
     }
 
