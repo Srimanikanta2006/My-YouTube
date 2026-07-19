@@ -18,18 +18,28 @@ export function initSignalingServer(server) {
 
         switch (data.type) {
           case "join": {
-            const { roomId, uid, name } = data;
+            const { roomId, uid, name, createMode } = data;
             currentRoomId = roomId;
             userId = uid;
             userName = name;
 
             // Get or create room info object
             if (!rooms.has(roomId)) {
-              rooms.set(roomId, {
-                clients: new Set(),
-                hostUid: uid, // Set first joining client as the host
-                deleteTimeout: null,
-              });
+              if (createMode) {
+                rooms.set(roomId, {
+                  clients: new Set(),
+                  hostUid: uid, // Set first joining client as the host
+                  deleteTimeout: null,
+                });
+              } else {
+                console.log(`User ${name} (${uid}) attempted to join non-existent room: ${roomId}`);
+                ws.send(JSON.stringify({
+                  type: "error",
+                  message: "Watch Party room not found or has been closed."
+                }));
+                ws.close();
+                return;
+              }
             }
             const roomObj = rooms.get(roomId);
 
@@ -156,6 +166,41 @@ export function initSignalingServer(server) {
             break;
           }
 
+          case "leave-room": {
+            if (currentRoomId && rooms.has(currentRoomId)) {
+              const roomObj = rooms.get(currentRoomId);
+              roomObj.clients.delete(ws);
+              console.log(`User ${userName} explicitly left Watch Party room ${currentRoomId}. Remaining: ${roomObj.clients.size}`);
+
+              // Host transfer logic
+              if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
+                const nextClient = roomObj.clients.values().next().value;
+                if (nextClient) {
+                  roomObj.hostUid = nextClient.userId;
+                  broadcastToRoom(currentRoomId, null, {
+                    type: "new-host",
+                    hostUid: roomObj.hostUid,
+                  });
+                }
+              }
+
+              // Notify others
+              broadcastToRoom(currentRoomId, null, {
+                type: "peer-left",
+                uid: userId,
+                name: userName,
+                peerCount: roomObj.clients.size,
+              });
+
+              // Clean up empty room immediately
+              if (roomObj.clients.size === 0) {
+                rooms.delete(currentRoomId);
+                console.log(`Watch Party room ${currentRoomId} is empty. Deleted room immediately.`);
+              }
+            }
+            break;
+          }
+
           default:
             console.log("Unknown WebSocket message type:", data.type);
         }
@@ -167,50 +212,42 @@ export function initSignalingServer(server) {
     ws.on("close", () => {
       if (currentRoomId && rooms.has(currentRoomId)) {
         const roomObj = rooms.get(currentRoomId);
-        roomObj.clients.delete(ws);
-        console.log(
-          `User ${userName} disconnected from Watch Party room ${currentRoomId}. Room size: ${roomObj.clients.size}`,
-        );
+        
+        // Check if the client was already removed by leave-room message
+        if (roomObj.clients.has(ws)) {
+          roomObj.clients.delete(ws);
+          console.log(
+            `User ${userName} disconnected from Watch Party room ${currentRoomId}. Room size: ${roomObj.clients.size}`,
+          );
 
-        // Host transfer logic: if the host left and there are remaining clients, elect a new host
-        if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
-          const nextClient = roomObj.clients.values().next().value;
-          if (nextClient) {
-            roomObj.hostUid = nextClient.userId;
-            console.log(
-              `Host left watch party room ${currentRoomId}. Transferred host role to ${nextClient.userName} (${nextClient.userId})`,
-            );
-            broadcastToRoom(currentRoomId, null, {
-              type: "new-host",
-              hostUid: roomObj.hostUid,
-            });
+          // Host transfer logic: if the host left and there are remaining clients, elect a new host
+          if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
+            const nextClient = roomObj.clients.values().next().value;
+            if (nextClient) {
+              roomObj.hostUid = nextClient.userId;
+              console.log(
+                `Host left watch party room ${currentRoomId}. Transferred host role to ${nextClient.userName} (${nextClient.userId})`,
+              );
+              broadcastToRoom(currentRoomId, null, {
+                type: "new-host",
+                hostUid: roomObj.hostUid,
+              });
+            }
           }
+
+          // Notify others that this peer left
+          broadcastToRoom(currentRoomId, null, {
+            type: "peer-left",
+            uid: userId,
+            name: userName,
+            peerCount: roomObj.clients.size,
+          });
         }
 
-        // Notify others that this peer left
-        broadcastToRoom(currentRoomId, null, {
-          type: "peer-left",
-          uid: userId,
-          name: userName,
-          peerCount: roomObj.clients.size,
-        });
-
-        // Clean up empty room with 1 minute delay
+        // Clean up empty room immediately
         if (roomObj.clients.size === 0) {
-          console.log(
-            `Watch Party room ${currentRoomId} is empty. Scheduling deletion in 1 minute...`,
-          );
-          roomObj.deleteTimeout = setTimeout(() => {
-            if (rooms.has(currentRoomId)) {
-              const currentRoom = rooms.get(currentRoomId);
-              if (currentRoom.clients.size === 0) {
-                rooms.delete(currentRoomId);
-                console.log(
-                  `Watch Party room ${currentRoomId} remained empty for 1 minute. Deleted room.`,
-                );
-              }
-            }
-          }, 60000);
+          rooms.delete(currentRoomId);
+          console.log(`Watch Party room ${currentRoomId} is empty. Deleted room immediately.`);
         }
       }
     });

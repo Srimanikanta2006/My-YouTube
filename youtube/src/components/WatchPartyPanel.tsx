@@ -12,12 +12,14 @@ interface WatchPartyPanelProps {
   roomId: string;
   onLeave: () => void;
   videosList?: any[];
+  createMode?: boolean;
 }
 
 export default function WatchPartyPanel({ 
   roomId, 
   onLeave,
-  videosList = []
+  videosList = [],
+  createMode = false
 }: WatchPartyPanelProps) {
   const { user } = useUser();
   const [copied, setCopied] = useState(false);
@@ -86,6 +88,8 @@ export default function WatchPartyPanel({
   const [activeEnlargedFeed, setActiveEnlargedFeed] = useState<{ uid: string; name: string; stream: MediaStream | null; videoOff: boolean } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [lastTap, setLastTap] = useState<{ [uid: string]: number }>({});
+  const [touchStartDist, setTouchStartDist] = useState<number | null>(null);
+  const [baseZoom, setBaseZoom] = useState<number>(1);
 
   // Panning references & states
   const lightboxContainerRef = useRef<HTMLDivElement>(null);
@@ -344,7 +348,8 @@ export default function WatchPartyPanel({
         type: "join",
         roomId: roomId,
         uid: myUidRef.current,
-        name: user?.name || "Guest"
+        name: user?.name || "Guest",
+        createMode: createMode
       }));
 
       // Broadcast initial media states
@@ -362,6 +367,11 @@ export default function WatchPartyPanel({
         const data = JSON.parse(event.data);
 
         switch (data.type) {
+          case "error":
+            alert(data.message);
+            onLeave();
+            break;
+
           case "room-users":
             setParticipants(data.users);
             if (data.hostUid) {
@@ -591,6 +601,15 @@ export default function WatchPartyPanel({
       });
       peerConnectionsRef.current = {};
       (window as any).partyWs = null;
+      if (socket.readyState === WebSocket.OPEN) {
+        try {
+          socket.send(JSON.stringify({
+            type: "leave-room",
+            roomId: roomId,
+            uid: myUidRef.current
+          }));
+        } catch (err) {}
+      }
       socket.close();
     };
   }, [localMediaReady, roomId, isChatOpen]);
@@ -1619,33 +1638,6 @@ export default function WatchPartyPanel({
           >
             <X className="w-5 h-5" />
           </button>
-          
-          {/* Zoom Controls Overlay */}
-          {!activeEnlargedFeed.videoOff && activeEnlargedFeed.stream && (
-            <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/60 backdrop-blur border border-white/10 p-1.5 rounded-xl z-50 text-white select-none">
-              <button 
-                onClick={() => setZoomLevel(prev => Math.max(1, prev - 0.5))} 
-                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center font-bold text-lg cursor-pointer transition-colors"
-                title="Zoom Out"
-              >
-                -
-              </button>
-              <span className="text-xs font-mono font-bold px-1.5">{zoomLevel.toFixed(1)}x</span>
-              <button 
-                onClick={() => setZoomLevel(prev => Math.min(5, prev + 0.5))} 
-                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center font-bold text-lg cursor-pointer transition-colors"
-                title="Zoom In"
-              >
-                +
-              </button>
-              <button 
-                onClick={() => setZoomLevel(1)} 
-                className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-white/10 cursor-pointer transition-colors"
-              >
-                Reset
-              </button>
-            </div>
-          )}
 
           <div 
             ref={lightboxContainerRef}
@@ -1653,6 +1645,36 @@ export default function WatchPartyPanel({
             onMouseMove={handlePanMouseMove}
             onMouseUp={handlePanMouseUpOrLeave}
             onMouseLeave={handlePanMouseUpOrLeave}
+            onWheel={(e) => {
+              e.preventDefault();
+              const zoomIntensity = 0.05;
+              const change = e.deltaY < 0 ? zoomIntensity : -zoomIntensity;
+              setZoomLevel(prev => Math.min(5, Math.max(1, prev + change)));
+            }}
+            onTouchStart={(e) => {
+              if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                  e.touches[0].clientX - e.touches[1].clientX,
+                  e.touches[0].clientY - e.touches[1].clientY
+                );
+                setTouchStartDist(dist);
+                setBaseZoom(zoomLevel);
+              }
+            }}
+            onTouchMove={(e) => {
+              if (e.touches.length === 2 && touchStartDist !== null) {
+                const dist = Math.hypot(
+                  e.touches[0].clientX - e.touches[1].clientX,
+                  e.touches[0].clientY - e.touches[1].clientY
+                );
+                const factor = dist / touchStartDist;
+                const newZoom = Math.min(5, Math.max(1, baseZoom * factor));
+                setZoomLevel(newZoom);
+              }
+            }}
+            onTouchEnd={() => {
+              setTouchStartDist(null);
+            }}
             className="w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-auto shadow-2xl relative border border-white/10 flex items-center justify-center select-none"
             style={{ cursor: zoomLevel > 1 ? (isPanning ? "grabbing" : "grab") : "default" }}
           >
@@ -1681,8 +1703,13 @@ export default function WatchPartyPanel({
                 }}
               />
             )}
-            <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-xl text-white font-bold text-sm pointer-events-none z-10">
-              {activeEnlargedFeed.name}
+            <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-xl text-white font-bold text-sm pointer-events-none z-10 flex items-center gap-2">
+              <span>{activeEnlargedFeed.name}</span>
+              {zoomLevel > 1 && (
+                <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded font-mono font-bold">
+                  {zoomLevel.toFixed(1)}x
+                </span>
+              )}
             </div>
           </div>
         </div>

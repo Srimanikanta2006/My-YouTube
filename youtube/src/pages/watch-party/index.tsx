@@ -33,7 +33,7 @@ export default function WatchPartyPortal() {
   const handleCreateRoom = () => {
     // Generate room code and push to portal
     const code = "WP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    router.push(`/watch-party?room=${code}`);
+    router.push(`/watch-party?room=${code}&create=true`);
   };
 
   const handleJoinRoom = (e: React.FormEvent) => {
@@ -185,6 +185,7 @@ export default function WatchPartyPortal() {
       roomId={room} 
       onLeave={handleLeaveRoom}
       videosList={videosList}
+      createMode={router.query.create === "true"}
     />
   );
 }
