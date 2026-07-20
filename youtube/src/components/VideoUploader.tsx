@@ -5,8 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import axiosInstance from "../lib/axiosinstance";
 import { useUser } from "../lib/AuthContext";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "../lib/firebase";
+import axios from "axios";
 
 const VideoUploader = ({ onUploadSuccess }: any) => {
   const { user } = useUser();
@@ -79,7 +78,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
     resetForm();
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!videoFile || !videoTitle.trim()) {
       setUploadError("Please provide both a video file and a title.");
       return;
@@ -90,61 +89,64 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
     setUploadProgress(0);
 
     try {
-      const storageRef = ref(storage, `videos/${Date.now()}_${videoFile.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, videoFile);
+      // 1. Get upload signature and credentials from the backend
+      const sigResponse = await axiosInstance.get("/video/signature");
+      const { signature, timestamp, cloudName, apiKey } = sigResponse.data;
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = Math.round(
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-          );
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error("Firebase Storage Upload Error:", error);
-          setUploadError("Could not upload file to Firebase: " + error.message);
-          setIsUploading(false);
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log("File uploaded, permanent URL available:", downloadURL);
+      // 2. Upload file directly to Cloudinary with secure signature validation
+      const formData = new FormData();
+      formData.append("file", videoFile);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", timestamp.toString());
+      formData.append("signature", signature);
+      formData.append("folder", "videos");
 
-            // Send metadata (along with the permanent downloadURL) to the backend
-            await axiosInstance.post("/video/upload", {
-              videotitle: videoTitle,
-              filename: videoFile.name,
-              filepath: downloadURL,
-              filetype: videoFile.type || "video/mp4",
-              filesize: (videoFile.size / (1024 * 1024)).toFixed(2) + " MB",
-              videochanel: user?.channelname || "Anonymous Channel",
-              uploader: user?._id || "",
-              videoduration: videoDuration,
-              videocategory: videoCategorySelected,
-            });
-
-            setUploadComplete(true);
-            setTimeout(() => {
-              resetForm();
-              if (onUploadSuccess) {
-                onUploadSuccess();
-              }
-            }, 1000);
-          } catch (postError: any) {
-            console.error("Error saving database metadata:", postError);
-            setUploadError(
-              "Could not save video metadata: " +
-                (postError.response?.data?.message || postError.message)
-            );
-          } finally {
-            setIsUploading(false);
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          },
+          onUploadProgress: (progressEvent: any) => {
+            if (progressEvent.total) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(progress);
+            }
           }
         }
       );
-    } catch (err: any) {
-      console.error("Upload initialization failed:", err);
-      setUploadError("Upload failed: " + err.message);
+
+      const downloadURL = response.data.secure_url;
+      console.log("Cloudinary upload successful:", downloadURL);
+
+      // 3. Save database metadata on our backend
+      await axiosInstance.post("/video/upload", {
+        videotitle: videoTitle,
+        filename: videoFile.name,
+        filepath: downloadURL,
+        filetype: videoFile.type || "video/mp4",
+        filesize: (videoFile.size / (1024 * 1024)).toFixed(2) + " MB",
+        videochanel: user?.channelname || "Anonymous Channel",
+        uploader: user?._id || "",
+        videoduration: videoDuration,
+        videocategory: videoCategorySelected,
+      });
+
+      setUploadComplete(true);
+      setTimeout(() => {
+        resetForm();
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
+      }, 1000);
+    } catch (error: any) {
+      console.error("Cloudinary upload error:", error);
+      const errorMsg = error.response?.data?.error?.message || error.message || "Failed to upload video.";
+      setUploadError(errorMsg);
+    } finally {
       setIsUploading(false);
     }
   };
