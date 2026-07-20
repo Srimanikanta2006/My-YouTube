@@ -114,12 +114,14 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
             // Send metadata (along with the permanent downloadURL) to the backend
             await axiosInstance.post("/video/upload", {
               videotitle: videoTitle,
+              filename: videoFile.name,
               filepath: downloadURL,
+              filetype: videoFile.type || "video/mp4",
+              filesize: (videoFile.size / (1024 * 1024)).toFixed(2) + " MB",
               videochanel: user?.channelname || "Anonymous Channel",
               uploader: user?._id || "",
               videoduration: videoDuration,
               videocategory: videoCategorySelected,
-              filesize: (videoFile.size / (1024 * 1024)).toFixed(2) + " MB"
             });
 
             setUploadComplete(true);
