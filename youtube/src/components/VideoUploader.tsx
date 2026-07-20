@@ -5,6 +5,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import axiosInstance from "../lib/axiosinstance";
 import { useUser } from "../lib/AuthContext";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "../lib/firebase";
 
 const VideoUploader = ({ onUploadSuccess }: any) => {
   const { user } = useUser();
@@ -77,47 +79,70 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
     resetForm();
   };
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     if (!videoFile || !videoTitle.trim()) {
       setUploadError("Please provide both a video file and a title.");
       return;
     }
     
     setUploadError("");
-    const formdata = new FormData();
-    formdata.append("file", videoFile);
-    formdata.append("videotitle", videoTitle);
-    formdata.append("videochanel", user?.channelname || "Anonymous Channel");
-    formdata.append("uploader", user?._id || "");
-    formdata.append("videoduration", videoDuration);
-    formdata.append("videocategory", videoCategorySelected);
+    setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      setIsUploading(true);
-      setUploadProgress(0);
-      await axiosInstance.post("/video/upload", formdata, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        onUploadProgress: (progresEvent: any) => {
+      const storageRef = ref(storage, `videos/${Date.now()}_${videoFile.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, videoFile);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
           const progress = Math.round(
-            (progresEvent.loaded * 100) / progresEvent.total,
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
           );
           setUploadProgress(progress);
         },
-      });
-      setUploadComplete(true);
-      setTimeout(() => {
-        resetForm();
-        if (onUploadSuccess) {
-          onUploadSuccess();
+        (error) => {
+          console.error("Firebase Storage Upload Error:", error);
+          setUploadError("Could not upload file to Firebase: " + error.message);
+          setIsUploading(false);
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log("File uploaded, permanent URL available:", downloadURL);
+
+            // Send metadata (along with the permanent downloadURL) to the backend
+            await axiosInstance.post("/video/upload", {
+              videotitle: videoTitle,
+              filepath: downloadURL,
+              videochanel: user?.channelname || "Anonymous Channel",
+              uploader: user?._id || "",
+              videoduration: videoDuration,
+              videocategory: videoCategorySelected,
+              filesize: (videoFile.size / (1024 * 1024)).toFixed(2) + " MB"
+            });
+
+            setUploadComplete(true);
+            setTimeout(() => {
+              resetForm();
+              if (onUploadSuccess) {
+                onUploadSuccess();
+              }
+            }, 1000);
+          } catch (postError: any) {
+            console.error("Error saving database metadata:", postError);
+            setUploadError(
+              "Could not save video metadata: " +
+                (postError.response?.data?.message || postError.message)
+            );
+          } finally {
+            setIsUploading(false);
+          }
         }
-      }, 1000);
-    } catch (error: any) {
-      console.error("Error uploading video:", error);
-      const serverMsg = error.response?.data?.message || "There was an error uploading your video. Check server storage limits.";
-      setUploadError(serverMsg);
-    } finally {
+      );
+    } catch (err: any) {
+      console.error("Upload initialization failed:", err);
+      setUploadError("Upload failed: " + err.message);
       setIsUploading(false);
     }
   };

@@ -5,6 +5,38 @@ import path from "path";
 
 
 export const uploadvideo = async (req, res) => {
+  // Check if filepath was uploaded directly to Firebase Storage and passed as a URL string in req.body
+  if (req.body.filepath && (req.body.filepath.startsWith("http://") || req.body.filepath.startsWith("https://"))) {
+    try {
+      const file = new video({
+        videotitle: req.body.videotitle,
+        filename: req.body.filename || req.body.videotitle,
+        filepath: req.body.filepath,
+        filetype: req.body.filetype || "video/mp4",
+        filesize: req.body.filesize || "0 MB",
+        videochanel: req.body.videochanel,
+        uploader: req.body.uploader,
+        videoduration: req.body.videoduration,
+        videocategory: req.body.videocategory || "All",
+      });
+      await file.save();
+      // Broadcast live event to all connected WebSockets
+      const wss = req.app.get("wss");
+      if (wss) {
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            client.send(JSON.stringify({ type: "global-video-uploaded" }));
+          }
+        });
+      }
+      return res.status(201).json("file uploaded successfully");
+    } catch (error) {
+      console.error(" error:", error);
+      return res.status(500).json({ message: "Something went wrong" });
+    }
+  }
+
+  // Fallback to local Multer file uploads:
   if (req.file === undefined) {
     return res
       .status(404)
