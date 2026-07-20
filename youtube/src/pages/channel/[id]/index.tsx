@@ -60,6 +60,10 @@ const ChannelDetailPage = () => {
   useEffect(() => {
     if (!router.isReady || !id) return;
 
+    setChannel(null);
+    setVideos([]);
+    setLoading(true);
+
     fetchChannelDetails();
     fetchChannelVideos();
   }, [id, router.isReady]);
@@ -147,6 +151,48 @@ const ChannelDetailPage = () => {
   };
 
   const filteredVideos = getFilteredVideos();
+
+  if (loading || !channel) {
+    return (
+      <div className="flex-1 min-h-screen bg-white">
+        <div className="max-w-full mx-auto animate-pulse animate-duration-1000">
+          {/* Banner Skeleton */}
+          <div className="h-32 md:h-48 lg:h-64 bg-gray-100"></div>
+
+          {/* Profile details Skeleton */}
+          <div className="px-4 py-6 border-b">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-gray-100 flex-shrink-0"></div>
+              <div className="flex-1 space-y-3 pt-2 w-full">
+                <div className="h-7 bg-gray-100 rounded-md w-1/3"></div>
+                <div className="h-4 bg-gray-100 rounded-md w-1/4"></div>
+                <div className="h-4 bg-gray-100 rounded-md w-1/2"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Tab bar Skeleton */}
+          <div className="border-b h-12 bg-gray-50/50 px-4 flex items-center gap-6">
+            <div className="h-4 bg-gray-100 rounded w-16"></div>
+            <div className="h-4 bg-gray-100 rounded w-16"></div>
+            <div className="h-4 bg-gray-100 rounded w-16"></div>
+            <div className="h-4 bg-gray-100 rounded w-16"></div>
+          </div>
+
+          {/* Video Grid Loader Skeleton */}
+          <div className="px-4 py-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-3">
+                <div className="aspect-video bg-gray-100 rounded-xl w-full"></div>
+                <div className="h-4 bg-gray-100 rounded w-5/6"></div>
+                <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 min-h-screen bg-white">

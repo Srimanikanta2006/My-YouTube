@@ -20,6 +20,9 @@ export const UserProvider = ({ children }) => {
     } catch (error) {
       console.error("Error during sign out:", error);
     }
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
   const handlegooglesignin = async () => {
     try {
