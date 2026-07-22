@@ -3,20 +3,26 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
   Clock,
+  Crown,
   Download,
   MoreHorizontal,
   Share,
+  ShieldAlert,
+  Sparkles,
   ThumbsDown,
   ThumbsUp,
   Users,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useUser } from "../lib/AuthContext";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import axiosInstance from "../lib/axiosinstance";
 import { getBackendUrl } from "../lib/urlHelper";
 
 const VideoInfo = ({ video, onStartWatchParty }: any) => {
+  const router = useRouter();
   const [likes, setlikes] = useState(video.Like || 0);
   const [dislikes, setDislikes] = useState(video.Dislike || 0);
   const [isLiked, setIsLiked] = useState(false);
@@ -254,38 +260,77 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     }
   };
 
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitDetails, setLimitDetails] = useState<any>(null);
+  const [isUpgradingPlan, setIsUpgradingPlan] = useState(false);
+
   const handleDownload = async () => {
+    if (!user) {
+      showToast("Please sign in to download videos.");
+      return;
+    }
     if (downloadState === "loading") return;
     setDownloadState("loading");
+
     try {
+      // 1. Check & track daily quota with backend
+      await axiosInstance.post("/download/track", {
+        userId: user._id,
+        videoId: video._id,
+      });
+
+      // 2. Perform video file stream download
       const response = await fetch(videoSrc);
       if (!response.ok) {
         window.open(videoSrc, "_blank");
-        setDownloadState("success");
-        setTimeout(() => setDownloadState("idle"), 3000);
-        return;
+      } else {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        
+        const cleanTitle = (video.videotitle || "video")
+          .replace(/[^a-z0-9]/gi, "_")
+          .toLowerCase();
+        a.download = `${cleanTitle}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        a.remove();
       }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      
-      const cleanTitle = (video.videotitle || "video")
-        .replace(/[^a-z0-9]/gi, "_")
-        .toLowerCase();
-      a.download = `${cleanTitle}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      
-      window.URL.revokeObjectURL(url);
-      a.remove();
+
       setDownloadState("success");
+      showToast("Video downloaded & added to your Downloads!");
       setTimeout(() => setDownloadState("idle"), 3000);
+    } catch (err: any) {
+      setDownloadState("idle");
+      if (err.response?.status === 403 && err.response?.data?.limitReached) {
+        setLimitDetails(err.response.data);
+        setShowLimitModal(true);
+      } else {
+        console.error("Download error:", err);
+        showToast("Could not download video. Please try again.");
+      }
+    }
+  };
+
+  const handleUpgradePlan = async () => {
+    if (!user) return;
+    try {
+      setIsUpgradingPlan(true);
+      await axiosInstance.patch("/download/plan", {
+        userId: user._id,
+        plan: "Premium",
+      });
+      setShowLimitModal(false);
+      showToast("🎉 Upgraded to Premium! Enjoy 10 daily downloads!");
     } catch (err) {
-      window.open(videoSrc, "_blank");
-      setDownloadState("success");
-      setTimeout(() => setDownloadState("idle"), 3000);
+      console.error("Upgrade error:", err);
+      showToast("Failed to upgrade plan.");
+    } finally {
+      setIsUpgradingPlan(false);
     }
   };
 
@@ -434,6 +479,80 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       {toastMessage && (
         <div className="fixed bottom-6 left-6 bg-zinc-900/90 backdrop-blur text-white text-sm px-4 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <span className="font-medium">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Daily Download Limit Exceeded Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowLimitModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 p-1.5 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mb-4 text-amber-600">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-1">
+              Daily Download Limit Reached
+            </h3>
+            
+            <p className="text-sm text-gray-600 mb-4 px-2">
+              {limitDetails?.message || `Daily download limit reached for your ${limitDetails?.userPlan || "Free"} plan (${limitDetails?.currentCount || 1}/${limitDetails?.maxAllowed || 1}). Upgrade to Bronze, Silver, or Gold to download more videos!`}
+            </p>
+
+            {/* Quota Usage Meter */}
+            <div className="w-full bg-gray-100 rounded-2xl p-4 mb-6 border border-gray-200/60">
+              <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
+                <span className="text-gray-500 uppercase tracking-wider">Current Plan: {limitDetails?.userPlan || "Free"}</span>
+                <span className="text-amber-600 font-bold">{limitDetails?.currentCount || 1} / {limitDetails?.maxAllowed || 1} Used</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div className="bg-amber-500 h-full rounded-full w-full" />
+              </div>
+            </div>
+
+            {/* Tier Perks Breakdown */}
+            <div className="w-full space-y-2 mb-6 text-left text-xs bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/50">
+              <div className="flex items-center gap-2 font-bold text-amber-900 mb-1">
+                <Crown className="w-4 h-4 text-amber-600" />
+                <span>Available Subscription Upgrades</span>
+              </div>
+              <p className="text-amber-800">
+                • <strong>Bronze (₹99)</strong>: 5 Video Downloads / day
+              </p>
+              <p className="text-amber-800">
+                • <strong>Silver (₹199)</strong>: 15 Downloads / day + Full Ad-Free
+              </p>
+              <p className="text-amber-800">
+                • <strong>Gold (₹499)</strong>: 50 Downloads / day + VIP Access
+              </p>
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl font-semibold border-gray-300 text-xs"
+                onClick={() => setShowLimitModal(false)}
+              >
+                Close
+              </Button>
+              <Button
+                className="flex-1 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md flex items-center justify-center gap-1.5 text-xs"
+                onClick={() => {
+                  setShowLimitModal(false);
+                  router.push("/membership");
+                }}
+              >
+                <Sparkles className="w-4 h-4" />
+                View Plans & Upgrade
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -26,6 +26,7 @@ export const uploadvideo = async (req, res) => {
         uploader: req.body.uploader,
         videoduration: req.body.videoduration,
         videocategory: req.body.videocategory || "All",
+        isPremium: req.body.isPremium || false,
       });
       await file.save();
       // Broadcast live event to all connected WebSockets
@@ -61,6 +62,7 @@ export const uploadvideo = async (req, res) => {
         uploader: req.body.uploader,
         videoduration: req.body.videoduration,
         videocategory: req.body.videocategory || "All",
+        isPremium: req.body.isPremium || false,
       });
       await file.save();
       // Broadcast live event to all connected WebSockets

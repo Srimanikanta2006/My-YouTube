@@ -5,6 +5,8 @@ import {
   Compass,
   PlaySquare,
   Clock,
+  Crown,
+  Download,
   ThumbsUp,
   History,
   User,
@@ -113,6 +115,24 @@ const Sidebar = () => {
                     {!isSidebarCollapsed && <span>Watch later</span>}
                   </Button>
                 </Link>
+                <Link href="/downloads">
+                  <Button
+                    variant={isActive("/downloads") ? "secondary" : "ghost"}
+                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/downloads") ? "font-semibold text-black" : "text-gray-700"}`}
+                  >
+                    <Download className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
+                    {!isSidebarCollapsed && <span>Downloads</span>}
+                  </Button>
+                </Link>
+                <Link href="/membership">
+                  <Button
+                    variant={isActive("/membership") ? "secondary" : "ghost"}
+                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/membership") ? "font-semibold text-black" : "text-gray-700"}`}
+                  >
+                    <Crown className={`w-5 h-5 text-amber-600 ${isSidebarCollapsed ? "" : "mr-3"}`} />
+                    {!isSidebarCollapsed && <span>Membership Plans</span>}
+                  </Button>
+                </Link>
                 {user?.channelname ? (
                   <Link href={`/channel/${user._id}`}>
                     <Button
@@ -133,6 +153,34 @@ const Sidebar = () => {
                     >
                       {isSidebarCollapsed ? <User className="w-5 h-5" /> : "Create Channel"}
                     </Button>
+                  </div>
+                )}
+
+                {/* Sidebar Active Plan Badge Card */}
+                {!isSidebarCollapsed && (
+                  <div className="mt-4 p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-amber-700 tracking-wider">Current Plan</span>
+                      <span className="text-xs font-black text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                        {user?.plan || "Free"} {user?.plan && user.plan !== "Free" ? "⭐" : ""}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-600 leading-tight">
+                      {user?.plan === "Gold"
+                        ? "50 Downloads/day • VIP Access"
+                        : user?.plan === "Silver"
+                        ? "15 Downloads/day • Ad-Free"
+                        : user?.plan === "Bronze"
+                        ? "5 Downloads/day"
+                        : "1 Download/day"}
+                    </p>
+                    {user?.plan === "Free" && (
+                      <Link href="/membership" className="block pt-1">
+                        <Button size="sm" className="w-full h-7 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl">
+                          Upgrade Plan
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>

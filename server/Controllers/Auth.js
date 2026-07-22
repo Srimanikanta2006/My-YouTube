@@ -5,12 +5,25 @@ export const login = async (req, res) => {
   const { email, name, image } = req.body;
 
   try {
-    const existingUser = await users.findOne({ email });
+    let existingUser = await users.findOne({ email });
 
     if (!existingUser) {
-      const newUser = await users.create({ email, name, image });
+      const newUser = await users.create({
+        email,
+        name,
+        image,
+        plan: "Free",
+      });
       return res.status(201).json({ result: newUser });
     } else {
+      // Check if user subscription has expired
+      if (
+        existingUser.subscriptionExpiresAt &&
+        new Date() > new Date(existingUser.subscriptionExpiresAt)
+      ) {
+        existingUser.plan = "Free";
+        await existingUser.save();
+      }
       return res.status(200).json({ result: existingUser });
     }
   } catch (error) {
@@ -51,6 +64,14 @@ export const getuser = async (req, res) => {
     const userDetail = await users.findById(id);
     if (!userDetail) {
       return res.status(404).json({ message: "User not found" });
+    }
+    // Check subscription validity
+    if (
+      userDetail.subscriptionExpiresAt &&
+      new Date() > new Date(userDetail.subscriptionExpiresAt)
+    ) {
+      userDetail.plan = "Free";
+      await userDetail.save();
     }
     return res.status(200).json(userDetail);
   } catch (error) {

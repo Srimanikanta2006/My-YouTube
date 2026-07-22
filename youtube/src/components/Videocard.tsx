@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { getBackendUrl } from "../lib/urlHelper";
 import { useUser } from "../lib/AuthContext";
 import axiosInstance from "../lib/axiosinstance";
-import { MoreVertical } from "lucide-react";
+import { Crown, MoreVertical } from "lucide-react";
 
 export default function VideoCard({ video }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -181,6 +181,12 @@ export default function VideoCard({ video }: any) {
               className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-200"
               onMouseEnter={handleMouseEnter}
             />
+            {video?.isPremium && (
+              <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 z-10 border border-amber-300/40 animate-pulse">
+                <Crown className="w-3 h-3 text-white" />
+                <span>⭐ PREMIUM</span>
+              </div>
+            )}
             <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
               {video?.videoduration || "00:00"}
             </div>

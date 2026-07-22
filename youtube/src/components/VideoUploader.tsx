@@ -1,4 +1,4 @@
-import { Check, FileVideo, Upload, X } from "lucide-react";
+import { Check, Crown, FileVideo, Upload, X } from "lucide-react";
 import React, { ChangeEvent, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -15,6 +15,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDuration, setVideoDuration] = useState("00:00");
   const [videoCategorySelected, setVideoCategorySelected] = useState("All");
+  const [isPremiumVideo, setIsPremiumVideo] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +134,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
         uploader: user?._id || "",
         videoduration: videoDuration,
         videocategory: videoCategorySelected,
+        isPremium: isPremiumVideo,
       });
 
       setUploadComplete(true);
@@ -247,6 +249,21 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
                   <option value="Food">Food</option>
                   <option value="Fashion">Fashion</option>
                 </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 bg-amber-50/60 p-3 rounded-xl border border-amber-200/60">
+                <input
+                  type="checkbox"
+                  id="isPremium"
+                  checked={isPremiumVideo}
+                  onChange={(e) => setIsPremiumVideo(e.target.checked)}
+                  disabled={isUploading || uploadComplete}
+                  className="w-4 h-4 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                />
+                <Label htmlFor="isPremium" className="font-semibold text-xs text-amber-900 cursor-pointer flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-amber-600" />
+                  <span>Mark as Premium Video (Requires Bronze / Silver / Gold Plan to Watch)</span>
+                </Label>
               </div>
             </div>
 

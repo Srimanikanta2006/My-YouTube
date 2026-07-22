@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
+import { Crown } from "lucide-react";
 
 const ChannelHeader = ({ channel, user }: any) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -31,6 +32,20 @@ const ChannelHeader = ({ channel, user }: any) => {
               <p className="text-sm text-gray-700 max-w-2xl">
                 {channel?.description}
               </p>
+            )}
+            
+            {user && (
+              <div className="inline-flex flex-col gap-1 bg-amber-50/80 border border-amber-200/80 p-3 rounded-2xl text-xs text-amber-900 font-medium mt-2">
+                <div className="flex items-center gap-2 font-bold text-amber-950">
+                  <Crown className="w-4 h-4 text-amber-600" />
+                  <span>Current Membership Plan: {user?.plan || "Free"} {user?.plan && user.plan !== "Free" ? "⭐" : ""}</span>
+                </div>
+                {user?.subscriptionStartDate && (
+                  <p className="text-[11px] text-amber-800 font-mono">
+                    Subscribed: {new Date(user.subscriptionStartDate).toLocaleDateString()} • Expires: {user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toLocaleDateString() : "30 Days"}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
