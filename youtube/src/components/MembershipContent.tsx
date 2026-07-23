@@ -6,6 +6,7 @@ import { useUser } from "../lib/AuthContext";
 import axiosInstance from "../lib/axiosinstance";
 import { Button } from "./ui/button";
 import Head from "next/head";
+import emailjs from "@emailjs/browser";
 
 declare global {
   interface Window {
@@ -167,6 +168,33 @@ export default function MembershipContent() {
           } else if (login) {
             login(verifyRes.data.user);
           }
+        }
+
+        // Send confirmation email directly to the signed-in user via EmailJS!
+        if (user?.email) {
+          const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "service_default";
+          const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "template_subscription";
+          const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
+
+          const templateParams = {
+            to_name: user.name || user.channelname || "Subscriber",
+            to_email: user.email,
+            user_email: user.email,
+            plan_name: plan.name,
+            amount_paid: verifyRes.data.invoice?.totalAmount || plan.price,
+            payment_id: paymentId,
+            order_id: orderId,
+            date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+            downloads_limit: plan.name === "Gold" ? "50" : plan.name === "Silver" ? "15" : "5",
+          };
+
+          emailjs.send(serviceId, templateId, templateParams, publicKey)
+            .then((res) => {
+              console.log("✉️ EmailJS Email dispatched successfully to:", user.email, res.status);
+            })
+            .catch((err) => {
+              console.log("EmailJS note:", err);
+            });
         }
 
         setCurrentPlan(plan.name);
