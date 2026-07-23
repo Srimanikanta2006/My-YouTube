@@ -119,7 +119,15 @@ export default function WatchPage() {
               )}
             </div>
           ) : (
-            <VideoPlayer video={video} />
+            <VideoPlayer
+              video={video}
+              hasNextVideo={relatedVideos.length > 0}
+              onNextVideo={() => {
+                if (relatedVideos.length > 0) {
+                  router.push(`/watch/${relatedVideos[0]._id}`);
+                }
+              }}
+            />
           )}
           <VideoInfo video={video} />
           <Advertisement />
