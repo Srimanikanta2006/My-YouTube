@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import users from "../Modals/auth.js";
+import videofiles from "../Modals/video.js";
 
 export const login = async (req, res) => {
   const { email, name, image } = req.body;
@@ -31,6 +32,7 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 export const updateprofile = async (req, res) => {
   const { id: _id } = req.params;
   const { channelname, description } = req.body;
@@ -48,6 +50,15 @@ export const updateprofile = async (req, res) => {
       },
       { new: true }
     );
+
+    // Also update all videos uploaded by this user so Video Cards & Pages reflect the new channel name everywhere instantly!
+    if (channelname) {
+      await videofiles.updateMany(
+        { uploader: _id },
+        { $set: { videochanel: channelname } }
+      );
+    }
+
     return res.status(201).json(updatedata);
   } catch (error) {
     console.error(error);

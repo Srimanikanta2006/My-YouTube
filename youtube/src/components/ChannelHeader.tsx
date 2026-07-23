@@ -21,16 +21,16 @@ const ChannelHeader = ({ channel, user }: any) => {
 
           <div className="flex-1 space-y-2">
             <h1 className="text-2xl md:text-4xl font-bold">
-              {channel?.channelname || user?.name || "Channel"}
+              {(user && user._id === channel?._id ? (user.channelname || channel?.channelname) : channel?.channelname) || user?.name || "Channel"}
             </h1>
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <span>
-                @{channel?.channelname ? channel.channelname.toLowerCase().replace(/\s+/g, "") : user?.name?.toLowerCase().replace(/\s+/g, "") || "channel"}
+                @{(user && user._id === channel?._id ? (user.channelname || channel?.channelname) : channel?.channelname) ? ((user && user._id === channel?._id ? (user.channelname || channel?.channelname) : channel?.channelname).toLowerCase().replace(/\s+/g, "")) : user?.name?.toLowerCase().replace(/\s+/g, "") || "channel"}
               </span>
             </div>
-            {channel?.description && (
+            {(user && user._id === channel?._id ? (user.description || channel?.description) : channel?.description) && (
               <p className="text-sm text-gray-700 max-w-2xl">
-                {channel?.description}
+                {(user && user._id === channel?._id ? (user.description || channel?.description) : channel?.description)}
               </p>
             )}
             

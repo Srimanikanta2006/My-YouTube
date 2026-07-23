@@ -193,13 +193,13 @@ export default function VideoCard({ video }: any) {
           </div>
           <div className="flex gap-3 relative">
             <Avatar className="w-9 h-9 flex-shrink-0">
-              <AvatarFallback>{video?.videochanel?.[0] || "V"}</AvatarFallback>
+              <AvatarFallback>{(isOwner ? (user?.channelname || video?.videochanel) : video?.videochanel)?.[0] || "V"}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0 pr-8">
               <h3 className="font-medium text-sm line-clamp-2 group-hover:text-red-600 leading-tight">
                 {video?.videotitle}
               </h3>
-              <p className="text-sm text-gray-600 mt-1">{video?.videochanel}</p>
+              <p className="text-sm text-gray-600 mt-1">{isOwner ? (user?.channelname || video?.videochanel) : video?.videochanel}</p>
               <p className="text-sm text-gray-600">
                 {video?.views?.toLocaleString() || 0} views •{" "}
                 {video?.createdAt ? formatDistanceToNow(new Date(video.createdAt)) : "some time"} ago

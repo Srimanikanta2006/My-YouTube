@@ -111,6 +111,10 @@ export const UserProvider = ({ children }) => {
       if (!prev) return null;
       const updated = { ...prev, ...updatedFields };
       localStorage.setItem("user", JSON.stringify(updated));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("user-profile-updated"));
+        window.dispatchEvent(new Event("video-list-changed"));
+      }
       return updated;
     });
   };

@@ -70,10 +70,15 @@ const ChannelDetailPage = () => {
 
   useEffect(() => {
     const handleListChange = () => {
+      fetchChannelDetails();
       fetchChannelVideos();
     };
     window.addEventListener("video-list-changed", handleListChange);
-    return () => window.removeEventListener("video-list-changed", handleListChange);
+    window.addEventListener("user-profile-updated", handleListChange);
+    return () => {
+      window.removeEventListener("video-list-changed", handleListChange);
+      window.removeEventListener("user-profile-updated", handleListChange);
+    };
   }, [id]);
 
   // Sync edit settings fields when channel changes

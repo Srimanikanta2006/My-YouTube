@@ -343,10 +343,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <div className="flex items-center gap-4">
             <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer">
               <Avatar className="w-10 h-10">
-                <AvatarFallback>{video.videochanel?.[0] || "V"}</AvatarFallback>
+                <AvatarFallback>{((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-medium hover:text-red-600 transition-colors">{video.videochanel}</h3>
+                <h3 className="font-medium hover:text-red-600 transition-colors">
+                  {user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel}
+                </h3>
                 <p className="text-sm text-gray-600">1.2M subscribers</p>
               </div>
             </Link>
