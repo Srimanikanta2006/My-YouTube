@@ -22,23 +22,22 @@ const Channeltabs = ({ activeTab: propActiveTab, setActiveTab: propSetActiveTab 
 
   return (
     <div className="w-full">
-      <div className="flex gap-8 overflow-x-auto scrollbar-none border-b border-gray-100 px-2">
+      <div className="flex gap-8 overflow-x-auto scrollbar-none border-b border-gray-200 dark:border-zinc-800 px-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative py-3.5 text-sm font-semibold transition-all outline-none focus:outline-none focus:ring-0 cursor-pointer whitespace-nowrap ${
+              className={`relative py-3.5 text-sm transition-all outline-none focus:outline-none focus:ring-0 cursor-pointer whitespace-nowrap ${
                 isActive
-                  ? "text-gray-900 font-bold"
-                  : "text-gray-500 hover:text-gray-800 font-medium"
+                  ? "text-zinc-900 dark:text-white font-bold"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 font-medium"
               }`}
             >
               <span>{tab.label}</span>
-              {/* Sleek YouTube-style active bottom indicator bar */}
               {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 rounded-full animate-in fade-in zoom-in-95 duration-150" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 dark:bg-white rounded-full animate-in fade-in zoom-in-95 duration-150" />
               )}
             </button>
           );

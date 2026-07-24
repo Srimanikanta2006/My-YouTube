@@ -9,7 +9,7 @@ export default function DownloadsPage() {
         <title>Downloads - YouTube</title>
         <meta name="description" content="View and manage your offline downloaded videos and daily plan quota." />
       </Head>
-      <div className="flex-1 min-h-screen bg-white">
+      <div className="flex-1 min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
         <DownloadsContent />
       </div>
     </>

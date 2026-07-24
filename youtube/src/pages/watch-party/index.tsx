@@ -75,14 +75,14 @@ export default function WatchPartyPortal() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[75vh] max-w-md mx-auto text-center px-4 space-y-6">
-        <div className="p-4 bg-red-50 rounded-full text-red-600 animate-bounce">
+        <div className="p-4 bg-red-50 dark:bg-red-950/40 rounded-full text-red-600 dark:text-red-400 animate-bounce">
           <Tv className="w-12 h-12" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-zinc-100">
             Watch Party Portal
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-zinc-400">
             Create private theater rooms, start video calls, chat, and stream videos in perfect sync with your friends.
           </p>
         </div>
@@ -120,15 +120,15 @@ export default function WatchPartyPortal() {
         </div>
 
         {/* Action panels grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-zinc-900 dark:text-zinc-100">
           {/* Create Room */}
-          <div className="border border-gray-150 rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
             <div className="space-y-2">
-              <div className="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center">
                 <Plus className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800">Start a New Watch Party</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Start a New Watch Party</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Launch a fresh room instantly. You'll be generated an invite code to share with your friends.
               </p>
             </div>
@@ -141,13 +141,13 @@ export default function WatchPartyPortal() {
           </div>
 
           {/* Join Room */}
-          <div className="border border-gray-150 rounded-2xl p-8 bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
             <div className="space-y-2">
-              <div className="w-12 h-12 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl flex items-center justify-center">
                 <Users className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800">Join an Existing Party</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Join an Existing Party</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Enter an invite code or room link provided by your host to join the theater group.
               </p>
             </div>
@@ -160,7 +160,7 @@ export default function WatchPartyPortal() {
                   setJoinCode(e.target.value);
                   setJoinError("");
                 }}
-                className="py-6 rounded-xl border-gray-300"
+                className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-mono text-sm py-6 rounded-xl"
                 required
               />
               {joinError && (

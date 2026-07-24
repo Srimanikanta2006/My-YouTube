@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { 
   Users, Video, VideoOff, Mic, MicOff, PhoneOff, 
-  Send, ScreenShare, Copy, Check, MessageSquare, Disc, X, RefreshCw, Volume2, Menu
+  Send, ScreenShare, Copy, Check, MessageSquare, Disc, X, RefreshCw, Volume2, Menu, Sun, Moon
 } from "lucide-react";
 
 interface WatchPartyPanelProps {
@@ -21,7 +21,7 @@ export default function WatchPartyPanel({
   videosList = [],
   createMode = false
 }: WatchPartyPanelProps) {
-  const { user } = useUser();
+  const { user, theme, toggleTheme } = useUser();
   const [copied, setCopied] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [wsReady, setWsReady] = useState(false);
@@ -943,22 +943,31 @@ export default function WatchPartyPanel({
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden font-sans text-gray-800 antialiased">
+    <div className="w-full h-screen bg-gray-50 dark:bg-zinc-950 flex flex-col md:flex-row overflow-hidden font-sans text-gray-800 dark:text-zinc-100 antialiased transition-colors">
       
       {/* Mobile/Tablet Header Bar (Only visible on mobile) */}
-      <div className="w-full bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:hidden flex-shrink-0 z-30">
-        <span className="text-gray-955 font-black text-lg tracking-tighter italic font-sans select-none">
+      <div className="w-full bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 px-4 py-3 flex items-center justify-between md:hidden flex-shrink-0 z-30">
+        <span className="text-gray-900 dark:text-white font-black text-lg tracking-tighter italic font-sans select-none">
           You<span className="text-red-600 font-extrabold">Stream</span>
         </span>
         <div className="flex items-center gap-2">
-          <span className="bg-red-50 border border-red-100 text-red-700 px-2.5 py-1 rounded-lg text-xs font-mono select-all">
+          <Button
+            onClick={toggleTheme}
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 rounded-lg text-xs flex items-center justify-center cursor-pointer"
+            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Theme`}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
+          </Button>
+          <span className="bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 text-red-700 dark:text-red-300 px-2.5 py-1 rounded-lg text-xs font-mono select-all">
             {roomId}
           </span>
           <Button
             onClick={handleCopyLink}
             size="sm"
             variant="outline"
-            className="h-8 rounded-lg text-xs flex items-center gap-1 cursor-pointer flex-shrink-0"
+            className="h-8 rounded-lg text-xs flex items-center gap-1 cursor-pointer flex-shrink-0 bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "Copied" : "Copy Link"}
@@ -967,13 +976,13 @@ export default function WatchPartyPanel({
       </div>
 
       {/* COLUMN 1: LEFT SIDEBAR (Only visible on desktop/tablet) */}
-      <div className={`bg-white border-r border-gray-200 flex flex-col justify-between h-full flex-shrink-0 z-20 transition-all duration-300 ${isSidebarCollapsed ? "w-[72px]" : "w-[260px]"} hidden md:flex`}>
+      <div className={`bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 flex flex-col justify-between h-full flex-shrink-0 z-20 transition-all duration-300 ${isSidebarCollapsed ? "w-[72px]" : "w-[260px]"} hidden md:flex`}>
         <div className="flex flex-col min-h-0">
           
           {/* Logo row */}
-          <div className="p-4 flex items-center justify-between border-b border-gray-50 flex-shrink-0">
+          <div className="p-4 flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 flex-shrink-0">
             {!isSidebarCollapsed && (
-              <span className="text-gray-955 font-black text-xl tracking-tighter italic font-sans flex items-center gap-1 select-none pl-1">
+              <span className="text-gray-900 dark:text-white font-black text-xl tracking-tighter italic font-sans flex items-center gap-1 select-none pl-1">
                 You<span className="text-red-600 font-extrabold">Stream</span>
               </span>
             )}
@@ -982,7 +991,7 @@ export default function WatchPartyPanel({
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsSidebarCollapsed(true)} 
-                className="h-8 w-8 rounded-full text-gray-500 hover:bg-gray-100 flex-shrink-0 cursor-pointer"
+                className="h-8 w-8 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 flex-shrink-0 cursor-pointer"
               >
                 <Menu className="w-4 h-4" />
               </Button>
@@ -992,7 +1001,7 @@ export default function WatchPartyPanel({
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsSidebarCollapsed(false)} 
-                className="h-8 w-8 rounded-full text-gray-500 hover:bg-gray-100 mx-auto cursor-pointer"
+                className="h-8 w-8 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 mx-auto cursor-pointer"
               >
                 <Menu className="w-4 h-4" />
               </Button>
@@ -1001,14 +1010,14 @@ export default function WatchPartyPanel({
 
           {/* Room info block (Hidden when collapsed) */}
           {!isSidebarCollapsed && (
-            <div className="px-5 py-5 border-b border-gray-100">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
+            <div className="px-5 py-5 border-b border-gray-100 dark:border-zinc-800">
+              <span className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest block">
                 ROOM
               </span>
-              <h2 className="text-sm font-bold text-gray-900 mt-1 truncate">
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white mt-1 truncate">
                 {selectedVideo ? selectedVideo.videotitle : `Room ${roomId}`}
               </h2>
-              <span className="text-xs text-gray-500 block mt-1">
+              <span className="text-xs text-gray-500 dark:text-zinc-400 block mt-1">
                 {participants.length + 1} {participants.length === 0 ? "person" : "people"} watching
               </span>
             </div>
@@ -1016,8 +1025,8 @@ export default function WatchPartyPanel({
 
           {/* Navigation list */}
           <nav className="p-3 space-y-1">
-            <button className={`w-full flex items-center rounded-xl font-semibold text-sm transition-colors text-left ${isSidebarCollapsed ? "justify-center p-3 text-red-600" : "gap-3 px-3 py-2.5 bg-red-50 text-red-700"}`}>
-              <Video className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <button className={`w-full flex items-center rounded-xl font-semibold text-sm transition-colors text-left ${isSidebarCollapsed ? "justify-center p-3 text-red-600" : "gap-3 px-3 py-2.5 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400"}`}>
+              <Video className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
               {!isSidebarCollapsed && "Watch Party"}
             </button>
             
@@ -1032,8 +1041,8 @@ export default function WatchPartyPanel({
               }}
               className={`w-full flex items-center rounded-xl font-medium text-sm transition-colors text-left ${isSidebarCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5"} ${
                 isChatOpen && activeRightPanel === "chat" 
-                  ? "bg-red-50 text-red-700 font-semibold" 
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                  ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold" 
+                  : "text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white"
               }`}
             >
               <MessageSquare className="w-4 h-4 flex-shrink-0" />
@@ -1060,31 +1069,47 @@ export default function WatchPartyPanel({
               }}
               className={`w-full flex items-center rounded-xl font-medium text-sm transition-colors text-left ${isSidebarCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5"} ${
                 isChatOpen && activeRightPanel === "members" 
-                  ? "bg-red-50 text-red-700 font-semibold" 
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                  ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold" 
+                  : "text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white"
               }`}
             >
               <Users className="w-4 h-4 flex-shrink-0" />
               {!isSidebarCollapsed && `Members (${participants.length + 1})`}
+            </button>
+
+            {/* Light / Dark Theme Toggle Button */}
+            <button 
+              onClick={toggleTheme}
+              className={`w-full flex items-center rounded-xl font-medium text-sm transition-colors text-left ${isSidebarCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5"} text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white cursor-pointer`}
+              title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Theme`}
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              ) : (
+                <Moon className="w-4 h-4 text-zinc-700 dark:text-zinc-300 flex-shrink-0" />
+              )}
+              {!isSidebarCollapsed && (
+                <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              )}
             </button>
           </nav>
         </div>
 
         {/* User profile card */}
         <div className="p-3 space-y-3">
-          <div className={`flex items-center bg-gray-50 border border-gray-100 rounded-xl ${isSidebarCollapsed ? "justify-center p-2" : "gap-3 p-3"}`}>
+          <div className={`flex items-center bg-gray-50 dark:bg-zinc-800/80 border border-gray-100 dark:border-zinc-700/60 rounded-xl ${isSidebarCollapsed ? "justify-center p-2" : "gap-3 p-3"}`}>
             <div className="relative flex-shrink-0">
-              <div className="w-9 h-9 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-sm border border-red-200">
+              <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 flex items-center justify-center font-bold text-sm border border-red-200 dark:border-red-900/60">
                 {user?.name?.[0]?.toUpperCase() || "U"}
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-zinc-900 rounded-full" />
             </div>
             {!isSidebarCollapsed && (
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-gray-900 truncate leading-none">
+                <p className="text-xs font-semibold text-gray-900 dark:text-white truncate leading-none">
                   {user?.name || "Guest User"}
                 </p>
-                <p className="text-[10px] text-gray-500 font-medium mt-1 uppercase tracking-wider">
+                <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-medium mt-1 uppercase tracking-wider">
                   {isHost ? "Host" : "Guest"}
                 </p>
               </div>
@@ -1092,9 +1117,9 @@ export default function WatchPartyPanel({
           </div>
 
           {!isSidebarCollapsed && (
-            <div className="p-4 rounded-xl bg-red-50/50 border border-red-100/60 relative overflow-hidden">
-              <h4 className="text-xs font-bold text-red-800 leading-none">Invite Friends</h4>
-              <p className="text-[10px] text-red-600/80 font-medium mt-1">
+            <div className="p-4 rounded-xl bg-red-50/50 dark:bg-red-950/20 border border-red-100/60 dark:border-red-900/40 relative overflow-hidden">
+              <h4 className="text-xs font-bold text-red-800 dark:text-red-300 leading-none">Invite Friends</h4>
+              <p className="text-[10px] text-red-600/80 dark:text-red-400/80 font-medium mt-1">
                 Share the link and watch together!
               </p>
             </div>
@@ -1103,7 +1128,7 @@ export default function WatchPartyPanel({
       </div>
 
       {/* COLUMN 2: CENTER STAGE */}
-      <div className="flex-1 bg-gray-50 overflow-y-auto p-4 md:p-6 pt-4 md:pt-6 flex flex-col gap-2 min-w-0 h-full">
+      <div className="flex-1 bg-gray-50 dark:bg-zinc-950 overflow-y-auto p-4 md:p-6 pt-4 md:pt-6 flex flex-col gap-2 min-w-0 h-full transition-colors">
         
         {/* Mobile View first fold wrapper - forces everything above chat onto the screen */}
         <div className="flex flex-col h-[calc(100vh-100px)] lg:h-full gap-2 flex-shrink-0 justify-between min-h-0">
@@ -1113,7 +1138,7 @@ export default function WatchPartyPanel({
             
             {/* Local participant webcam tile */}
             <div 
-              className="relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
+              className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
               onClick={() => handleTap("local", "You", localStreamRef.current || null, !!isVideoOff)}
             >
               {(!isVideoOff || isScreenSharing) ? (
@@ -1125,7 +1150,7 @@ export default function WatchPartyPanel({
                   className={`object-cover w-full h-full ${!isScreenSharing ? "transform scale-x-[-1]" : ""}`}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold text-base border border-red-200">
+                <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-base border border-red-200 dark:border-red-900/60">
                   {user?.name?.[0]?.toUpperCase() || "U"}
                 </div>
               )}
@@ -1141,13 +1166,13 @@ export default function WatchPartyPanel({
               return (
                 <div 
                   key={p.uid} 
-                  className="relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
+                  className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
                   onClick={() => handleTap(p.uid, p.name, stream || null, !!p.videoOff)}
                 >
                   {(!p.videoOff || p.isScreenSharing) && stream ? (
                     <VideoCardKey stream={stream} name={p.name} uid={p.uid} isScreenSharing={!!p.isScreenSharing} />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-base border border-gray-200">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 flex items-center justify-center font-bold text-base border border-gray-200 dark:border-zinc-700">
                       {p.name?.[0]?.toUpperCase() || "G"}
                     </div>
                   )}
@@ -1167,7 +1192,7 @@ export default function WatchPartyPanel({
                         {isVolOpen && (
                           <div 
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute bottom-6 right-0 bg-white border border-gray-200 p-2 rounded-xl shadow-md flex items-center z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+                            className="absolute bottom-6 right-0 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 p-2 rounded-xl shadow-md flex items-center z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
                           >
                             <input 
                               type="range" 
@@ -1191,7 +1216,7 @@ export default function WatchPartyPanel({
           </div>
 
           {/* Main video player container - takes remaining complete viewport space */}
-          <div className="flex-1 min-h-0 w-full max-w-[1000px] mx-auto relative bg-black rounded-3xl overflow-hidden flex-shrink-1">
+          <div className="flex-1 min-h-0 w-full max-w-[1000px] mx-auto relative bg-black rounded-3xl overflow-hidden flex-shrink-1 border border-zinc-800/80">
             <div className="w-full h-full relative flex items-center justify-center bg-black overflow-hidden">
               {selectedVideo ? (
                 <video
@@ -1212,17 +1237,17 @@ export default function WatchPartyPanel({
                   preload="metadata"
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center text-gray-500 space-y-2">
-                  <Users className="w-12 h-12 text-gray-400 animate-pulse" />
+                <div className="flex flex-col items-center justify-center text-gray-400 space-y-2">
+                  <Users className="w-12 h-12 text-gray-500 animate-pulse" />
                   <p className="font-semibold text-sm">Waiting for Video Stream...</p>
-                  <p className="text-xs text-gray-400">Only the host can select files from the library tray below.</p>
+                  <p className="text-xs text-gray-500">Only the host can select files from the library tray below.</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Control bar (Only Icons) */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-2.5 shadow-sm flex items-center justify-center gap-4 w-full max-w-[1000px] mx-auto flex-shrink-0 mt-1">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-2.5 shadow-sm flex items-center justify-center gap-4 w-full max-w-[1000px] mx-auto flex-shrink-0 mt-1">
             
             {/* Mute Mic button */}
             <Button 
@@ -1231,8 +1256,8 @@ export default function WatchPartyPanel({
               size="icon"
               className={`rounded-full h-10 w-10 border transition-all shadow-sm cursor-pointer flex-shrink-0 ${
                 isMuted 
-                  ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100" 
-                  : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"
+                  ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/60" 
+                  : "bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-200 dark:hover:bg-zinc-700"
               }`}
               title={isMuted ? "Unmute Mic" : "Mute Mic"}
             >
@@ -1246,8 +1271,8 @@ export default function WatchPartyPanel({
               size="icon"
               className={`rounded-full h-10 w-10 border transition-all shadow-sm cursor-pointer flex-shrink-0 ${
                 isVideoOff 
-                  ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100" 
-                  : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"
+                  ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/60" 
+                  : "bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-200 dark:hover:bg-zinc-700"
               }`}
               title="Toggle Camera"
             >
@@ -1261,8 +1286,8 @@ export default function WatchPartyPanel({
               size="icon"
               className={`rounded-full h-10 w-10 border transition-all shadow-sm cursor-pointer flex-shrink-0 ${
                 isScreenSharing 
-                  ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100" 
-                  : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"
+                  ? "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100" 
+                  : "bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-200 dark:hover:bg-zinc-700"
               }`}
               title="Share Screen"
             >
@@ -1276,8 +1301,8 @@ export default function WatchPartyPanel({
               size="icon"
               className={`rounded-full h-10 w-10 border transition-all shadow-sm cursor-pointer flex-shrink-0 ${
                 isRecording 
-                  ? "bg-red-50 border-red-200 text-red-700 animate-pulse hover:bg-red-100" 
-                  : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"
+                  ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 animate-pulse hover:bg-red-100" 
+                  : "bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-200 dark:hover:bg-zinc-700"
               }`}
               title="Record Session"
             >
@@ -1289,7 +1314,7 @@ export default function WatchPartyPanel({
               <Button
                 onClick={handleForceSync}
                 size="icon"
-                className="bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 rounded-full h-10 w-10 flex items-center justify-center shadow-sm cursor-pointer flex-shrink-0"
+                className="bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 rounded-full h-10 w-10 flex items-center justify-center shadow-sm cursor-pointer flex-shrink-0"
                 title="Sync Room Playhead"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -1310,17 +1335,17 @@ export default function WatchPartyPanel({
         </div>
 
         {/* Compact Room Options Footer (Only visible on desktop/tablet) */}
-        <div className="w-full max-w-[1000px] mx-auto bg-white border border-gray-200 rounded-2xl p-3 shadow-sm items-center justify-between gap-4 flex-shrink-0 hidden md:flex">
+        <div className="w-full max-w-[1000px] mx-auto bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-3 shadow-sm items-center justify-between gap-4 flex-shrink-0 hidden md:flex">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-xs text-gray-900">Room Code:</h3>
-            <span className="bg-red-50 border border-red-100 text-red-700 px-2.5 py-1 rounded-lg text-xs font-mono select-all">
+            <h3 className="font-bold text-xs text-gray-900 dark:text-white">Room Code:</h3>
+            <span className="bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 text-red-700 dark:text-red-300 px-2.5 py-1 rounded-lg text-xs font-mono select-all">
               {roomId}
             </span>
             <Button
               onClick={handleCopyLink}
               size="sm"
               variant="outline"
-              className="h-8 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
+              className="h-8 rounded-lg text-xs flex items-center gap-1 cursor-pointer bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? "Copied Link" : "Copy Invite URL"}
@@ -1330,7 +1355,7 @@ export default function WatchPartyPanel({
           {/* Stream Catalog Selection */}
           {isHost ? (
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex-shrink-0">
+              <label className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider flex-shrink-0">
                 Stream Catalog:
               </label>
               {loadingVideos ? (
@@ -1349,7 +1374,7 @@ export default function WatchPartyPanel({
                       }));
                     }
                   }}
-                  className="bg-white border border-gray-200 text-gray-800 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-red-600 min-w-[160px] max-w-[240px] shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-zinc-100 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-red-600 min-w-[160px] max-w-[240px] shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
                 >
                   {videosList.map(v => (
                     <option key={v._id} value={v._id}>
@@ -1362,9 +1387,9 @@ export default function WatchPartyPanel({
           ) : (
             selectedVideo && (
               <div className="text-xs">
-                <span className="text-gray-500">Watching: </span>
-                <span className="font-bold text-red-600">{selectedVideo.videotitle}</span>
-                <span className="text-gray-400 font-normal ml-2">({selectedVideo.videochanel})</span>
+                <span className="text-gray-500 dark:text-zinc-400">Watching: </span>
+                <span className="font-bold text-red-600 dark:text-red-400">{selectedVideo.videotitle}</span>
+                <span className="text-gray-400 dark:text-zinc-500 font-normal ml-2">({selectedVideo.videochanel})</span>
               </div>
             )
           )}
@@ -1375,8 +1400,8 @@ export default function WatchPartyPanel({
           
           {/* Inline Host Catalog dropdown for mobile/tablet */}
           {isHost && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm mb-3 flex items-center justify-between gap-3 md:hidden">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Stream Catalog:</span>
+            <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-3 shadow-sm mb-3 flex items-center justify-between gap-3 md:hidden">
+              <span className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Stream Catalog:</span>
               {loadingVideos ? (
                 <span className="text-xs text-gray-450 animate-pulse">Loading...</span>
               ) : (
@@ -1393,7 +1418,7 @@ export default function WatchPartyPanel({
                       }));
                     }
                   }}
-                  className="bg-white border border-gray-200 text-gray-800 rounded-xl px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-red-600 max-w-[200px]"
+                  className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-zinc-100 rounded-xl px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-red-600 max-w-[200px]"
                 >
                   {videosList.map(v => (
                     <option key={v._id} value={v._id}>
@@ -1405,17 +1430,17 @@ export default function WatchPartyPanel({
             </div>
           )}
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col min-h-0">
-            <div className="flex border-b border-gray-100 pb-2 mb-3 gap-4">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col min-h-0">
+            <div className="flex border-b border-gray-100 dark:border-zinc-800 pb-2 mb-3 gap-4">
               <button 
                 onClick={() => setActiveRightPanel("chat")}
-                className={`text-xs font-bold ${activeRightPanel === "chat" ? "text-red-600 border-b-2 border-red-600 pb-1" : "text-gray-400"}`}
+                className={`text-xs font-bold ${activeRightPanel === "chat" ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400 pb-1" : "text-gray-400 dark:text-zinc-500"}`}
               >
                 Room Live Chat
               </button>
               <button 
                 onClick={() => setActiveRightPanel("members")}
-                className={`text-xs font-bold ${activeRightPanel === "members" ? "text-red-600 border-b-2 border-red-600 pb-1" : "text-gray-400"}`}
+                className={`text-xs font-bold ${activeRightPanel === "members" ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400 pb-1" : "text-gray-400 dark:text-zinc-500"}`}
               >
                 Room Members ({participants.length + 1})
               </button>
@@ -1426,9 +1451,9 @@ export default function WatchPartyPanel({
                 {/* Messages log - made taller for easy viewing */}
                 <div className="h-[280px] overflow-y-auto space-y-3 pr-1">
                   {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-450 space-y-1">
-                      <MessageSquare className="w-6 h-6 text-gray-300" />
-                      <p className="text-xs font-semibold text-gray-500">No messages yet</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-1">
+                      <MessageSquare className="w-6 h-6 text-gray-400 dark:text-zinc-600" />
+                      <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">No messages yet</p>
                     </div>
                   ) : (
                     messages.map((msg) => {
@@ -1439,14 +1464,14 @@ export default function WatchPartyPanel({
                           className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}
                         >
                           <div className="flex items-baseline gap-1.5 mb-0.5">
-                            <span className="text-[9px] font-bold text-gray-500">{msg.sender}</span>
-                            <span className="text-[7px] text-gray-400">{msg.timestamp}</span>
+                            <span className="text-[9px] font-bold text-gray-500 dark:text-zinc-400">{msg.sender}</span>
+                            <span className="text-[7px] text-gray-400 dark:text-zinc-500">{msg.timestamp}</span>
                           </div>
                           <div 
                             className={`px-3 py-2 text-xs rounded-2xl max-w-[85%] break-words shadow-sm border ${
                               isSelf
                                 ? "bg-red-600 text-white border-red-500 rounded-tr-none"
-                                : "bg-gray-100 text-gray-800 border-gray-200 rounded-tl-none"
+                                : "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 border-gray-200 dark:border-zinc-700 rounded-tl-none"
                             }`}
                           >
                             {msg.text}
@@ -1457,13 +1482,13 @@ export default function WatchPartyPanel({
                   )}
                   <div ref={mobileMessagesEndRef} />
                 </div>
-                <form onSubmit={sendChatMessage} className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                <form onSubmit={sendChatMessage} className="flex gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
                   <Input
                     type="text"
                     placeholder="Type a message..."
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    className="bg-white border-gray-200 text-xs h-9 rounded-xl flex-1 shadow-inner"
+                    className="bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-zinc-100 text-xs h-9 rounded-xl flex-1 shadow-inner"
                   />
                   <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 h-9 cursor-pointer">
                     Send
@@ -1472,35 +1497,35 @@ export default function WatchPartyPanel({
               </div>
             ) : (
               <div className="space-y-2 h-[280px] overflow-y-auto">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <div className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
                   ACTIVE MEMBERS — {participants.length + 1}
                 </div>
                 {/* Local Host */}
-                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl border border-transparent transition-colors">
+                <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-xl border border-transparent transition-colors">
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs border border-red-200">
+                    <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 flex items-center justify-center font-bold text-xs border border-red-200 dark:border-red-900/60">
                       {user?.name?.[0]?.toUpperCase() || "U"}
                     </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-zinc-900 rounded-full" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 leading-none truncate">{user?.name || "Guest"} (You)</p>
-                    <p className="text-[9px] text-gray-450 font-bold uppercase tracking-wider mt-1">Host</p>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none truncate">{user?.name || "Guest"} (You)</p>
+                    <p className="text-[9px] text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-wider mt-1">Host</p>
                   </div>
                 </div>
 
                 {/* Remote Participants */}
                 {participants.map((p) => (
-                  <div key={p.uid} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl border border-transparent transition-colors">
+                  <div key={p.uid} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-xl border border-transparent transition-colors">
                     <div className="relative flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-xs border border-gray-200">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 flex items-center justify-center font-bold text-xs border border-gray-200 dark:border-zinc-700">
                         {p.name?.[0]?.toUpperCase() || "G"}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-zinc-900 rounded-full" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-800 leading-none truncate">{p.name}</p>
-                      <p className="text-[9px] text-gray-400 font-medium mt-1 uppercase tracking-wider">Guest</p>
+                      <p className="text-xs font-semibold text-gray-800 dark:text-zinc-200 leading-none truncate">{p.name}</p>
+                      <p className="text-[9px] text-gray-400 dark:text-zinc-500 font-medium mt-1 uppercase tracking-wider">Guest</p>
                     </div>
                   </div>
                 ))}
@@ -1511,18 +1536,18 @@ export default function WatchPartyPanel({
       </div>
 
       {/* COLUMN 3: RIGHT PANEL (Live Text Chat message panel OR Active Members panel) */}
-      <div className={`h-full border-l border-gray-200 bg-white flex flex-col min-h-0 overflow-hidden text-gray-800 transition-all z-20 ${isChatOpen ? "w-[340px]" : "w-0 border-l-0"} hidden lg:flex`}>
+      <div className={`h-full border-l border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col min-h-0 overflow-hidden text-gray-800 dark:text-zinc-100 transition-all z-20 ${isChatOpen ? "w-[340px]" : "w-0 border-l-0"} hidden lg:flex`}>
         
         {/* Chat header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
-          <span className="font-bold text-sm tracking-wide text-gray-800">
+        <div className="p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-gray-50 dark:bg-zinc-800/60 flex-shrink-0">
+          <span className="font-bold text-sm tracking-wide text-gray-800 dark:text-white">
             {activeRightPanel === "chat" ? "Room Live Chat" : "Room Members"}
           </span>
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => setIsChatOpen(false)}
-            className="text-gray-500 hover:text-gray-800 rounded-full h-8 w-8 cursor-pointer"
+            className="text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full h-8 w-8 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -1534,10 +1559,10 @@ export default function WatchPartyPanel({
             {/* Messages log */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-2 px-6">
-                  <MessageSquare className="w-8 h-8 text-gray-300" />
-                  <p className="text-xs font-semibold text-gray-500">No messages yet</p>
-                  <p className="text-[10px] text-gray-400">Type a message below to start chatting with room members!</p>
+                <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 dark:text-zinc-500 space-y-2 px-6">
+                  <MessageSquare className="w-8 h-8 text-gray-300 dark:text-zinc-600" />
+                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">No messages yet</p>
+                  <p className="text-[10px] text-gray-400 dark:text-zinc-500">Type a message below to start chatting with room members!</p>
                 </div>
               ) : (
                 messages.map((msg) => {
@@ -1548,14 +1573,14 @@ export default function WatchPartyPanel({
                       className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}
                     >
                       <div className="flex items-baseline gap-1.5 mb-0.5">
-                        <span className="text-[10px] font-bold text-gray-500">{msg.sender}</span>
-                        <span className="text-[8px] text-gray-400">{msg.timestamp}</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400">{msg.sender}</span>
+                        <span className="text-[8px] text-gray-400 dark:text-zinc-500">{msg.timestamp}</span>
                       </div>
                       <div 
                         className={`px-3 py-2 text-xs rounded-2xl max-w-[85%] break-words shadow-sm border ${
                           isSelf
                             ? "bg-red-600 text-white border-red-500 rounded-tr-none"
-                            : "bg-gray-100 text-gray-800 border-gray-200 rounded-tl-none"
+                            : "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 border-gray-200 dark:border-zinc-700 rounded-tl-none"
                         }`}
                       >
                         {msg.text}
@@ -1568,13 +1593,13 @@ export default function WatchPartyPanel({
             </div>
 
             {/* Input text form */}
-            <form onSubmit={sendChatMessage} className="p-3 border-t border-gray-200 bg-gray-50 flex gap-2 flex-shrink-0">
+            <form onSubmit={sendChatMessage} className="p-3 border-t border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/60 flex gap-2 flex-shrink-0">
               <Input
                 type="text"
                 placeholder="Type a message..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="bg-white border-gray-200 text-gray-800 text-xs h-10 rounded-xl focus:border-red-500 focus:ring-red-500 shadow-inner"
+                className="bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-zinc-100 text-xs h-10 rounded-xl focus:border-red-500 focus:ring-red-500 shadow-inner"
               />
               <Button 
                 type="submit" 
@@ -1588,36 +1613,36 @@ export default function WatchPartyPanel({
         ) : (
           /* Live Members drawer view */
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+            <div className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
               ACTIVE MEMBERS — {participants.length + 1}
             </div>
             <div className="space-y-2">
               {/* Local Host */}
-              <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl border border-transparent transition-colors">
+              <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-xl border border-transparent transition-colors">
                 <div className="relative flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs border border-red-200">
+                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 flex items-center justify-center font-bold text-xs border border-red-200 dark:border-red-900/60">
                     {user?.name?.[0]?.toUpperCase() || "U"}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-zinc-900 rounded-full" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-gray-900 leading-none truncate">{user?.name || "Guest"} (You)</p>
-                  <p className="text-[9px] text-gray-455 font-bold uppercase tracking-wider mt-1">Host</p>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none truncate">{user?.name || "Guest"} (You)</p>
+                  <p className="text-[9px] text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-wider mt-1">Host</p>
                 </div>
               </div>
 
               {/* Remote Participants */}
               {participants.map((p) => (
-                <div key={p.uid} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl border border-transparent transition-colors">
+                <div key={p.uid} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-xl border border-transparent transition-colors">
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-xs border border-gray-200">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 flex items-center justify-center font-bold text-xs border border-gray-200 dark:border-zinc-700">
                       {p.name?.[0]?.toUpperCase() || "G"}
                     </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-zinc-900 rounded-full" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-gray-800 leading-none truncate">{p.name}</p>
-                    <p className="text-[9px] text-gray-400 font-medium mt-1 uppercase tracking-wider">Guest</p>
+                    <p className="text-xs font-semibold text-gray-800 dark:text-zinc-200 leading-none truncate">{p.name}</p>
+                    <p className="text-[9px] text-gray-400 dark:text-zinc-500 font-medium mt-1 uppercase tracking-wider">Guest</p>
                   </div>
                 </div>
               ))}

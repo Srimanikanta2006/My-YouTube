@@ -244,17 +244,17 @@ export default function MembershipContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-8">
+    <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-8 text-zinc-900 dark:text-zinc-100">
       {/* Header Banner */}
       <div className="text-center space-y-3 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-900 px-4 py-1.5 rounded-full text-xs font-bold border border-amber-300">
-          <Sparkles className="w-4 h-4 text-amber-600" />
+        <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-800 dark:text-amber-300 px-4 py-1.5 rounded-full text-xs font-bold border border-amber-500/30">
+          <Sparkles className="w-4 h-4 text-amber-500" />
           <span>Flexible Membership Plans</span>
         </div>
-        <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight">
+        <h1 className="text-3xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tight">
           Unlock Premium YouTube Benefits
         </h1>
-        <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+        <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed">
           Upgrade to unlock ad-free streaming, premium video access, and up to 50 daily offline downloads with Razorpay test payments.
         </p>
       </div>
@@ -266,7 +266,9 @@ export default function MembershipContent() {
           return (
             <div
               key={plan.name}
-              className={`rounded-3xl p-6 relative flex flex-col justify-between border transition-all duration-300 ${plan.color}`}
+              className={`rounded-3xl p-6 relative flex flex-col justify-between border transition-all duration-300 bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-md ${
+                plan.recommended ? "ring-2 ring-amber-500 border-amber-500 dark:border-amber-500" : ""
+              }`}
             >
               {plan.badge && (
                 <span className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full shadow-md">
@@ -276,30 +278,30 @@ export default function MembershipContent() {
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-extrabold text-gray-900">{plan.name}</h3>
+                  <h3 className="text-xl font-extrabold text-zinc-900 dark:text-white">{plan.name}</h3>
                   {isCurrent && (
-                    <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-300">
+                    <span className="bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-300 dark:border-green-800">
                       Active Plan
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl md:text-4xl font-black text-gray-900">
+                  <span className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white">
                     ₹{plan.price}
                   </span>
-                  <span className="text-xs text-gray-500 font-semibold">/ month</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">/ month</span>
                 </div>
 
-                <div className="bg-amber-50/80 p-2.5 rounded-xl border border-amber-200/60 text-xs font-bold text-amber-900 flex items-center gap-2">
-                  <Download className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <div className="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
+                  <Download className="w-4 h-4 text-amber-500 flex-shrink-0" />
                   <span>{plan.downloadsLimit}</span>
                 </div>
 
-                <ul className="space-y-2.5 pt-2 text-xs text-gray-700">
+                <ul className="space-y-2.5 pt-2 text-xs text-zinc-700 dark:text-zinc-300">
                   {plan.features.map((feat, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </li>
                   ))}
@@ -310,12 +312,12 @@ export default function MembershipContent() {
                 <Button
                   onClick={() => handleSelectPlan(plan)}
                   disabled={loadingPlan === plan.name || isCurrent}
-                  className={`w-full rounded-2xl font-bold text-xs py-5 transition-all shadow-md ${
+                  className={`w-full rounded-2xl font-bold text-xs py-5 transition-all shadow-md cursor-pointer ${
                     isCurrent
-                      ? "bg-gray-200 text-gray-500 hover:bg-gray-200 cursor-not-allowed shadow-none"
+                      ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 cursor-not-allowed shadow-none"
                       : plan.recommended
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                      : "bg-gray-900 hover:bg-black text-white"
+                      ? "bg-amber-500 hover:bg-amber-600 text-black font-extrabold"
+                      : "bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900"
                   }`}
                 >
                   {loadingPlan === plan.name ? (
@@ -365,59 +367,59 @@ export default function MembershipContent() {
           `}</style>
           <div
             id="printable-invoice"
-            className="bg-white rounded-3xl w-full max-w-lg p-6 relative shadow-2xl border border-gray-100 space-y-6 animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-lg p-6 relative shadow-2xl border border-gray-200 dark:border-zinc-800 space-y-6 animate-in zoom-in-95 duration-200 text-zinc-900 dark:text-zinc-100"
           >
-            <div className="flex items-center gap-3 border-b pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center">
+            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-zinc-800 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 flex items-center justify-center">
                 <ShieldCheck className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Payment Successful!</h3>
-                <p className="text-xs text-gray-500">Official Subscription Invoice Receipt</p>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Payment Successful!</h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Official Subscription Invoice Receipt</p>
               </div>
             </div>
 
             {/* Invoice Table */}
-            <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-xs border border-gray-200/80">
-              <div className="flex justify-between text-gray-500 font-mono">
+            <div className="bg-zinc-50 dark:bg-zinc-800 rounded-2xl p-4 space-y-3 text-xs border border-zinc-200 dark:border-zinc-700">
+              <div className="flex justify-between text-zinc-500 dark:text-zinc-400 font-mono">
                 <span>Invoice ID:</span>
-                <span className="font-bold text-gray-900">{invoice.invoiceId}</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">{invoice.invoiceId}</span>
               </div>
-              <div className="flex justify-between text-gray-500 font-mono">
+              <div className="flex justify-between text-zinc-500 dark:text-zinc-400 font-mono">
                 <span>Transaction ID:</span>
-                <span className="font-bold text-gray-900">{invoice.transactionId}</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">{invoice.transactionId}</span>
               </div>
-              <div className="flex justify-between text-gray-500">
+              <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
                 <span>Subscriber:</span>
-                <span className="font-bold text-gray-900">{invoice.userName} ({invoice.userEmail})</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">{invoice.userName} ({invoice.userEmail})</span>
               </div>
-              <div className="flex justify-between text-gray-500">
+              <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
                 <span>Plan Tier:</span>
-                <span className="font-bold text-amber-600">{invoice.plan} Membership</span>
+                <span className="font-bold text-amber-500">{invoice.plan} Membership</span>
               </div>
-              <div className="flex justify-between text-gray-500">
+              <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
                 <span>Validity:</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                   {new Date(invoice.paidAt).toLocaleDateString()} - {new Date(invoice.expiresAt).toLocaleDateString()}
                 </span>
               </div>
-              <div className="border-t pt-2 flex justify-between font-bold text-sm text-gray-900">
+              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-2 flex justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100">
                 <span>Total Paid (incl. GST):</span>
-                <span className="text-green-700">₹{invoice.totalAmount} INR</span>
+                <span className="text-green-600 dark:text-green-400">₹{invoice.totalAmount} INR</span>
               </div>
             </div>
 
             <div id="printable-buttons" className="flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 rounded-xl font-bold text-xs border-gray-300"
+                className="flex-1 rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border-0"
                 onClick={() => window.print()}
               >
                 <Printer className="w-4 h-4 mr-2" />
                 Print / Save PDF
               </Button>
               <Button
-                className="flex-1 rounded-xl font-bold text-xs bg-gray-900 hover:bg-black text-white"
+                className="flex-1 rounded-xl font-bold text-xs bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 cursor-pointer"
                 onClick={() => setShowInvoiceModal(false)}
               >
                 Close Receipt

@@ -131,14 +131,14 @@ export default function WatchPage() {
           )}
           <VideoInfo video={video} />
           <Advertisement />
-          <div className="border-t pt-6">
+          <div className="border-t border-gray-200 dark:border-zinc-800 pt-6">
             <Comments videoId={video._id} />
           </div>
         </div>
 
         {/* Right sidebar: Related Videos */}
         <div className="w-full lg:w-[28%] space-y-4">
-          <h2 className="text-lg font-semibold">Up Next</h2>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Up Next</h2>
           {relatedVideos.length === 0 ? (
             <p className="text-sm text-gray-500 italic">No other videos available.</p>
           ) : (

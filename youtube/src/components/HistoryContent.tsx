@@ -2,10 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { MoreVertical, X, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { getBackendUrl } from "../lib/urlHelper";
 import {
   DropdownMenu,
@@ -47,14 +45,15 @@ export default function HistoryContent() {
       setLoading(false);
     }
   };
+
   if (!user) {
     return (
-      <div className="text-center py-12">
-        <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">
+      <div className="text-center py-16 text-zinc-900 dark:text-zinc-100">
+        <Clock className="w-16 h-16 mx-auto text-zinc-400 dark:text-zinc-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2 text-zinc-900 dark:text-white">
           Keep track of what you watch
         </h2>
-        <p className="text-gray-600">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Watch history isn't viewable when signed out.
         </p>
       </div>
@@ -62,12 +61,11 @@ export default function HistoryContent() {
   }
 
   if (loading) {
-    return <div>Loading history...</div>;
+    return <div className="p-4 text-zinc-500 dark:text-zinc-400 animate-pulse">Loading history...</div>;
   }
 
   const handleRemoveFromHistory = async (historyId: string) => {
     try {
-      console.log("Removing from history:", historyId);
       await axiosInstance.delete(`/history/delete/${historyId}`);
       setHistory(history.filter((item) => item._id !== historyId));
     } catch (error) {
@@ -77,17 +75,19 @@ export default function HistoryContent() {
 
   if (history.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">No watch history yet</h2>
-        <p className="text-gray-600">Videos you watch will appear here.</p>
+      <div className="text-center py-16 text-zinc-900 dark:text-zinc-100">
+        <Clock className="w-16 h-16 mx-auto text-zinc-400 dark:text-zinc-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2 text-zinc-900 dark:text-white">No watch history yet</h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">Videos you watch will appear here.</p>
       </div>
     );
   }
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-600">{history.length} videos</p>
+    <div className="space-y-6 text-zinc-900 dark:text-zinc-100 max-w-5xl">
+      <div className="flex justify-between items-center border-b border-gray-200 dark:border-zinc-800 pb-4">
+        <h1 className="text-2xl font-bold">Watch History</h1>
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{history.length} videos</p>
       </div>
 
       <div className="space-y-4">
@@ -128,9 +128,9 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
   };
 
   return (
-    <div className="flex gap-4 group">
+    <div className="flex gap-4 group p-2 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
       <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
-        <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
+        <div className="relative w-44 md:w-56 aspect-video bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden">
           <video
             ref={videoRef}
             src={videoSrc}
@@ -141,7 +141,7 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           />
-          <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
+          <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[11px] font-mono px-1.5 py-0.5 rounded">
             {item.videoid.videoduration || "00:00"}
           </div>
         </div>
@@ -149,28 +149,28 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
 
       <div className="flex-1 min-w-0">
         <Link href={`/watch/${item.videoid._id}`}>
-          <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 mb-1">
+          <h3 className="font-bold text-sm md:text-base line-clamp-2 text-zinc-900 dark:text-zinc-100 mb-1 leading-tight">
             {item.videoid.videotitle}
           </h3>
         </Link>
-        <p className="text-sm text-gray-600">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
           {item.videoid.videochanel}
         </p>
-        <p className="text-sm text-gray-600">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {item.videoid.views?.toLocaleString() || 0} views •{" "}
           {item.videoid.createdAt ? formatDistanceToNow(new Date(item.videoid.createdAt)) : "some time"} ago
         </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Added {formatDistanceToNow(new Date(item.createdAt))} ago
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 font-mono">
+          Watched {formatDistanceToNow(new Date(item.createdAt))} ago
         </p>
       </div>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full focus:outline-none flex items-center justify-center cursor-pointer">
-          <MoreVertical className="w-4 h-4" />
+        <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full focus:outline-none flex items-center justify-center cursor-pointer transition-opacity">
+          <MoreVertical className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onRemove}>
+        <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xl">
+          <DropdownMenuItem onClick={onRemove} className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-red-600 dark:text-red-400">
             <X className="w-4 h-4 mr-2" />
             Remove from watch history
           </DropdownMenuItem>

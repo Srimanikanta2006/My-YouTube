@@ -75,9 +75,9 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
   };
   return (
     <Dialog open={isopen} onOpenChange={onclose}>
-      <DialogContent className="sm:max-w-md md:max-w-lg">
+      <DialogContent className="sm:max-w-md md:max-w-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xl">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-zinc-900 dark:text-white font-bold text-xl">
             {mode === "create" ? "Create your channel" : "Edit your channel"}
           </DialogTitle>
         </DialogHeader>
@@ -85,17 +85,18 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
         <form onSubmit={handlesubmit} className="space-y-6">
           {/* Channel Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Channel Name</Label>
+            <Label htmlFor="name" className="text-zinc-800 dark:text-zinc-200 font-semibold">Channel Name</Label>
             <Input
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
+              className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus-visible:ring-2 focus-visible:ring-red-600"
             />
           </div>
           {/* Channel Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Channel Description</Label>
+            <Label htmlFor="description" className="text-zinc-800 dark:text-zinc-200 font-semibold">Channel Description</Label>
             <Textarea
               id="description"
               name="description"
@@ -103,14 +104,15 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
               onChange={handleChange}
               rows={4}
               placeholder="Tell viewers about your channel..."
+              className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus-visible:ring-2 focus-visible:ring-red-600"
             />
           </div>
 
-          <DialogFooter className="flex justify-between sm:justify-between">
-            <Button type="button" variant="outline" onClick={onclose}>
+          <DialogFooter className="flex justify-between sm:justify-between pt-2">
+            <Button type="button" variant="outline" onClick={onclose} className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-0">
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl">
               {isSubmitting
                 ? "Saving..."
                 : mode === "create"

@@ -86,11 +86,11 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-8">
+    <div className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-8 text-zinc-900 dark:text-zinc-100">
       {/* Page Header */}
-      <div className="flex items-center gap-3 border-b pb-4">
-        <Compass className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-bold tracking-tight">Explore</h1>
+      <div className="flex items-center gap-3 border-b border-gray-200 dark:border-zinc-800 pb-4">
+        <Compass className="w-8 h-8 text-red-600 dark:text-red-500" />
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Explore</h1>
       </div>
 
       {/* Explore Categories Cards */}
@@ -102,16 +102,16 @@ export default function ExplorePage() {
             <button
               key={cat.id}
               onClick={() => handleCategoryChange(cat.id)}
-              className={`flex flex-col items-center justify-center p-6 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
+              className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all hover:shadow-md cursor-pointer ${
                 isActive
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-gray-200 bg-white"
+                  ? "border-red-600 dark:border-red-500 bg-red-50 dark:bg-red-950/30 ring-2 ring-red-500"
+                  : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
               }`}
             >
               <div className={`p-3 rounded-full ${cat.color} mb-3`}>
                 <IconComponent className="w-6 h-6" />
               </div>
-              <span className="font-semibold text-sm">{cat.name}</span>
+              <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</span>
             </button>
           );
         })}
@@ -119,7 +119,7 @@ export default function ExplorePage() {
 
       {/* Videos Section */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold capitalize">
+        <h2 className="text-xl font-bold capitalize text-zinc-900 dark:text-zinc-100">
           {activeCategory} Videos
         </h2>
 
@@ -127,16 +127,16 @@ export default function ExplorePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-3">
-                <div className="aspect-video bg-gray-200 rounded-lg" />
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-3 bg-gray-200 rounded w-1/2" />
+                <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-1/2" />
               </div>
             ))}
           </div>
         ) : filteredVideos.length === 0 ? (
-          <div className="text-center py-12 border rounded-xl bg-gray-50">
-            <p className="text-gray-500 font-medium">No videos found in this category.</p>
-            <p className="text-sm text-gray-400 mt-1">Upload a video with matching keywords to see it here!</p>
+          <div className="text-center py-12 border border-gray-200 dark:border-zinc-800 rounded-2xl bg-zinc-50 dark:bg-zinc-900">
+            <p className="text-zinc-500 dark:text-zinc-400 font-medium">No videos found in this category.</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Upload a video with matching keywords to see it here!</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

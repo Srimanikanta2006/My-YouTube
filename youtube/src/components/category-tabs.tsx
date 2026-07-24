@@ -35,16 +35,23 @@ export default function CategoryTabs({
 
   return (
     <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none w-full max-w-full">
-      {categories.map((category) => (
-        <Button
-          key={category}
-          variant={activeCategory === category ? "default" : "secondary"}
-          className="whitespace-nowrap rounded-lg px-4 py-1 text-sm font-medium transition-colors"
-          onClick={() => setActiveCategory(category)}
-        >
-          {category}
-        </Button>
-      ))}
+      {categories.map((category) => {
+        const isActive = activeCategory === category;
+        return (
+          <Button
+            key={category}
+            variant="ghost"
+            className={`whitespace-nowrap rounded-lg px-4 py-1.5 text-xs md:text-sm transition-all cursor-pointer ${
+              isActive
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow"
+                : "bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium"
+            }`}
+            onClick={() => setActiveCategory(category)}
+          >
+            {category}
+          </Button>
+        );
+      })}
     </div>
   );
 }

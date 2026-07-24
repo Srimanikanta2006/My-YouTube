@@ -335,33 +335,35 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">{video.videotitle}</h1>
+    <div className="space-y-4 text-zinc-900 dark:text-zinc-100">
+      <h1 className="text-xl font-bold">{video.videotitle}</h1>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-200 dark:border-zinc-800 pb-4">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-4">
             <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback>{((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}</AvatarFallback>
+              <Avatar className="w-10 h-10 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
+                <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
+                  {((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-medium hover:text-red-600 transition-colors">
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
                   {user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel}
                 </h3>
-                <p className="text-sm text-gray-600">1.2M subscribers</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">1.2M subscribers</p>
               </div>
             </Link>
             {user && user._id === video.uploader ? (
-              <span className="ml-4 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full uppercase tracking-wider">
+              <span className="ml-4 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1 rounded-full uppercase tracking-wider">
                 Owner
               </span>
             ) : (
               <Button
                 onClick={handleSubscribe}
-                className={`ml-4 rounded-full transition-all duration-300 ${
+                className={`ml-4 rounded-full transition-all duration-300 cursor-pointer ${
                   isSubscribed
-                    ? "bg-gray-200 text-black hover:bg-gray-300 font-medium"
+                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-medium"
                     : "bg-red-600 text-white hover:bg-red-700 font-semibold"
                 }`}
               >
@@ -371,30 +373,30 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none w-full md:overflow-x-visible md:pb-0 md:w-auto flex-shrink-0">
-          <div className="flex items-center bg-gray-100 rounded-full flex-shrink-0">
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full flex-shrink-0 text-zinc-900 dark:text-zinc-100">
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-l-full"
+              className="rounded-l-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer"
               onClick={handleLike}
             >
               <ThumbsUp
-                className={`w-5 h-5 mr-2 ${
-                  isLiked ? "fill-black text-black" : ""
+                className={`w-4 h-4 mr-2 ${
+                  isLiked ? "fill-zinc-800 text-zinc-800 dark:fill-zinc-200 dark:text-zinc-200" : ""
                 }`}
               />
               {likes.toLocaleString()}
             </Button>
-            <div className="w-px h-6 bg-gray-300" />
+            <div className="w-px h-5 bg-zinc-300 dark:bg-zinc-700" />
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-r-full"
+              className="rounded-r-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer"
               onClick={handleDislike}
             >
               <ThumbsDown
-                className={`w-5 h-5 mr-2 ${
-                  isDisliked ? "fill-black text-black" : ""
+                className={`w-4 h-4 mr-2 ${
+                  isDisliked ? "fill-zinc-800 text-zinc-800 dark:fill-zinc-200 dark:text-zinc-200" : ""
                 }`}
               />
               {dislikes.toLocaleString()}
@@ -403,41 +405,41 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-gray-100 rounded-full flex-shrink-0 ${
-              isWatchLater ? "text-primary" : ""
+            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0 cursor-pointer ${
+              isWatchLater ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold" : ""
             }`}
             onClick={handleWatchLater}
           >
-            <Clock className="w-5 h-5 mr-2" />
+            <Clock className="w-4 h-4 mr-2" />
             {isWatchLater ? "Saved" : "Watch Later"}
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="bg-gray-100 rounded-full flex-shrink-0"
+            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0 cursor-pointer"
             onClick={handleShare}
           >
-            <Share className="w-5 h-5 mr-2" />
+            <Share className="w-4 h-4 mr-2" />
             Share
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-gray-100 rounded-full flex-shrink-0 transition-all duration-300 ${
-              downloadState === "success" ? "bg-green-100 text-green-800 hover:bg-green-150" : ""
+            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0 transition-all duration-300 cursor-pointer ${
+              downloadState === "success" ? "bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300 hover:bg-green-200" : ""
             }`}
             onClick={handleDownload}
             disabled={downloadState === "loading"}
           >
             {downloadState === "idle" && (
               <>
-                <Download className="w-5 h-5 mr-2" />
+                <Download className="w-4 h-4 mr-2" />
                 Download
               </>
             )}
             {downloadState === "loading" && (
               <>
-                <span className="w-4 h-4 mr-2 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 mr-2 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin" />
                 Downloading...
               </>
             )}
@@ -451,27 +453,26 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="icon"
-            className="bg-gray-100 rounded-full flex-shrink-0"
+            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0"
           >
             <MoreHorizontal className="w-5 h-5" />
           </Button>
         </div>
       </div>
-      <div className="bg-gray-100 rounded-lg p-4">
-        <div className="flex gap-4 text-sm font-medium mb-2">
+      <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 transition-colors">
+        <div className="flex gap-4 text-sm font-semibold mb-2 text-zinc-800 dark:text-zinc-200">
           <span>{video.views.toLocaleString()} views</span>
           <span>{formatDistanceToNow(new Date(video.createdAt))} ago</span>
         </div>
-        <div className={`text-sm ${showFullDescription ? "" : "line-clamp-3"}`}>
+        <div className={`text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed ${showFullDescription ? "" : "line-clamp-3"}`}>
           <p>
-            Sample video description. This would contain the actual video
-            description from the database.
+            {video.videodescription || "No description provided."}
           </p>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="mt-2 p-0 h-auto font-medium"
+          className="mt-2 p-0 h-auto font-bold text-zinc-900 dark:text-white hover:underline cursor-pointer"
           onClick={() => setShowFullDescription(!showFullDescription)}
         >
           {showFullDescription ? "Show less" : "Show more"}

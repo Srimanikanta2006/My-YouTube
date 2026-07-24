@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { getBackendUrl } from "../lib/urlHelper";
 
@@ -17,7 +16,7 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
   const backendUrl = getBackendUrl();
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {videos.map((video) => {
         const normalizedPath = video.filepath ? video.filepath.replace(/\\/g, "/") : "";
         const videoSrcBase = normalizedPath.startsWith("http") ? normalizedPath : `${backendUrl}/${normalizedPath}`;
@@ -29,25 +28,25 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
           <Link
             key={video._id}
             href={`/watch/${video._id}`}
-            className="flex gap-2 group"
+            className="flex gap-2 group p-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
           >
-            <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden flex-shrink-0">
+            <div className="relative w-40 aspect-video bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden flex-shrink-0">
               <video
                 src={videoSrc}
-                className="object-cover group-hover:scale-105 transition-transform duration-200"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
               />
             </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600">
-              {video.videotitle}
-            </h3>
-            <p className="text-xs text-gray-600 mt-1">{video.videochanel}</p>
-            <p className="text-xs text-gray-600">
-              {video.views.toLocaleString()} views •{" "}
-              {formatDistanceToNow(new Date(video.createdAt))} ago
-            </p>
-          </div>
-        </Link>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-xs md:text-sm line-clamp-2 text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 leading-tight transition-colors">
+                {video.videotitle}
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate">{video.videochanel}</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                {video.views.toLocaleString()} views •{" "}
+                {formatDistanceToNow(new Date(video.createdAt))} ago
+              </p>
+            </div>
+          </Link>
         );
       })}
     </div>

@@ -28,7 +28,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-14 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-14 w-full overflow-x-hidden transition-colors duration-200">
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
@@ -44,6 +44,8 @@ function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+import OtpModal from "@/components/OtpModal";
 
 export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
@@ -64,6 +66,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <AuthProvider>
       <Layout>
         <Component {...pageProps} />
+        <OtpModal />
       </Layout>
     </AuthProvider>
   );

@@ -31,13 +31,10 @@ const Sidebar = () => {
     }
   }, [pathname]);
 
-  // Dynamic wrapper classes:
-  // Desktop/Mobile: fixed to the left viewport, scrollable internally if overflowing
   const sidebarClasses = isSidebarCollapsed
-    ? "hidden md:block md:w-16 fixed left-0 top-14 bottom-0 bg-white border-r p-2 z-40 overflow-y-auto flex-shrink-0 scrollbar-none"
-    : "w-64 block fixed left-0 top-14 bottom-0 bg-white shadow-lg md:shadow-none border-r p-2 z-40 overflow-y-auto flex-shrink-0 scrollbar-none";
+    ? "hidden md:block md:w-16 fixed left-0 top-14 bottom-0 bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 p-2 z-40 overflow-y-auto flex-shrink-0 scrollbar-none transition-colors"
+    : "w-64 block fixed left-0 top-14 bottom-0 bg-white dark:bg-zinc-900 shadow-lg md:shadow-none border-r border-gray-200 dark:border-zinc-800 p-2 z-40 overflow-y-auto flex-shrink-0 scrollbar-none transition-colors";
 
-  // Helper function to check if link is active
   const isActive = (href: string) => {
     if (href === "/") {
       return pathname === "/";
@@ -45,12 +42,21 @@ const Sidebar = () => {
     return pathname?.startsWith(href);
   };
 
+  const getButtonClass = (href: string) => {
+    const active = isActive(href);
+    const base = `w-full transition-colors cursor-pointer ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"}`;
+    if (active) {
+      return `${base} font-bold text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800`;
+    }
+    return `${base} font-normal text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white`;
+  };
+
   return (
     <>
       {/* Mobile Drawer Backdrop overlay */}
       {!isSidebarCollapsed && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden top-14"
+          className="fixed inset-0 bg-black/60 z-40 md:hidden top-14 backdrop-blur-xs"
           onClick={toggleSidebar}
         />
       )}
@@ -58,28 +64,19 @@ const Sidebar = () => {
       <aside className={sidebarClasses}>
         <nav className="space-y-1">
           <Link href="/">
-            <Button
-              variant={isActive("/") ? "secondary" : "ghost"}
-              className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/") ? "font-semibold text-black" : "text-gray-700"}`}
-            >
+            <Button variant="ghost" className={getButtonClass("/")}>
               <Home className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
               {!isSidebarCollapsed && <span>Home</span>}
             </Button>
           </Link>
           <Link href="/explore">
-            <Button
-              variant={isActive("/explore") ? "secondary" : "ghost"}
-              className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/explore") ? "font-semibold text-black" : "text-gray-700"}`}
-            >
+            <Button variant="ghost" className={getButtonClass("/explore")}>
               <Compass className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
               {!isSidebarCollapsed && <span>Explore</span>}
             </Button>
           </Link>
           <Link href="/subscriptions">
-            <Button
-              variant={isActive("/subscriptions") ? "secondary" : "ghost"}
-              className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/subscriptions") ? "font-semibold text-black" : "text-gray-700"}`}
-            >
+            <Button variant="ghost" className={getButtonClass("/subscriptions")}>
               <PlaySquare className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
               {!isSidebarCollapsed && <span>Subscriptions</span>}
             </Button>
@@ -87,58 +84,40 @@ const Sidebar = () => {
 
           {user && (
             <>
-              <div className={`border-t pt-2 mt-2 ${isSidebarCollapsed ? "border-gray-200" : ""}`}>
+              <div className={`border-t border-gray-200 dark:border-zinc-800 pt-2 mt-2`}>
                 <Link href="/history">
-                  <Button
-                    variant={isActive("/history") ? "secondary" : "ghost"}
-                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/history") ? "font-semibold text-black" : "text-gray-700"}`}
-                  >
+                  <Button variant="ghost" className={getButtonClass("/history")}>
                     <History className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                     {!isSidebarCollapsed && <span>History</span>}
                   </Button>
                 </Link>
                 <Link href="/liked">
-                  <Button
-                    variant={isActive("/liked") ? "secondary" : "ghost"}
-                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/liked") ? "font-semibold text-black" : "text-gray-700"}`}
-                  >
+                  <Button variant="ghost" className={getButtonClass("/liked")}>
                     <ThumbsUp className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                     {!isSidebarCollapsed && <span>Liked videos</span>}
                   </Button>
                 </Link>
                 <Link href="/watch-later">
-                  <Button
-                    variant={isActive("/watch-later") ? "secondary" : "ghost"}
-                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/watch-later") ? "font-semibold text-black" : "text-gray-700"}`}
-                  >
+                  <Button variant="ghost" className={getButtonClass("/watch-later")}>
                     <Clock className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                     {!isSidebarCollapsed && <span>Watch later</span>}
                   </Button>
                 </Link>
                 <Link href="/downloads">
-                  <Button
-                    variant={isActive("/downloads") ? "secondary" : "ghost"}
-                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/downloads") ? "font-semibold text-black" : "text-gray-700"}`}
-                  >
+                  <Button variant="ghost" className={getButtonClass("/downloads")}>
                     <Download className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                     {!isSidebarCollapsed && <span>Downloads</span>}
                   </Button>
                 </Link>
                 <Link href="/membership">
-                  <Button
-                    variant={isActive("/membership") ? "secondary" : "ghost"}
-                    className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive("/membership") ? "font-semibold text-black" : "text-gray-700"}`}
-                  >
-                    <Crown className={`w-5 h-5 text-amber-600 ${isSidebarCollapsed ? "" : "mr-3"}`} />
+                  <Button variant="ghost" className={getButtonClass("/membership")}>
+                    <Crown className={`w-5 h-5 text-amber-500 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                     {!isSidebarCollapsed && <span>Membership Plans</span>}
                   </Button>
                 </Link>
                 {user?.channelname ? (
                   <Link href={`/channel/${user._id}`}>
-                    <Button
-                      variant={isActive(`/channel/${user._id}`) ? "secondary" : "ghost"}
-                      className={`w-full ${isSidebarCollapsed ? "justify-center px-0" : "justify-start"} ${isActive(`/channel/${user._id}`) ? "font-semibold text-black" : "text-gray-700"}`}
-                    >
+                    <Button variant="ghost" className={getButtonClass(`/channel/${user._id}`)}>
                       <User className={`w-5 h-5 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                       {!isSidebarCollapsed && <span>Your channel</span>}
                     </Button>
@@ -148,7 +127,7 @@ const Sidebar = () => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className={isSidebarCollapsed ? "w-10 h-10 p-0 rounded-full flex items-center justify-center" : "w-full"}
+                      className={isSidebarCollapsed ? "w-10 h-10 p-0 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700" : "w-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold"}
                       onClick={() => setisdialogeopen(true)}
                     >
                       {isSidebarCollapsed ? <User className="w-5 h-5" /> : "Create Channel"}
@@ -158,14 +137,14 @@ const Sidebar = () => {
 
                 {/* Sidebar Active Plan Badge Card */}
                 {!isSidebarCollapsed && (
-                  <div className="mt-4 p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl space-y-2">
+                  <div className="mt-4 p-3 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold text-amber-700 tracking-wider">Current Plan</span>
-                      <span className="text-xs font-black text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">Current Plan</span>
+                      <span className="text-xs font-black text-amber-900 dark:text-amber-300 bg-amber-200/60 dark:bg-amber-900/60 px-2 py-0.5 rounded-full">
                         {user?.plan || "Free"} {user?.plan && user.plan !== "Free" ? "⭐" : ""}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-600 leading-tight">
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-tight">
                       {user?.plan === "Gold"
                         ? "50 Downloads/day • VIP Access"
                         : user?.plan === "Silver"
@@ -176,7 +155,7 @@ const Sidebar = () => {
                     </p>
                     {user?.plan === "Free" && (
                       <Link href="/membership" className="block pt-1">
-                        <Button size="sm" className="w-full h-7 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl">
+                        <Button size="sm" className="w-full h-7 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-black rounded-xl cursor-pointer">
                           Upgrade Plan
                         </Button>
                       </Link>

@@ -83,12 +83,21 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
 
     return () => {
       window.removeEventListener("video-list-changed", handleListChange);
-      if (ws) {
-        ws.onclose = null;
-        ws.close();
-      }
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
+      }
+      if (ws) {
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        } else if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => {
+            try {
+              ws?.close();
+            } catch (e) {}
+          };
+        }
       }
     };
   }, []);

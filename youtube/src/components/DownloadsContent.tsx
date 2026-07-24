@@ -143,21 +143,21 @@ export default function DownloadsContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-6">
+    <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-6 text-zinc-900 dark:text-zinc-100">
       {/* Header Title Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-6">
         <div>
           <div className="flex items-center gap-2">
-            <Download className="w-7 h-7 text-red-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Downloads Library</h1>
+            <Download className="w-7 h-7 text-red-600 dark:text-red-500" />
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white">Downloads Library</h1>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             Manage your offline downloaded videos and daily plan quota limits.
           </p>
         </div>
 
         {/* User Plan Badge */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-gray-900 to-zinc-800 text-white p-3.5 rounded-2xl shadow-sm border border-zinc-700">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-zinc-900 to-zinc-800 text-white p-3.5 rounded-2xl shadow-sm border border-zinc-700">
           <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
             <Crown className="w-5 h-5" />
           </div>
@@ -168,7 +168,7 @@ export default function DownloadsContent() {
                 {downloadsToday} / {maxAllowed} Used Today
               </span>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-zinc-400">
               Allowed {maxAllowed} {maxAllowed === 1 ? "download" : "downloads"} / day
             </p>
           </div>
@@ -176,19 +176,19 @@ export default function DownloadsContent() {
       </div>
 
       {/* Plan Tier Upgrade Banner */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-red-500/10 border border-amber-200 rounded-3xl p-6 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-red-500/10 border border-amber-500/30 rounded-3xl p-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1 max-w-2xl">
-            <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm">
               <Sparkles className="w-4 h-4" />
               <span>Controlled Quota Management</span>
             </div>
-            <h3 className="text-lg font-bold text-gray-900">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
               {userPlan === "Free"
                 ? "Upgrade to Bronze, Silver, or Gold for Up to 50 Downloads / Day!"
                 : `You are currently on the ${userPlan} Plan (${maxAllowed} downloads/day)`}
             </h3>
-            <p className="text-xs md:text-sm text-gray-600 leading-relaxed">
+            <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
               {userPlan === "Free"
                 ? "Free users are restricted to 1 video download per 24 hours. Upgrade your plan anytime to unlock ad-free streaming, premium video access, and up to 50 daily downloads!"
                 : "Manage or upgrade your plan anytime to unlock additional daily video download quotas and VIP platform benefits."}
@@ -197,7 +197,7 @@ export default function DownloadsContent() {
 
           <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
             <Link href="/membership" className="w-full md:w-auto">
-              <Button className="w-full md:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl px-5 shadow flex items-center gap-2 text-xs">
+              <Button className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-black font-extrabold rounded-xl px-5 shadow flex items-center gap-2 text-xs cursor-pointer">
                 <Crown className="w-4 h-4" />
                 <span>View & Upgrade Membership</span>
               </Button>
@@ -208,28 +208,28 @@ export default function DownloadsContent() {
 
       {/* Downloads Grid Section */}
       <div>
-        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <HardDrive className="w-5 h-5 text-gray-500" />
+        <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
+          <HardDrive className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
           <span>Downloaded Videos ({downloads.length})</span>
         </h2>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                <div className="aspect-video bg-gray-200 rounded-xl w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div key={i} className="space-y-3 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 rounded-xl w-full"></div>
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-5/6"></div>
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-1/2"></div>
               </div>
             ))}
           </div>
         ) : downloads.length === 0 ? (
-          <div className="text-center py-16 border border-dashed rounded-3xl bg-gray-50/50 text-gray-500 flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3 text-gray-400">
+          <div className="text-center py-16 border border-dashed border-zinc-300 dark:border-zinc-800 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3 text-zinc-400">
               <Download className="w-8 h-8" />
             </div>
-            <p className="font-bold text-gray-700 text-base mb-1">No Downloaded Videos</p>
-            <p className="text-xs text-gray-500 max-w-sm mb-4">
+            <p className="font-bold text-zinc-800 dark:text-zinc-200 text-base mb-1">No Downloaded Videos</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mb-4">
               Browse videos and click the Download button on the watch page to save them here!
             </p>
             <Link href="/">
@@ -245,10 +245,9 @@ export default function DownloadsContent() {
               return (
                 <div
                   key={item._id}
-                  className="group bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                  className="group bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
                 >
                   <div className="space-y-3 p-3">
-                    {/* Thumbnail / Video Stream Preview */}
                     <div className="relative aspect-video bg-black rounded-xl overflow-hidden group">
                       <video
                         src={getCleanVideoSrc(item.videoid.filepath)}
@@ -268,14 +267,14 @@ export default function DownloadsContent() {
                     <div>
                       <Link
                         href={`/watch/${item.videoid._id}`}
-                        className="font-bold text-sm text-gray-900 line-clamp-2 hover:text-red-600 transition-colors"
+                        className="font-bold text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                       >
                         {item.videoid.videotitle}
                       </Link>
-                      <p className="text-xs text-gray-500 mt-1 font-medium">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
                         {item.videoid.videochanel}
                       </p>
-                      <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-2 font-mono">
+                      <div className="flex items-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
                         <span>Downloaded: {new Date(item.downloadedAt).toLocaleDateString()}</span>
                         {item.videoid.filesize && (
                           <>
@@ -288,21 +287,21 @@ export default function DownloadsContent() {
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="border-t bg-gray-50/50 p-2.5 flex items-center justify-between gap-2">
+                  <div className="border-t border-gray-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 p-2.5 flex items-center justify-between gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRedownload(item)}
-                      className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1.5 h-8 px-3 rounded-lg hover:bg-gray-200/60"
+                      className="text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1.5 h-8 px-3 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700"
                     >
-                      <Download className="w-3.5 h-3.5 text-red-600" />
+                      <Download className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                       Save File
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveDownload(item._id)}
-                      className="text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2.5 rounded-lg"
+                      className="text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 h-8 px-2.5 rounded-lg"
                       title="Remove from Downloads"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

@@ -11,6 +11,30 @@ const userschema = mongoose.Schema({
   lastDownloadDate: { type: Date },
   subscriptionStartDate: { type: Date },
   subscriptionExpiresAt: { type: Date },
+  theme: { type: String, default: "dark" },
+  lastLocation: {
+    city: { type: String },
+    state: { type: String },
+    country: { type: String },
+    device: { type: String },
+  },
+  knownLocations: [
+    {
+      city: { type: String },
+      state: { type: String },
+      country: { type: String },
+      device: { type: String },
+      verifiedAt: { type: Date, default: Date.now },
+    },
+  ],
+  loginOtp: { type: String },
+  otpExpiresAt: { type: Date },
+  pendingLoginLocation: {
+    city: { type: String },
+    state: { type: String },
+    country: { type: String },
+    device: { type: String },
+  },
 });
 
 export default mongoose.model("user", userschema);
