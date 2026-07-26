@@ -6,7 +6,7 @@ import { ShieldAlert, KeyRound, ArrowRight, RefreshCw, X, CheckCircle2 } from "l
 import { Button } from "./ui/button";
 
 export default function OtpModal() {
-  const { otpData, setOtpData, verifyLoginOtp, resendLoginOtp } = useUser();
+  const { otpData, cancelOtp, verifyLoginOtp, resendLoginOtp } = useUser();
   const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(""));
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -100,7 +100,7 @@ export default function OtpModal() {
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 relative shadow-2xl space-y-6 text-zinc-900 dark:text-white">
         <button
-          onClick={() => setOtpData(null)}
+          onClick={cancelOtp}
           className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-full p-1.5 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />

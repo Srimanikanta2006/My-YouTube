@@ -201,8 +201,17 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  const cancelOtp = async () => {
+    setOtpData(null);
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error("Error signing out unverified session:", e);
+    }
+  };
+
   useEffect(() => {
-    // 1. Process Google auth redirect result on page load
+    // 1. Process Google auth redirect result ONLY if redirect login was initiated
     getRedirectResult(auth)
       .then(async (result) => {
         if (result && result.user && !isAuthProcessingRef.current) {
@@ -227,24 +236,29 @@ export const UserProvider = ({ children }) => {
         console.error("Google Redirect Auth Error:", error);
       });
 
-    const unsubcribe = onAuthStateChanged(auth, async (firebaseuser) => {
-      if (firebaseuser && !user && !isAuthProcessingRef.current && !otpData) {
-        isAuthProcessingRef.current = true;
+    // 2. Restore user session on mount from localStorage without auto-triggering login API on refresh
+    if (typeof window !== "undefined") {
+      const savedUserStr = localStorage.getItem("user");
+      if (savedUserStr) {
         try {
-          const clientLocation = await fetchClientLocation();
-          const payload = {
-            email: firebaseuser.email,
-            name: firebaseuser.displayName,
-            image: firebaseuser.photoURL || "https://github.com/shadcn.png",
-            location: clientLocation,
-          };
-          const response = await axiosInstance.post("/user/login", payload);
-          processLoginResponse(response.data);
-        } catch (error) {
-          console.error(error);
-          logout();
-        } finally {
-          isAuthProcessingRef.current = false;
+          const parsed = JSON.parse(savedUserStr);
+          if (parsed?._id) {
+            setUser(parsed);
+          }
+        } catch (e) {}
+      }
+    }
+
+    const unsubcribe = onAuthStateChanged(auth, async (firebaseuser) => {
+      if (!user && typeof window !== "undefined") {
+        const savedUserStr = localStorage.getItem("user");
+        if (savedUserStr) {
+          try {
+            const parsed = JSON.parse(savedUserStr);
+            if (parsed?._id) {
+              setUser(parsed);
+            }
+          } catch (e) {}
         }
       }
     });
@@ -300,6 +314,7 @@ export const UserProvider = ({ children }) => {
         updateUserData,
         otpData,
         setOtpData,
+        cancelOtp,
         verifyLoginOtp,
         resendLoginOtp,
       }}
