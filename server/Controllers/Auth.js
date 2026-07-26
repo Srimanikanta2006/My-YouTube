@@ -302,13 +302,13 @@ export const login = async (req, res) => {
         },
       });
 
-      // Dispatch OTP Email directly to whoever is signing in!
-      await sendSecurityOtpEmail(
+      // Dispatch OTP Email directly to whoever is signing in in background
+      sendSecurityOtpEmail(
         existingUser.email,
         existingUser.name,
         otp,
         currentLocation,
-      );
+      ).catch((err) => console.error("Email send error:", err));
     }
 
     return res.status(200).json({

@@ -146,7 +146,10 @@ export const UserProvider = ({ children }) => {
 
   const fetchClientLocation = async () => {
     try {
-      const res = await fetch("https://ipapi.co/json/");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 400);
+      const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data.city) {
@@ -158,7 +161,7 @@ export const UserProvider = ({ children }) => {
         }
       }
     } catch (e) {
-      console.warn("Client Geo-IP lookup unavailable, falling back to server Geo-IP:", e);
+      // Fast fallback to server-side Geo-IP
     }
     return null;
   };
