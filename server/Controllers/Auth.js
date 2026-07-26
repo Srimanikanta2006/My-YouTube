@@ -114,18 +114,14 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
     const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
     const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
 
+    let transporter;
     if (rawUser && rawPass) {
       const cleanPass = rawPass.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
+        service: "gmail",
         auth: {
           user: rawUser.trim(),
           pass: cleanPass,
-        },
-        tls: {
-          rejectUnauthorized: false,
         },
       });
     } else {
@@ -146,20 +142,10 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
       : "New Device / Location";
 
     const mailOptions = {
-      from: `"My YouTube Security" <${process.env.EMAIL_USER || "security@myyoutube.com"}>`,
+      from: `"My YouTube Security" <${rawUser ? rawUser.trim() : "security@myyoutube.com"}>`,
       to: userEmail,
       subject: `🔒 Security Check: Verification Code for New Login`,
-      text: `Hi ${userName || "User"},
-
-We detected a login attempt from a new city, state, or device:
-Location & Device: ${locationText}
-
-Your 6-digit Security Verification Code (OTP) is:
-👉 ${otp} 👈
-
-This code is valid for 10 minutes. If you did not initiate this login, please protect your account.
-
-— My YouTube Security Team`,
+      text: `Hi ${userName || "User"},\n\nWe detected a login attempt from a new city, state, or device:\nLocation & Device: ${locationText}\n\nYour 6-digit Security Verification Code (OTP) is:\n👉 ${otp} 👈\n\nThis code is valid for 10 minutes. If you did not initiate this login, please protect your account.\n\n— My YouTube Security Team`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; rounded: 16px;">
           <h2 style="color: #111827; margin-bottom: 8px;">🔒 Security Verification Required</h2>
@@ -180,14 +166,76 @@ This code is valid for 10 minutes. If you did not initiate this login, please pr
     const info = await transporter.sendMail(mailOptions);
     console.log(`🔒 Security OTP sent to: ${userEmail}`);
     console.log(`🔑 [DEV MODE] 6-Digit OTP Code for ${userEmail}: ${otp}`);
-    if (!process.env.EMAIL_USER) {
+    if (!rawUser) {
       console.log(
         "🔗 Live Security Email Preview URL:",
         nodemailer.getTestMessageUrl(info),
       );
     }
   } catch (err) {
-    console.error("Error sending OTP email:", err);
+    console.error("❌ Error sending OTP email:", err.message || err);
+  }
+};
+
+// Diagnostic test endpoint to test email dispatch live on Render
+export const testEmailDispatcher = async (req, res) => {
+  const targetEmail = req.query.email || process.env.EMAIL_USER || "test@gmail.com";
+  try {
+    const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
+    const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
+
+    const debugInfo = {
+      rawUserConfigured: !!rawUser,
+      userValue: rawUser ? rawUser.trim() : "NOT SET",
+      rawPassConfigured: !!rawPass,
+      passLength: rawPass ? rawPass.trim().replace(/\s+/g, "").length : 0,
+    };
+
+    console.log("🔍 Email Dispatcher Debug:", debugInfo);
+
+    if (!rawUser || !rawPass) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing EMAIL_USER or EMAIL_PASS in server environment variables.",
+        debugInfo,
+      });
+    }
+
+    const cleanPass = rawPass.trim().replace(/\s+/g, "");
+    
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: rawUser.trim(),
+        pass: cleanPass,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"My YouTube Security Test" <${rawUser.trim()}>`,
+      to: targetEmail,
+      subject: "🧪 Security OTP Live Test Dispatch",
+      text: "This is a live test email from your deployed My YouTube server!",
+    });
+
+    console.log("✅ Live Test Email Dispatched Successfully:", info.messageId);
+
+    return res.status(200).json({
+      success: true,
+      message: `Test email sent successfully to ${targetEmail}!`,
+      messageId: info.messageId,
+      debugInfo,
+    });
+  } catch (err) {
+    console.error("❌ Live Email Test Failed:", err);
+    return res.status(500).json({
+      success: false,
+      errorName: err.name,
+      errorCode: err.code,
+      command: err.command,
+      errorMessage: err.message,
+      response: err.response,
+    });
   }
 };
 
