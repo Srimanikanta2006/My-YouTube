@@ -257,113 +257,67 @@ export const login = async (req, res) => {
     let existingUser = await users.findOne({ email });
 
     if (!existingUser) {
-      // First-time user creation: Auto-trust initial location
-      const newUser = await users.create({
+      // First-time user creation: Create user record and send OTP to verify
+      existingUser = await users.create({
         email,
         name,
         image,
         plan: "Free",
         theme: calculatedTheme,
         lastLocation: currentLocation,
-        knownLocations: [{ ...currentLocation, verifiedAt: new Date() }],
+        knownLocations: [],
       });
-      return res.status(201).json({ result: newUser });
-    } else {
-      let updateFields = {};
-
-      // Check subscription expiry
-      if (
-        existingUser.subscriptionExpiresAt &&
-        new Date() > new Date(existingUser.subscriptionExpiresAt)
-      ) {
-        updateFields.plan = "Free";
-      }
-
-      // If user hasn't explicitly saved a theme, set based on IST time
-      if (!existingUser.theme) {
-        updateFields.theme = calculatedTheme;
-      }
-
-      // Security Location & Device Check:
-      const knownList = existingUser.knownLocations || [];
-      if (knownList.length === 0) {
-        const initialLocations = [
-          { ...currentLocation, verifiedAt: new Date() },
-        ];
-        const updatedUser = await users.findByIdAndUpdate(
-          existingUser._id,
-          {
-            $set: {
-              ...updateFields,
-              knownLocations: initialLocations,
-              lastLocation: currentLocation,
-            },
-          },
-          { returnDocument: "after" },
-        );
-        return res.status(200).json({ result: updatedUser });
-      }
-
-      // Check if current location/device matches any known trusted location
-      const isKnownLocation = knownList.some(
-        (loc) =>
-          loc.city?.toLowerCase() === currentLocation.city.toLowerCase() &&
-          loc.state?.toLowerCase() === currentLocation.state.toLowerCase() &&
-          loc.device?.toLowerCase() === currentLocation.device.toLowerCase(),
-      );
-
-      if (!isKnownLocation) {
-        // Reuse active OTP if generated less than 60 seconds ago (prevents duplicate emails from rapid race condition calls)
-        const isRecentOtp =
-          existingUser.loginOtp &&
-          existingUser.otpExpiresAt &&
-          new Date(existingUser.otpExpiresAt).getTime() - Date.now() > 9 * 60 * 1000;
-
-        let otp = existingUser.loginOtp;
-        if (!isRecentOtp) {
-          otp = generateSecureOtp();
-          await users.findByIdAndUpdate(existingUser._id, {
-            $set: {
-              ...updateFields,
-              loginOtp: otp,
-              otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-              pendingLoginLocation: currentLocation,
-            },
-          });
-
-          // Dispatch OTP Email
-          sendSecurityOtpEmail(
-            existingUser.email,
-            existingUser.name,
-            otp,
-            currentLocation,
-          );
-        }
-
-        return res.status(200).json({
-          otpRequired: true,
-          userId: existingUser._id,
-          email: existingUser.email,
-          message:
-            "Security Verification Required: New city, state, or device detected.",
-          locationInfo: currentLocation,
-        });
-      }
-
-      // Known location: Update last location and save
-      const updatedUser = await users.findByIdAndUpdate(
-        existingUser._id,
-        {
-          $set: {
-            ...updateFields,
-            lastLocation: currentLocation,
-          },
-        },
-        { returnDocument: "after" },
-      );
-
-      return res.status(200).json({ result: updatedUser });
     }
+
+    let updateFields = {};
+
+    // Check subscription expiry
+    if (
+      existingUser.subscriptionExpiresAt &&
+      new Date() > new Date(existingUser.subscriptionExpiresAt)
+    ) {
+      updateFields.plan = "Free";
+    }
+
+    // If user hasn't explicitly saved a theme, set based on IST time
+    if (!existingUser.theme) {
+      updateFields.theme = calculatedTheme;
+    }
+
+    // Reuse active OTP if generated less than 60 seconds ago (prevents duplicate emails from rapid race condition calls)
+    const isRecentOtp =
+      existingUser.loginOtp &&
+      existingUser.otpExpiresAt &&
+      new Date(existingUser.otpExpiresAt).getTime() - Date.now() > 9 * 60 * 1000;
+
+    let otp = existingUser.loginOtp;
+    if (!isRecentOtp) {
+      otp = generateSecureOtp();
+      await users.findByIdAndUpdate(existingUser._id, {
+        $set: {
+          ...updateFields,
+          loginOtp: otp,
+          otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          pendingLoginLocation: currentLocation,
+        },
+      });
+
+      // Dispatch OTP Email directly to whoever is signing in!
+      await sendSecurityOtpEmail(
+        existingUser.email,
+        existingUser.name,
+        otp,
+        currentLocation,
+      );
+    }
+
+    return res.status(200).json({
+      otpRequired: true,
+      userId: existingUser._id,
+      email: existingUser.email,
+      message: "Security Verification Required: 6-digit OTP code sent to your email.",
+      locationInfo: currentLocation,
+    });
   } catch (error) {
     console.error("Login error:", error);
     return res
