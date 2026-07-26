@@ -60,14 +60,14 @@ const resolveRealLocation = async (req) => {
 
   try {
     const apiUrl = isLocal
-      ? "http://ip-api.com/json"
-      : `http://ip-api.com/json/${ip}`;
+      ? "https://ipapi.co/json/"
+      : `https://ipapi.co/${ip}/json/`;
     const res = await axios.get(apiUrl, { timeout: 2500 });
-    if (res.data && res.data.status === "success") {
+    if (res.data && res.data.city) {
       return {
         city: res.data.city || "Hyderabad",
-        state: res.data.regionName || res.data.region || "Telangana",
-        country: res.data.country || "India",
+        state: res.data.region || res.data.region_code || "Telangana",
+        country: res.data.country_name || "India",
       };
     }
   } catch (err) {
@@ -117,10 +117,15 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
     if (rawUser && rawPass) {
       const cleanPass = rawPass.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
         auth: {
           user: rawUser.trim(),
           pass: cleanPass,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       });
     } else {
