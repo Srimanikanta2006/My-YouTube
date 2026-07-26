@@ -111,13 +111,15 @@ const getIstTheme = () => {
 // Helper to send security OTP email
 const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
   try {
-    let transporter;
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      const cleanPass = process.env.EMAIL_PASS.trim().replace(/\s+/g, "");
+    const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
+    const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
+
+    if (rawUser && rawPass) {
+      const cleanPass = rawPass.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: process.env.EMAIL_USER.trim(),
+          user: rawUser.trim(),
           pass: cleanPass,
         },
       });
