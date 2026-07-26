@@ -32,7 +32,7 @@ const parseUserAgentDetailed = (uaString = "") => {
   return `${browser} on ${os}`;
 };
 
-// Real Location Resolver: Uses client payload or server-side Geo-IP lookup API
+// Real Location Resolver: Uses client payload or multi-provider server-side Geo-IP lookup
 const resolveRealLocation = async (req) => {
   // 1. Prioritize client location payload if available
   if (req.body?.location?.city && req.body.location.city !== "Unknown") {
@@ -58,24 +58,33 @@ const resolveRealLocation = async (req) => {
     ip.startsWith("192.168.") ||
     ip.startsWith("10.");
 
+  // Provider 1: ipwho.is (Fast, reliable, HTTPS support)
+  try {
+    const apiUrl = isLocal ? "https://ipwho.is/" : `https://ipwho.is/${ip}`;
+    const res = await axios.get(apiUrl, { timeout: 2000 });
+    if (res.data && res.data.success && res.data.city) {
+      return {
+        city: res.data.city,
+        state: res.data.region || res.data.city,
+        country: res.data.country || "India",
+      };
+    }
+  } catch (err) {}
+
+  // Provider 2: ipapi.co fallback
   try {
     const apiUrl = isLocal
       ? "https://ipapi.co/json/"
       : `https://ipapi.co/${ip}/json/`;
-    const res = await axios.get(apiUrl, { timeout: 2500 });
+    const res = await axios.get(apiUrl, { timeout: 2000 });
     if (res.data && res.data.city) {
       return {
-        city: res.data.city || "Hyderabad",
+        city: res.data.city,
         state: res.data.region || res.data.region_code || "Telangana",
         country: res.data.country_name || "India",
       };
     }
-  } catch (err) {
-    console.warn(
-      "Geo-IP lookup fallback (network offline or timeout):",
-      err.message,
-    );
-  }
+  } catch (err) {}
 
   return {
     city: "Hyderabad",
@@ -257,67 +266,94 @@ export const login = async (req, res) => {
     let existingUser = await users.findOne({ email });
 
     if (!existingUser) {
-      // First-time user creation: Create user record and send OTP to verify
-      existingUser = await users.create({
+      // First-time user creation: Auto-trust initial location/device
+      const newUser = await users.create({
         email,
         name,
         image,
         plan: "Free",
         theme: calculatedTheme,
         lastLocation: currentLocation,
-        knownLocations: [],
+        knownLocations: [{ ...currentLocation, verifiedAt: new Date() }],
       });
-    }
+      return res.status(201).json({ result: newUser });
+    } else {
+      let updateFields = {};
 
-    let updateFields = {};
+      // Check subscription expiry
+      if (
+        existingUser.subscriptionExpiresAt &&
+        new Date() > new Date(existingUser.subscriptionExpiresAt)
+      ) {
+        updateFields.plan = "Free";
+      }
 
-    // Check subscription expiry
-    if (
-      existingUser.subscriptionExpiresAt &&
-      new Date() > new Date(existingUser.subscriptionExpiresAt)
-    ) {
-      updateFields.plan = "Free";
-    }
+      // If user hasn't explicitly saved a theme, set based on IST time
+      if (!existingUser.theme) {
+        updateFields.theme = calculatedTheme;
+      }
 
-    // If user hasn't explicitly saved a theme, set based on IST time
-    if (!existingUser.theme) {
-      updateFields.theme = calculatedTheme;
-    }
+      const knownList = existingUser.knownLocations || [];
 
-    // Reuse active OTP if generated less than 60 seconds ago (prevents duplicate emails from rapid race condition calls)
-    const isRecentOtp =
-      existingUser.loginOtp &&
-      existingUser.otpExpiresAt &&
-      new Date(existingUser.otpExpiresAt).getTime() - Date.now() > 9 * 60 * 1000;
+      // Check if current location/device matches any known trusted location
+      const isKnownLocation = knownList.some(
+        (loc) =>
+          loc.city?.toLowerCase() === currentLocation.city.toLowerCase() &&
+          loc.state?.toLowerCase() === currentLocation.state.toLowerCase() &&
+          loc.device?.toLowerCase() === currentLocation.device.toLowerCase()
+      );
 
-    let otp = existingUser.loginOtp;
-    if (!isRecentOtp) {
-      otp = generateSecureOtp();
-      await users.findByIdAndUpdate(existingUser._id, {
-        $set: {
-          ...updateFields,
-          loginOtp: otp,
-          otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-          pendingLoginLocation: currentLocation,
+      if (!isKnownLocation) {
+        // UNKNOWN DEVICE / NEW LOCATION: Require Security OTP Verification!
+        const isRecentOtp =
+          existingUser.loginOtp &&
+          existingUser.otpExpiresAt &&
+          new Date(existingUser.otpExpiresAt).getTime() - Date.now() > 9 * 60 * 1000;
+
+        let otp = existingUser.loginOtp;
+        if (!isRecentOtp) {
+          otp = generateSecureOtp();
+          await users.findByIdAndUpdate(existingUser._id, {
+            $set: {
+              ...updateFields,
+              loginOtp: otp,
+              otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+              pendingLoginLocation: currentLocation,
+            },
+          });
+
+          // Dispatch OTP Email directly to whoever is signing in in background
+          sendSecurityOtpEmail(
+            existingUser.email,
+            existingUser.name,
+            otp,
+            currentLocation
+          ).catch((err) => console.error("Email send error:", err));
+        }
+
+        return res.status(200).json({
+          otpRequired: true,
+          userId: existingUser._id,
+          email: existingUser.email,
+          message: "Security Verification Required: New city, state, or device detected.",
+          locationInfo: currentLocation,
+        });
+      }
+
+      // RECOGNIZED TRUSTED DEVICE & LOCATION: Log in directly without requiring OTP!
+      const updatedUser = await users.findByIdAndUpdate(
+        existingUser._id,
+        {
+          $set: {
+            ...updateFields,
+            lastLocation: currentLocation,
+          },
         },
-      });
+        { returnDocument: "after" }
+      );
 
-      // Dispatch OTP Email directly to whoever is signing in in background
-      sendSecurityOtpEmail(
-        existingUser.email,
-        existingUser.name,
-        otp,
-        currentLocation,
-      ).catch((err) => console.error("Email send error:", err));
+      return res.status(200).json({ result: updatedUser });
     }
-
-    return res.status(200).json({
-      otpRequired: true,
-      userId: existingUser._id,
-      email: existingUser.email,
-      message: "Security Verification Required: 6-digit OTP code sent to your email.",
-      locationInfo: currentLocation,
-    });
   } catch (error) {
     console.error("Login error:", error);
     return res

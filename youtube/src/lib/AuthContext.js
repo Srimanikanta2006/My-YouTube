@@ -147,22 +147,20 @@ export const UserProvider = ({ children }) => {
   const fetchClientLocation = async () => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 400);
-      const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch("https://ipwho.is/", { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
-        if (data.city) {
+        if (data.success && data.city) {
           return {
             city: data.city,
             state: data.region || data.city,
-            country: data.country_name || "India",
+            country: data.country || "India",
           };
         }
       }
-    } catch (e) {
-      // Fast fallback to server-side Geo-IP
-    }
+    } catch (e) {}
     return null;
   };
 
