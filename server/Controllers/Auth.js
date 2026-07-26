@@ -113,11 +113,12 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
   try {
     let transporter;
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      const cleanPass = process.env.EMAIL_PASS.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
+          user: process.env.EMAIL_USER.trim(),
+          pass: cleanPass,
         },
       });
     } else {
