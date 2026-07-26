@@ -49,7 +49,7 @@ export const handledislike = async (req, res) => {
     const updated = await video.findByIdAndUpdate(
       videoId,
       { $inc: { Dislike: val } },
-      { new: true }
+      { returnDocument: "after" }
     );
     return res.status(200).json({ dislikeCount: updated ? updated.Dislike : 0 });
   } catch (error) {

@@ -249,7 +249,7 @@ export const testEmailDispatcher = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, name, image } = req.body;
+  const { email, name, image, deviceId } = req.body;
   const rawUserAgent = req.headers["user-agent"] || "Standard Web Browser";
   const device = parseUserAgentDetailed(rawUserAgent);
 
@@ -258,6 +258,7 @@ export const login = async (req, res) => {
   const currentLocation = {
     ...realLoc,
     device,
+    deviceId: deviceId || "unknown_device",
   };
 
   const calculatedTheme = getIstTheme();
@@ -275,6 +276,7 @@ export const login = async (req, res) => {
         theme: calculatedTheme,
         lastLocation: currentLocation,
         knownLocations: [{ ...currentLocation, verifiedAt: new Date() }],
+        knownDevices: deviceId ? [deviceId] : [],
       });
       return res.status(201).json({ result: newUser });
     } else {
@@ -293,17 +295,22 @@ export const login = async (req, res) => {
         updateFields.theme = calculatedTheme;
       }
 
-      const knownList = existingUser.knownLocations || [];
+      const knownLocationsList = existingUser.knownLocations || [];
+      const knownDevicesList = existingUser.knownDevices || [];
 
-      // Check if current location/device matches any known trusted location
-      const isKnownLocation = knownList.some(
-        (loc) =>
-          loc.city?.toLowerCase() === currentLocation.city.toLowerCase() &&
-          loc.state?.toLowerCase() === currentLocation.state.toLowerCase() &&
-          loc.device?.toLowerCase() === currentLocation.device.toLowerCase()
-      );
+      // A device is TRUSTED if its deviceId matches knownDevices OR if device & city match knownLocations
+      const isKnownDevice =
+        (deviceId && knownDevicesList.includes(deviceId)) ||
+        knownLocationsList.some(
+          (loc) =>
+            (deviceId && loc.deviceId === deviceId) ||
+            (loc.device?.toLowerCase() === currentLocation.device.toLowerCase() &&
+             loc.city?.toLowerCase() === currentLocation.city.toLowerCase()) ||
+            (loc.device?.toLowerCase() === currentLocation.device.toLowerCase() &&
+             loc.country?.toLowerCase() === currentLocation.country.toLowerCase())
+        );
 
-      if (!isKnownLocation) {
+      if (!isKnownDevice) {
         // UNKNOWN DEVICE / NEW LOCATION: Require Security OTP Verification!
         const isRecentOtp =
           existingUser.loginOtp &&
@@ -393,7 +400,7 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    // OTP Valid! Register pending location as trusted
+    // OTP Valid! Register pending location and deviceId as trusted
     const pendingLoc = userDetail.pendingLoginLocation || {
       city: "Hyderabad",
       state: "Telangana",
@@ -402,6 +409,12 @@ export const verifyOtp = async (req, res) => {
     };
 
     userDetail.knownLocations.push({ ...pendingLoc, verifiedAt: new Date() });
+    if (pendingLoc.deviceId) {
+      if (!userDetail.knownDevices) userDetail.knownDevices = [];
+      if (!userDetail.knownDevices.includes(pendingLoc.deviceId)) {
+        userDetail.knownDevices.push(pendingLoc.deviceId);
+      }
+    }
     userDetail.lastLocation = pendingLoc;
     userDetail.loginOtp = null;
     userDetail.otpExpiresAt = null;

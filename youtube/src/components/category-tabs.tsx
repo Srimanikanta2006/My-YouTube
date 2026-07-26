@@ -30,8 +30,14 @@ export default function CategoryTabs({
 }: CategoryTabsProps) {
   const [internalActiveCategory, setInternalActiveCategory] = useState("All");
 
-  const activeCategory = propActiveCategory !== undefined ? propActiveCategory : internalActiveCategory;
-  const setActiveCategory = propSetActiveCategory !== undefined ? propSetActiveCategory : setInternalActiveCategory;
+  const activeCategory =
+    propActiveCategory !== undefined
+      ? propActiveCategory
+      : internalActiveCategory;
+  const setActiveCategory =
+    propSetActiveCategory !== undefined
+      ? propSetActiveCategory
+      : setInternalActiveCategory;
 
   return (
     <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none w-full max-w-full">

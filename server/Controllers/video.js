@@ -161,7 +161,7 @@ export const updatevideo = async (req, res) => {
       return res.status(404).json({ message: "Video not found" });
     }
 
-    const updated = await video.findByIdAndUpdate(id, { videotitle }, { new: true });
+    const updated = await video.findByIdAndUpdate(id, { videotitle }, { returnDocument: "after" });
 
     // Broadcast live event to all connected WebSockets
     const wss = req.app.get("wss");

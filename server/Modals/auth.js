@@ -17,6 +17,7 @@ const userschema = mongoose.Schema({
     state: { type: String },
     country: { type: String },
     device: { type: String },
+    deviceId: { type: String },
   },
   knownLocations: [
     {
@@ -24,9 +25,11 @@ const userschema = mongoose.Schema({
       state: { type: String },
       country: { type: String },
       device: { type: String },
+      deviceId: { type: String },
       verifiedAt: { type: Date, default: Date.now },
     },
   ],
+  knownDevices: [{ type: String }],
   loginOtp: { type: String },
   otpExpiresAt: { type: Date },
   pendingLoginLocation: {
@@ -34,6 +37,7 @@ const userschema = mongoose.Schema({
     state: { type: String },
     country: { type: String },
     device: { type: String },
+    deviceId: { type: String },
   },
 });
 

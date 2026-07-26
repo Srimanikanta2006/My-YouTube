@@ -164,6 +164,16 @@ export const UserProvider = ({ children }) => {
     return null;
   };
 
+  const getOrCreateDeviceId = () => {
+    if (typeof window === "undefined") return "server-device";
+    let deviceId = localStorage.getItem("my_youtube_device_id");
+    if (!deviceId) {
+      deviceId = "dev_" + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      localStorage.setItem("my_youtube_device_id", deviceId);
+    }
+    return deviceId;
+  };
+
   const isAuthProcessingRef = useRef(false);
 
   const handlegooglesignin = async () => {
@@ -178,6 +188,7 @@ export const UserProvider = ({ children }) => {
         name: firebaseuser.displayName,
         image: firebaseuser.photoURL || "https://github.com/shadcn.png",
         location: clientLocation,
+        deviceId: getOrCreateDeviceId(),
       };
       const response = await axiosInstance.post("/user/login", payload);
       processLoginResponse(response.data);
@@ -222,6 +233,7 @@ export const UserProvider = ({ children }) => {
               name: firebaseuser.displayName,
               image: firebaseuser.photoURL || "https://github.com/shadcn.png",
               location: clientLocation,
+              deviceId: getOrCreateDeviceId(),
             };
             const response = await axiosInstance.post("/user/login", payload);
             processLoginResponse(response.data);

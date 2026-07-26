@@ -201,6 +201,13 @@ export function initSignalingServer(server) {
             break;
           }
 
+          case "user-media-state":
+          case "user-sync-state":
+            if (currentRoomId) {
+              broadcastToRoom(currentRoomId, ws, data);
+            }
+            break;
+
           default:
             console.log("Unknown WebSocket message type:", data.type);
         }

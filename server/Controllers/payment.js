@@ -245,7 +245,7 @@ export const verifyPayment = async (req, res) => {
         subscriptionStartDate: startDate,
         subscriptionExpiresAt: expiresDate,
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!updatedUser) {
@@ -261,7 +261,7 @@ export const verifyPayment = async (req, res) => {
         status: "paid",
         paidAt: startDate,
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     // Generate Invoice Summary metadata

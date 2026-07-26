@@ -70,8 +70,10 @@ const ChannelDetailPage = () => {
 
   useEffect(() => {
     const handleListChange = () => {
-      fetchChannelDetails();
-      fetchChannelVideos();
+      setTimeout(() => {
+        fetchChannelDetails();
+        fetchChannelVideos();
+      }, 0);
     };
     window.addEventListener("video-list-changed", handleListChange);
     window.addEventListener("user-profile-updated", handleListChange);
