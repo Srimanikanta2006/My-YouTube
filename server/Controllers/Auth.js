@@ -331,13 +331,12 @@ export const login = async (req, res) => {
             },
           });
 
-          // Dispatch OTP Email directly to whoever is signing in in background
-          sendSecurityOtpEmail(
+          await sendSecurityOtpEmail(
             existingUser.email,
             existingUser.name,
             otp,
             currentLocation
-          ).catch((err) => console.error("Email send error:", err));
+          );
         }
 
         return res.status(200).json({
@@ -435,7 +434,7 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
-// Endpoint to resend OTP
+// Endpoint to resend 6-Digit Security OTP
 export const resendOtp = async (req, res) => {
   const { userId } = req.body;
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -453,7 +452,7 @@ export const resendOtp = async (req, res) => {
     userDetail.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await userDetail.save();
 
-    sendSecurityOtpEmail(
+    await sendSecurityOtpEmail(
       userDetail.email,
       userDetail.name,
       otp,
