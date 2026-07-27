@@ -199,7 +199,7 @@ export default function VideoCard({ video }: any) {
           )}
 
           {/* Video Duration Badge */}
-          <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-xs text-white text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded-md tracking-wide shadow">
+          <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white font-medium font-mono text-[10px] px-1.5 py-[1px] rounded tracking-tight backdrop-blur-xs shadow-xs select-none">
             {video?.videoduration || "00:00"}
           </div>
         </Link>

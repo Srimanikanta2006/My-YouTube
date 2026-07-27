@@ -150,7 +150,7 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           />
-          <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[11px] font-mono px-1.5 py-0.5 rounded">
+          <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white font-medium font-mono text-[10px] px-1.5 py-[1px] rounded tracking-tight backdrop-blur-xs shadow-xs select-none">
             {item.videoid.videoduration || "00:00"}
           </div>
         </div>

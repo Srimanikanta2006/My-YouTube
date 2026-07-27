@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Crown, Check, Sparkles, ShieldCheck, Download, Zap, Printer, X, CreditCard } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Crown, Check, Sparkles, ShieldCheck, Download, Zap, Printer, X, CreditCard, Loader2 } from "lucide-react";
 import { useUser } from "../lib/AuthContext";
 import axiosInstance from "../lib/axiosinstance";
 import { Button } from "./ui/button";
@@ -86,6 +86,7 @@ export default function MembershipContent() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<any>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -94,6 +95,8 @@ export default function MembershipContent() {
       setToastMessage((prev) => (prev === msg ? null : prev));
     }, 4000);
   };
+
+  const paymentHandledRef = useRef(false);
 
   useEffect(() => {
     // Inject Razorpay checkout.js script
@@ -111,6 +114,7 @@ export default function MembershipContent() {
   }, [user]);
 
   const handleSelectPlan = async (plan: PlanTier) => {
+    paymentHandledRef.current = false;
     if (!user?._id) {
       showToast("Please sign in to select a membership plan.");
       return;
@@ -125,14 +129,24 @@ export default function MembershipContent() {
       // Free Plan downgrade request
       try {
         setLoadingPlan(plan.name);
-        await axiosInstance.patch("/download/plan", {
+        const res = await axiosInstance.patch("/download/plan", {
           userId: user._id,
           plan: "Free",
         });
+
+        if (res.data?.user) {
+          if (updateUserData) {
+            updateUserData(res.data.user);
+          } else if (login) {
+            login(res.data.user);
+          }
+        }
+
         setCurrentPlan("Free");
-        showToast("Switched to Free plan.");
+        showToast("Switched back to Free plan.");
       } catch (err) {
         console.error("Error switching plan:", err);
+        showToast("Failed to switch plan. Please try again.");
       } finally {
         setLoadingPlan(null);
       }
@@ -153,6 +167,7 @@ export default function MembershipContent() {
 
       // Helper function to complete verification
       const completeVerification = async (paymentId: string, signature: string) => {
+        setVerifyingPayment(true);
         try {
           const verifyRes = await axiosInstance.post("/payment/verify", {
             userId: user._id,
@@ -189,6 +204,7 @@ export default function MembershipContent() {
           };
 
           setInvoice(invoiceData);
+          setVerifyingPayment(false);
           setShowInvoiceModal(true);
         } catch (err: any) {
           console.error("Error verifying payment:", err);
@@ -211,8 +227,10 @@ export default function MembershipContent() {
 
           setCurrentPlan(plan.name);
           setInvoice(fallbackInvoice);
+          setVerifyingPayment(false);
           setShowInvoiceModal(true);
         } finally {
+          setVerifyingPayment(false);
           setLoadingPlan(null);
         }
       };
@@ -240,7 +258,10 @@ export default function MembershipContent() {
 
         const rzp = new window.Razorpay(options);
         rzp.on("payment.failed", function (response: any) {
-          alert("Razorpay Payment Failed: " + (response.error?.description || "Payment process cancelled."));
+          if (!paymentHandledRef.current) {
+            paymentHandledRef.current = true;
+            showToast("Payment cancelled or failed.");
+          }
           setLoadingPlan(null);
         });
         rzp.open();
@@ -249,7 +270,10 @@ export default function MembershipContent() {
       }
     } catch (err: any) {
       console.error("Payment error:", err);
-      showToast("Could not process payment. Please try again.");
+      if (!paymentHandledRef.current) {
+        paymentHandledRef.current = true;
+        showToast("Payment process cancelled.");
+      }
     } finally {
       setLoadingPlan(null);
     }
@@ -348,6 +372,34 @@ export default function MembershipContent() {
           );
         })}
       </div>
+
+      {/* Payment Verification & Invoice Generation Overlay */}
+      {verifyingPayment && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping"></div>
+              <div className="w-16 h-16 rounded-full border-4 border-amber-500/30 border-t-amber-500 animate-spin flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-amber-500" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight">
+                Payment Successful! 🎉
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
+                Verifying transaction details & generating your official Tax Invoice... Please wait a moment.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+              <span>Preparing your Invoice Receipt...</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invoice Receipt Modal */}
       {showInvoiceModal && invoice && (

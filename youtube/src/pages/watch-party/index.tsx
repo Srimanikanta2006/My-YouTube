@@ -97,57 +97,57 @@ export default function WatchPartyPortal() {
     );
   }
 
-  // 3. Dashboard View (Create or Join room)
+  // 3. Dashboard View (Full original text, reduced gap under navbar)
   if (!room) {
     return (
-      <div className="max-w-[1200px] mx-auto p-6 md:p-12 space-y-12 animate-in fade-in duration-200">
+      <div className="max-w-[1200px] mx-auto p-3 sm:p-4 pt-2 md:pt-3 space-y-4 sm:space-y-6 animate-in fade-in duration-200">
         {/* Banner */}
-        <div className="bg-gradient-to-r from-red-600 to-rose-700 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
-          <div className="absolute right-0 top-0 opacity-10 transform translate-x-12 -translate-y-12">
+        <div className="bg-gradient-to-r from-red-600 to-rose-700 rounded-3xl p-6 sm:p-8 md:p-10 text-white relative overflow-hidden shadow-xl">
+          <div className="absolute right-0 top-0 opacity-10 transform translate-x-12 -translate-y-12 pointer-events-none">
             <Tv className="w-96 h-96" />
           </div>
-          <div className="max-w-xl space-y-4 relative z-10">
+          <div className="max-w-xl space-y-3 relative z-10">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold backdrop-blur-sm">
-              <Sparkles className="w-3 h-3 text-yellow-300" /> New Dedicated Theater Portal
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300" /> New Dedicated Theater Portal
             </span>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none">
               Stream Together, Synchronized.
             </h1>
-            <p className="text-red-100 font-medium">
+            <p className="text-sm md:text-base text-red-100 font-medium leading-relaxed">
               Create a room, share the invite URL with friends, and enjoy real-time synced videos with integrated WebRTC video calling and chat!
             </p>
           </div>
         </div>
 
         {/* Action panels grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-zinc-900 dark:text-zinc-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-zinc-900 dark:text-zinc-100">
           {/* Create Room */}
-          <div className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 md:p-8 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
             <div className="space-y-2">
               <div className="w-12 h-12 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center">
                 <Plus className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Start a New Watch Party</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
                 Launch a fresh room instantly. You'll be generated an invite code to share with your friends.
               </p>
             </div>
             <Button
               onClick={handleCreateRoom}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-6 rounded-xl shadow cursor-pointer transition-colors"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-5 rounded-xl shadow cursor-pointer transition-colors"
             >
               Create Room
             </Button>
           </div>
 
           {/* Join Room */}
-          <div className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 md:p-8 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
             <div className="space-y-2">
               <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl flex items-center justify-center">
                 <Users className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Join an Existing Party</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
                 Enter an invite code or room link provided by your host to join the theater group.
               </p>
             </div>
@@ -160,7 +160,7 @@ export default function WatchPartyPortal() {
                   setJoinCode(e.target.value);
                   setJoinError("");
                 }}
-                className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-mono text-sm py-6 rounded-xl"
+                className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-mono text-sm py-5 rounded-xl"
                 required
               />
               {joinError && (
@@ -168,7 +168,7 @@ export default function WatchPartyPortal() {
               )}
               <Button
                 type="submit"
-                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-6 rounded-xl cursor-pointer transition-colors"
+                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-5 rounded-xl cursor-pointer transition-colors"
               >
                 Join Room
               </Button>

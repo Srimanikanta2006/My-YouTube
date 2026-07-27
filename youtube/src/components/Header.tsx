@@ -74,13 +74,21 @@ const Header = () => {
         <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hover:bg-zinc-100 dark:hover:bg-zinc-800">
           <Menu className="w-6 h-6 text-zinc-800 dark:text-zinc-200" />
         </Button>
-        <Link href="/" className="flex items-center gap-1">
-          <div className="bg-red-600 p-1 rounded">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+        <Link href="/" className="flex items-center gap-1.5 focus:outline-none select-none">
+          <div className="flex items-center">
+            <svg height="20" viewBox="0 0 28 20" width="28" className="flex-shrink-0">
+              <path d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2192 0 14 0 14 0C14 0 4.7808 0 2.55319 0.597366C1.32318 0.926623 0.356573 1.89323 0.027316 3.12324C0 5.35085 0 10 0 10C0 10 0 14.6491 0.027316 16.8768C0.356573 18.1068 1.32318 19.0734 2.55319 19.4026C4.7808 20 14 20 14 20C14 20 23.2192 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28 14.6491 28 10 28 10C28 10 28 5.35085 27.9727 3.12324Z" fill="#FF0000"/>
+              <path d="M11.2 14.2857L18.4 10L11.2 5.71429V14.2857Z" fill="#FFFFFF"/>
             </svg>
           </div>
-          <span className="font-extrabold text-xl tracking-tighter text-zinc-900 dark:text-white">YouTube</span>
+          <div className="flex items-start">
+            <span className="font-bold text-xl tracking-tighter text-zinc-900 dark:text-white font-sans leading-none">
+              YouTube
+            </span>
+            <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 font-sans ml-1 -mt-1 select-none">
+              IN
+            </span>
+          </div>
         </Link>
       </div>
 

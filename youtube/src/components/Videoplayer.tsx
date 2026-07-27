@@ -26,11 +26,20 @@ interface VideoPlayerProps {
   };
   onNextVideo?: () => void;
   hasNextVideo?: boolean;
+  externalVideoRef?: React.RefObject<HTMLVideoElement | null>;
+  isHost?: boolean;
 }
 
-export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoPlayerProps) {
+export default function VideoPlayer({
+  video,
+  onNextVideo,
+  hasNextVideo,
+  externalVideoRef,
+  isHost = true,
+}: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const internalVideoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = externalVideoRef || internalVideoRef;
 
   // Control States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -82,6 +91,23 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
       videoRef.current.load();
     }
   }, [videoSrc]);
+
+  // Sync isPlaying state with native video play/pause events
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    v.addEventListener("play", handlePlay);
+    v.addEventListener("pause", handlePause);
+
+    return () => {
+      v.removeEventListener("play", handlePlay);
+      v.removeEventListener("pause", handlePause);
+    };
+  }, [videoRef.current]);
 
   // 2. Hide Controls Timer (Auto-fade after 3s)
   const handleMouseMove = () => {
@@ -340,7 +366,7 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
       onTouchEnd={handleTouchEnd}
-      className="relative aspect-video w-full bg-black rounded-2xl overflow-hidden group select-none shadow-2xl border border-zinc-900"
+      className="relative aspect-video w-full max-w-full max-h-full bg-black rounded-2xl overflow-hidden group select-none shadow-2xl border border-zinc-900 mx-auto flex items-center justify-center"
     >
       {/* Video Element */}
       <video
@@ -349,7 +375,6 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
         onClick={togglePlay}
         onTimeUpdate={updateProgress}
         onLoadedMetadata={() => videoRef.current && setDuration(videoRef.current.duration)}
-        onWaiting={() => setIsBuffering(true)}
         onSeeking={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
         onPlaying={() => {
@@ -457,14 +482,14 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
         </div>
       )}
 
-      {/* 5. Custom Control Bar Overlay (YouTube Layout & Sleek Dark Styling) */}
+      {/* 5. Custom Control Bar Overlay (Proportional to video size) */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent px-3 md:px-5 pb-3 pt-8 transition-opacity duration-300 z-20 ${
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent px-2 sm:px-4 pb-2 sm:pb-3 pt-6 transition-opacity duration-300 z-20 ${
           showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
         {/* Scrubber Progress Bar with Draggable Circle Thumb (●) */}
-        <div className="relative group/scrubber mb-2.5">
+        <div className="relative group/scrubber mb-1.5 sm:mb-2.5">
           {/* Timestamp Hover Tooltip */}
           {hoverTime !== null && (
             <div
@@ -490,7 +515,7 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
             {/* Draggable Red Circle Thumb (●) */}
             <div
               style={{ left: `${playedPercent}%` }}
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-red-600 border-2 border-white rounded-full shadow-md transition-all group-hover/scrubber:scale-125 z-20 pointer-events-none"
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-red-600 border-2 border-white rounded-full shadow-md transition-all group-hover/scrubber:scale-125 z-20 pointer-events-none"
             />
           </div>
 
@@ -509,70 +534,67 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
         </div>
 
         {/* Toolbar Buttons Layout: Left Group & Right Group */}
-        <div className="flex items-center justify-between text-white">
+        <div className="flex items-center justify-between text-white w-full gap-1">
           {/* Left Controls Group: Play, Rewind, Skip, Next, Volume, Time */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-0.5 sm:gap-1.5 min-w-0 shrink">
             {/* Play / Pause */}
             <button
               onClick={togglePlay}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer"
+              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer shrink-0"
               title={isPlaying ? "Pause (Space)" : "Play (Space)"}
             >
               {isPlaying ? (
-                <Pause className="w-5 h-5 fill-white" />
+                <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
               ) : (
-                <Play className="w-5 h-5 fill-white ml-0.5" />
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white ml-0.5" />
               )}
             </button>
 
             {/* Rewind -10s */}
             <button
               onClick={() => seekByAmount(-10)}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-semibold shrink-0"
               title="Rewind 10s (Left Arrow)"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span className="text-[11px]">10</span>
+              <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
 
             {/* Skip +10s */}
             <button
               onClick={() => seekByAmount(10)}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-semibold shrink-0"
               title="Skip 10s (Right Arrow)"
             >
-              <RotateCw className="w-4 h-4" />
-              <span className="text-[11px]">10</span>
+              <RotateCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
 
             {/* Next Video Button */}
             {hasNextVideo && onNextVideo && (
               <button
                 onClick={onNextVideo}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold shrink-0"
                 title="Next Video"
               >
-                <SkipForward className="w-4 h-4 fill-white" />
-                <span className="text-[11px] hidden sm:inline">Next</span>
+                <SkipForward className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-white" />
               </button>
             )}
 
             {/* Expandable Volume Control */}
-            <div className="flex items-center group/vol">
+            <div className="flex items-center group/vol shrink-0">
               <button
                 onClick={toggleMute}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer"
                 title={isMuted ? "Unmute (M)" : "Mute (M)"}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-5 h-5 text-red-500" />
+                  <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
                 ) : volume < 0.5 ? (
-                  <Volume1 className="w-5 h-5" />
+                  <Volume1 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 ) : (
-                  <Volume2 className="w-5 h-5" />
+                  <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 )}
               </button>
-              <div className="w-0 group-hover/vol:w-16 md:group-hover/vol:w-20 transition-all duration-200 overflow-hidden flex items-center ml-1">
+              <div className="w-0 group-hover/vol:w-12 sm:group-hover/vol:w-16 transition-all duration-200 overflow-hidden flex items-center ml-0.5">
                 <input
                   type="range"
                   min={0}
@@ -587,24 +609,24 @@ export default function VideoPlayer({ video, onNextVideo, hasNextVideo }: VideoP
             </div>
 
             {/* Formatted Time Display */}
-            <div className="text-[11px] md:text-xs font-mono text-gray-200 ml-1 select-none">
+            <div className="text-[9px] sm:text-[11px] font-mono text-gray-200 select-none whitespace-nowrap shrink-0 ml-0.5">
               <span>{formatTime(currentTime)}</span>
-              <span className="mx-1 text-gray-500">/</span>
+              <span className="mx-0.5 text-gray-500">/</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Right Controls Group: Fullscreen */}
-          <div className="flex items-center">
+          <div className="flex items-center shrink-0">
             <button
               onClick={toggleFullscreen}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer"
+              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer"
               title={isFullscreen ? "Exit Fullscreen (F)" : "Fullscreen (F)"}
             >
               {isFullscreen ? (
-                <Minimize className="w-5 h-5" />
+                <Minimize className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               ) : (
-                <Maximize className="w-5 h-5" />
+                <Maximize className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
           </div>

@@ -219,14 +219,25 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     if (!user) return;
     if (typeof window !== "undefined" && video?.videochanel) {
       let subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-      if (isSubscribed) {
-        subscribedChannels = subscribedChannels.filter((c: string) => c !== video.videochanel);
+      const name = video.videochanel;
+      const uploaderId = video.uploader;
+
+      const isSub =
+        subscribedChannels.includes(name) ||
+        (uploaderId && subscribedChannels.includes(uploaderId));
+
+      if (isSub) {
+        subscribedChannels = subscribedChannels.filter(
+          (c: string) => c !== name && c !== uploaderId
+        );
         setIsSubscribed(false);
       } else {
-        subscribedChannels.push(video.videochanel);
+        if (name && !subscribedChannels.includes(name)) subscribedChannels.push(name);
+        if (uploaderId && !subscribedChannels.includes(uploaderId)) subscribedChannels.push(uploaderId);
         setIsSubscribed(true);
       }
       localStorage.setItem("subscribedChannels", JSON.stringify(subscribedChannels));
+      window.dispatchEvent(new Event("subscription-changed"));
     }
   };
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -342,30 +353,30 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     <div className="space-y-4 text-zinc-900 dark:text-zinc-100">
       <h1 className="text-xl font-bold">{video.videotitle}</h1>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-200 dark:border-zinc-800 pb-4">
-        <div className="flex items-center justify-between w-full md:w-auto">
-          <div className="flex items-center gap-4">
-            <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer">
+      <div className="flex flex-col gap-3.5 xl:flex-row xl:items-center xl:justify-between border-b border-gray-200 dark:border-zinc-800 pb-4">
+        <div className="flex items-center justify-between w-full xl:w-auto shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer shrink-0">
               <Avatar className="w-10 h-10 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
                 <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
                   {((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+              <div className="shrink-0">
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors text-sm sm:text-base">
                   {user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">1.2M subscribers</p>
               </div>
             </Link>
             {user && user._id === video.uploader ? (
-              <span className="ml-4 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1 rounded-full uppercase tracking-wider">
+              <span className="ml-2 sm:ml-3 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                 Owner
               </span>
             ) : (
               <Button
                 onClick={handleSubscribe}
-                className={`ml-4 rounded-full transition-all duration-300 cursor-pointer ${
+                className={`ml-2 sm:ml-3 rounded-full transition-all duration-200 cursor-pointer min-w-[96px] h-8 text-xs shrink-0 text-center flex items-center justify-center ${
                   isSubscribed
                     ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-medium"
                     : "bg-red-600 text-white hover:bg-red-700 font-semibold"
@@ -376,30 +387,30 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none w-full md:overflow-x-visible md:pb-0 md:w-auto flex-shrink-0">
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full flex-shrink-0 text-zinc-900 dark:text-zinc-100">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none w-full xl:w-auto shrink-0 py-0.5 max-w-full">
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full shrink-0 text-zinc-900 dark:text-zinc-100 h-8">
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-l-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer"
+              className="rounded-l-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer h-8 px-2.5 text-xs"
               onClick={handleLike}
             >
               <ThumbsUp
-                className={`w-4 h-4 mr-2 ${
+                className={`w-3.5 h-3.5 mr-1.5 ${
                   isLiked ? "fill-zinc-800 text-zinc-800 dark:fill-zinc-200 dark:text-zinc-200" : ""
                 }`}
               />
               {likes.toLocaleString()}
             </Button>
-            <div className="w-px h-5 bg-zinc-300 dark:bg-zinc-700" />
+            <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700" />
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-r-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer"
+              className="rounded-r-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer h-8 px-2.5 text-xs"
               onClick={handleDislike}
             >
               <ThumbsDown
-                className={`w-4 h-4 mr-2 ${
+                className={`w-3.5 h-3.5 mr-1.5 ${
                   isDisliked ? "fill-zinc-800 text-zinc-800 dark:fill-zinc-200 dark:text-zinc-200" : ""
                 }`}
               />
@@ -409,27 +420,27 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0 cursor-pointer ${
+            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer min-w-[105px] h-8 text-xs px-3 text-center flex items-center justify-center transition-colors ${
               isWatchLater ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold" : ""
             }`}
             onClick={handleWatchLater}
           >
-            <Clock className="w-4 h-4 mr-2" />
+            <Clock className="w-3.5 h-3.5 mr-1.5" />
             {isWatchLater ? "Saved" : "Watch Later"}
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0 cursor-pointer"
+            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-8 text-xs px-3"
             onClick={handleShare}
           >
-            <Share className="w-4 h-4 mr-2" />
+            <Share className="w-3.5 h-3.5 mr-1.5" />
             Share
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0 transition-all duration-300 cursor-pointer ${
+            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer min-w-[95px] h-8 text-xs px-3 text-center flex items-center justify-center ${
               downloadState === "success" ? "bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300 hover:bg-green-200" : ""
             }`}
             onClick={handleDownload}
@@ -437,29 +448,22 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           >
             {downloadState === "idle" && (
               <>
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3.5 h-3.5 mr-1.5" />
                 Download
               </>
             )}
             {downloadState === "loading" && (
               <>
-                <span className="w-4 h-4 mr-2 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin" />
+                <span className="w-3.5 h-3.5 mr-1.5 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin" />
                 Downloading...
               </>
             )}
             {downloadState === "success" && (
               <>
-                <span className="mr-2 animate-bounce">🎉</span>
+                <span className="mr-1.5 animate-bounce">🎉</span>
                 Saved!
               </>
             )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex-shrink-0"
-          >
-            <MoreHorizontal className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -489,53 +493,53 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
         </div>
       )}
 
-      {/* Daily Download Limit Exceeded Modal */}
+      {/* Daily Download Limit Exceeded Modal (Fully Light & Dark Mode Compliant) */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
             <button
               onClick={() => setShowLimitModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 p-1.5 transition-colors"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 p-1.5 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mb-4 text-amber-600">
+            <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 flex items-center justify-center mb-4 text-amber-600 dark:text-amber-400">
               <ShieldAlert className="w-8 h-8" />
             </div>
 
-            <h3 className="text-xl font-bold text-gray-900 mb-1">
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">
               Daily Download Limit Reached
             </h3>
             
-            <p className="text-sm text-gray-600 mb-4 px-2">
+            <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4 px-2">
               {limitDetails?.message || `Daily download limit reached for your ${limitDetails?.userPlan || "Free"} plan (${limitDetails?.currentCount || 1}/${limitDetails?.maxAllowed || 1}). Upgrade to Bronze, Silver, or Gold to download more videos!`}
             </p>
 
             {/* Quota Usage Meter */}
-            <div className="w-full bg-gray-100 rounded-2xl p-4 mb-6 border border-gray-200/60">
+            <div className="w-full bg-gray-100 dark:bg-zinc-800/80 rounded-2xl p-4 mb-6 border border-gray-200/60 dark:border-zinc-700/60">
               <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
-                <span className="text-gray-500 uppercase tracking-wider">Current Plan: {limitDetails?.userPlan || "Free"}</span>
-                <span className="text-amber-600 font-bold">{limitDetails?.currentCount || 1} / {limitDetails?.maxAllowed || 1} Used</span>
+                <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Current Plan: {limitDetails?.userPlan || "Free"}</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{limitDetails?.currentCount || 1} / {limitDetails?.maxAllowed || 1} Used</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2 overflow-hidden">
                 <div className="bg-amber-500 h-full rounded-full w-full" />
               </div>
             </div>
 
             {/* Tier Perks Breakdown */}
-            <div className="w-full space-y-2 mb-6 text-left text-xs bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/50">
-              <div className="flex items-center gap-2 font-bold text-amber-900 mb-1">
-                <Crown className="w-4 h-4 text-amber-600" />
+            <div className="w-full space-y-2 mb-6 text-left text-xs bg-amber-50/50 dark:bg-amber-950/30 p-3.5 rounded-xl border border-amber-200/50 dark:border-amber-900/40 text-amber-800 dark:text-amber-300">
+              <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-200 mb-1">
+                <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>Available Subscription Upgrades</span>
               </div>
-              <p className="text-amber-800">
+              <p className="text-amber-800 dark:text-amber-300">
                 • <strong>Bronze (₹99)</strong>: 5 Video Downloads / day
               </p>
-              <p className="text-amber-800">
+              <p className="text-amber-800 dark:text-amber-300">
                 • <strong>Silver (₹199)</strong>: 15 Downloads / day + Full Ad-Free
               </p>
-              <p className="text-amber-800">
+              <p className="text-amber-800 dark:text-amber-300">
                 • <strong>Gold (₹499)</strong>: 50 Downloads / day + VIP Access
               </p>
             </div>
@@ -543,7 +547,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
             <div className="flex gap-3 w-full">
               <Button
                 variant="outline"
-                className="flex-1 rounded-xl font-semibold border-gray-300 text-xs"
+                className="flex-1 rounded-xl font-semibold border-gray-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs"
                 onClick={() => setShowLimitModal(false)}
               >
                 Close

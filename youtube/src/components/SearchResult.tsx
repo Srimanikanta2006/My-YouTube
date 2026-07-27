@@ -123,7 +123,7 @@ function SearchVideoRow({ video }: { video: any }) {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           />
-          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
+          <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white font-medium font-mono text-[10px] px-1.5 py-[1px] rounded tracking-tight backdrop-blur-xs shadow-xs select-none">
             {video.videoduration || "00:00"}
           </div>
         </div>

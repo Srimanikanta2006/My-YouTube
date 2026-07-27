@@ -140,8 +140,8 @@ const Sidebar = () => {
                   <div className="mt-4 p-3 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">Current Plan</span>
-                      <span className="text-xs font-black text-amber-900 dark:text-amber-300 bg-amber-200/60 dark:bg-amber-900/60 px-2 py-0.5 rounded-full">
-                        {user?.plan || "Free"} {user?.plan && user.plan !== "Free" ? "⭐" : ""}
+                      <span className="text-xs font-black text-amber-900 dark:text-amber-300 bg-amber-200/60 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-full">
+                        {user?.plan && user.plan !== "Free" ? `${user.plan} Member` : "Free Member"}
                       </span>
                     </div>
                     <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-tight">

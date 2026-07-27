@@ -7,6 +7,7 @@ import {
   Users, Video, VideoOff, Mic, MicOff, PhoneOff, 
   Send, ScreenShare, Copy, Check, MessageSquare, Disc, X, RefreshCw, Volume2, Menu, Sun, Moon
 } from "lucide-react";
+import VideoPlayer from "./Videoplayer";
 
 interface WatchPartyPanelProps {
   roomId: string;
@@ -1216,25 +1217,13 @@ export default function WatchPartyPanel({
           </div>
 
           {/* Main video player container - takes remaining complete viewport space */}
-          <div className="flex-1 min-h-0 w-full max-w-[1000px] mx-auto relative bg-black rounded-3xl overflow-hidden flex-shrink-1 border border-zinc-800/80">
-            <div className="w-full h-full relative flex items-center justify-center bg-black overflow-hidden">
+          <div className="flex-1 min-h-0 w-full max-w-[1000px] mx-auto relative bg-black rounded-3xl overflow-hidden flex-shrink-1 border border-zinc-800/80 flex items-center justify-center p-1">
+            <div className="w-full h-full relative flex items-center justify-center bg-black overflow-hidden max-w-full max-h-full">
               {selectedVideo ? (
-                <video
-                  ref={videoRef}
-                  src={
-                    (() => {
-                      const baseSrc = selectedVideo.filepath.startsWith("http")
-                        ? selectedVideo.filepath
-                        : `${getBackendUrl()}/${selectedVideo.filepath.replace(/\\/g, "/").replace(/^\//, "")}`;
-                      return typeof window !== "undefined" && window.location.protocol === "https:"
-                        ? baseSrc.replace(/^http:/, "https:")
-                        : baseSrc;
-                    })()
-                  }
-                  crossOrigin="anonymous"
-                  className="w-full h-full object-contain max-h-full"
-                  controls={isHost}
-                  preload="metadata"
+                <VideoPlayer
+                  video={selectedVideo}
+                  externalVideoRef={videoRef}
+                  isHost={isHost}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-gray-400 space-y-2">

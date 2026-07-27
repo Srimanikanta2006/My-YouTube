@@ -18,7 +18,7 @@ const ChannelDetailPage = () => {
 
   const [channel, setChannel] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState("videos");
+  const [activeTab, setActiveTab] = useState("home");
   const [loading, setLoading] = useState(true);
 
   // Video uploader modal trigger

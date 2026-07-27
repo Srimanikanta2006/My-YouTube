@@ -168,7 +168,7 @@ export const deleteDownloadRecord = async (req, res) => {
   }
 };
 
-// 4. Update User Plan (Free vs Premium)
+// 4. Update User Plan (Free vs Paid Tiers)
 export const updateUserPlan = async (req, res) => {
   const { userId, plan } = req.body;
 
@@ -176,14 +176,21 @@ export const updateUserPlan = async (req, res) => {
     return res.status(400).json({ message: "User ID and Plan are required." });
   }
 
-  if (!["Free", "Premium"].includes(plan)) {
-    return res.status(400).json({ message: "Plan must be either 'Free' or 'Premium'." });
+  const validPlans = ["Free", "Bronze", "Silver", "Gold", "Premium"];
+  if (!validPlans.includes(plan)) {
+    return res.status(400).json({ message: "Invalid plan type." });
   }
 
   try {
+    const updateFields = { plan };
+    if (plan === "Free") {
+      updateFields.subscriptionStartDate = null;
+      updateFields.subscriptionExpiresAt = null;
+    }
+
     const updatedUser = await user.findByIdAndUpdate(
       userId,
-      { plan },
+      updateFields,
       { returnDocument: "after" }
     );
     if (!updatedUser) {
