@@ -127,7 +127,9 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
     if (rawUser && rawPass) {
       const cleanPass = rawPass.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
         auth: {
           user: rawUser.trim(),
           pass: cleanPass,

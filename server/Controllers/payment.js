@@ -16,12 +16,18 @@ const sendSubscriptionEmail = async (invoice) => {
   try {
     let transporter;
 
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
+    const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
+
+    if (rawUser && rawPass) {
+      const cleanPass = rawPass.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
+          user: rawUser.trim(),
+          pass: cleanPass,
         },
       });
     } else {
