@@ -33,6 +33,7 @@ export const getallLikedVideo = async (req, res) => {
         path: "videoid",
         model: "videofiles",
       })
+      .sort({ createdAt: -1, _id: -1 })
       .exec();
     return res.status(200).json(likevideo);
   } catch (error) {

@@ -39,9 +39,22 @@ export const getallhistoryVideo = async (req, res) => {
         path: "videoid",
         model: "videofiles",
       })
-      .sort({ updatedAt: -1, createdAt: -1 })
+      .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
       .exec();
-    return res.status(200).json(historyvideo);
+
+    // Deduplicate history records so each video appears EXACTLY ONCE at its latest watched timestamp
+    const uniqueHistoryMap = new Map();
+    for (const item of historyvideo) {
+      if (item && item.videoid && item.videoid._id) {
+        const vidIdStr = item.videoid._id.toString();
+        if (!uniqueHistoryMap.has(vidIdStr)) {
+          uniqueHistoryMap.set(vidIdStr, item);
+        }
+      }
+    }
+    const deduplicatedHistory = Array.from(uniqueHistoryMap.values());
+
+    return res.status(200).json(deduplicatedHistory);
   } catch (error) {
     console.error(" error:", error);
     return res.status(500).json({ message: "Something went wrong" });

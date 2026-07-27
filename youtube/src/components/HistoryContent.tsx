@@ -38,7 +38,17 @@ export default function HistoryContent() {
     try {
       const historyData = await axiosInstance.get(`/history/${user?._id}`);
       const validItems = (historyData.data || []).filter((item: any) => item && item.videoid);
-      setHistory(validItems);
+
+      // Deduplicate items by videoid so each video appears EXACTLY ONCE
+      const seen = new Set();
+      const uniqueItems = validItems.filter((item: any) => {
+        const vidId = item.videoid?._id || item.videoid;
+        if (!vidId || seen.has(vidId.toString())) return false;
+        seen.add(vidId.toString());
+        return true;
+      });
+
+      setHistory(uniqueItems);
     } catch (error) {
       console.error("Error loading history:", error);
     } finally {

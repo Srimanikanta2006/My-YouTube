@@ -85,11 +85,15 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     fetchVideoUserStates();
   }, [user, video]);
 
+  const hasRecordedHistoryRef = React.useRef(false);
+
   useEffect(() => {
-    if (!video?._id) return;
+    if (!video?._id || hasRecordedHistoryRef.current) return;
+    hasRecordedHistoryRef.current = true;
+
     const handleviews = async () => {
       try {
-        if (user) {
+        if (user?._id) {
           await axiosInstance.post(`/history/${video._id}`, {
             userId: user._id,
           });
