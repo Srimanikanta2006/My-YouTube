@@ -8,9 +8,13 @@ export const handlehistory = async (req, res) => {
     // Delete any existing watch history entries for this video by this user to prevent stacking duplicates
     await history.deleteMany({ viewer: userId, videoid: videoId });
 
-    await history.create({ viewer: userId, videoid: videoId });
+    const newHistory = await history.create({
+      viewer: userId,
+      videoid: videoId,
+      likedon: new Date(),
+    });
     await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
-    return res.status(200).json({ history: true });
+    return res.status(200).json({ history: newHistory });
   } catch (error) {
     console.error(" error:", error);
     return res.status(500).json({ message: "Something went wrong" });
@@ -35,6 +39,7 @@ export const getallhistoryVideo = async (req, res) => {
         path: "videoid",
         model: "videofiles",
       })
+      .sort({ updatedAt: -1, createdAt: -1 })
       .exec();
     return res.status(200).json(historyvideo);
   } catch (error) {

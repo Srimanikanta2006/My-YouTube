@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { MoreVertical, X, Clock } from "lucide-react";
 import { getBackendUrl } from "../lib/urlHelper";
 import {
@@ -127,6 +127,12 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
     }
   };
 
+  const rawDate = item.updatedAt || item.createdAt || item.likedon;
+  const watchDate = rawDate ? new Date(rawDate) : new Date();
+  const isValidDate = !isNaN(watchDate.getTime());
+  const formattedWatchTime = isValidDate ? format(watchDate, "MMM d, yyyy • h:mm a") : "";
+  const relativeWatchTime = isValidDate ? formatDistanceToNow(watchDate) : "";
+
   return (
     <div className="flex gap-4 group p-2 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
       <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
@@ -160,8 +166,8 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
           {item.videoid.views?.toLocaleString() || 0} views •{" "}
           {item.videoid.createdAt ? formatDistanceToNow(new Date(item.videoid.createdAt)) : "some time"} ago
         </p>
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 font-mono">
-          Watched {formatDistanceToNow(new Date(item.createdAt))} ago
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 font-mono font-medium flex items-center gap-1">
+          <Clock className="w-3 h-3 inline" /> Watched {relativeWatchTime} ago {formattedWatchTime ? `(${formattedWatchTime})` : ""}
         </p>
       </div>
 
