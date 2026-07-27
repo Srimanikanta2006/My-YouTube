@@ -331,12 +331,16 @@ export const login = async (req, res) => {
             },
           });
 
-          await sendSecurityOtpEmail(
-            existingUser.email,
-            existingUser.name,
-            otp,
-            currentLocation
-          );
+          try {
+            await sendSecurityOtpEmail(
+              existingUser.email,
+              existingUser.name,
+              otp,
+              currentLocation
+            );
+          } catch (emailErr) {
+            console.error("⚠️ Security OTP email dispatch error (non-fatal):", emailErr);
+          }
         }
 
         return res.status(200).json({
@@ -452,12 +456,16 @@ export const resendOtp = async (req, res) => {
     userDetail.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await userDetail.save();
 
-    await sendSecurityOtpEmail(
-      userDetail.email,
-      userDetail.name,
-      otp,
-      userDetail.pendingLoginLocation || userDetail.lastLocation,
-    );
+    try {
+      await sendSecurityOtpEmail(
+        userDetail.email,
+        userDetail.name,
+        otp,
+        userDetail.pendingLoginLocation || userDetail.lastLocation,
+      );
+    } catch (emailErr) {
+      console.error("⚠️ Resend OTP email dispatch error (non-fatal):", emailErr);
+    }
 
     return res.status(200).json({
       success: true,

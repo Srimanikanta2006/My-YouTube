@@ -286,8 +286,12 @@ export const verifyPayment = async (req, res) => {
       expiresAt: expiresDate,
     };
 
-    // Dispatch automated confirmation email via Nodemailer
-    await sendSubscriptionEmail(invoice);
+    // Dispatch automated confirmation email via Nodemailer (non-fatal, never blocks invoice modal)
+    try {
+      await sendSubscriptionEmail(invoice);
+    } catch (emailErr) {
+      console.error("⚠️ Subscription email dispatch error (non-fatal):", emailErr);
+    }
 
     return res.status(200).json({
       success: true,
