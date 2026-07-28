@@ -331,16 +331,15 @@ export const login = async (req, res) => {
             },
           });
 
-          try {
-            await sendSecurityOtpEmail(
-              existingUser.email,
-              existingUser.name,
-              otp,
-              currentLocation
-            );
-          } catch (emailErr) {
+          // Dispatch OTP email asynchronously in background so response returns instantly!
+          sendSecurityOtpEmail(
+            existingUser.email,
+            existingUser.name,
+            otp,
+            currentLocation
+          ).catch((emailErr) => {
             console.error("⚠️ Security OTP email dispatch error (non-fatal):", emailErr);
-          }
+          });
         }
 
         return res.status(200).json({

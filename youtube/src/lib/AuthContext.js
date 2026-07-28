@@ -147,7 +147,7 @@ export const UserProvider = ({ children }) => {
   const fetchClientLocation = async () => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const timeoutId = setTimeout(() => controller.abort(), 600);
       const res = await fetch("https://ipwho.is/", { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {

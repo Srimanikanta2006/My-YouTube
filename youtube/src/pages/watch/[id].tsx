@@ -74,10 +74,10 @@ export default function WatchPage() {
   const isPremiumLocked = video?.isPremium && (!user || user.plan === "Free");
 
   return (
-    <div className="max-w-[1750px] mx-auto p-3 sm:p-4 lg:p-5 pt-2 sm:pt-3 lg:pt-3">
-      <div className="flex flex-col lg:flex-row gap-5">
+    <div className="max-w-[1750px] mx-auto p-0 sm:p-4 lg:p-5 pt-0 sm:pt-3 lg:pt-3">
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-5">
         {/* Left main content: Video Player, Info, Comments */}
-        <div className="flex-1 lg:max-w-[67%] xl:max-w-[69%] space-y-5">
+        <div className="flex-1 lg:max-w-[67%] xl:max-w-[69%] space-y-4 sm:space-y-5">
           {isPremiumLocked ? (
             <div className="aspect-video w-full bg-gradient-to-br from-zinc-900 via-gray-900 to-black rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white relative border border-zinc-800 shadow-2xl overflow-hidden">
               <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mb-4 animate-bounce">

@@ -350,7 +350,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   };
 
   return (
-    <div className="space-y-4 text-zinc-900 dark:text-zinc-100">
+    <div className="space-y-3 sm:space-y-4 px-3 sm:px-0 text-zinc-900 dark:text-zinc-100">
       <h1 className="text-xl font-bold">{video.videotitle}</h1>
 
       <div className="flex flex-col gap-3.5 xl:flex-row xl:items-center xl:justify-between border-b border-gray-200 dark:border-zinc-800 pb-4">

@@ -207,6 +207,22 @@ export default function VideoPlayer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isPlaying, isMuted, volume, duration]);
 
+  // Native Volume Sync with Device / Hardware volume controls
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleNativeVolumeSync = () => {
+      setVolume(video.volume);
+      setIsMuted(video.muted || video.volume === 0);
+    };
+
+    video.addEventListener("volumechange", handleNativeVolumeSync);
+    return () => {
+      video.removeEventListener("volumechange", handleNativeVolumeSync);
+    };
+  }, []);
+
   // Play / Pause Toggle
   const togglePlay = () => {
     if (!videoRef.current) return;
