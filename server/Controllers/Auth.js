@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import users from "../Modals/auth.js";
 import videofiles from "../Modals/video.js";
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import axios from "axios";
 
@@ -117,51 +116,33 @@ const getIstTheme = () => {
   }
 };
 
-// Helper to send security OTP email
+// Helper to send security OTP email via Brevo REST API
 const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
-  // STEP 4 — Entering email function
-  console.log("========================");
-  console.log("Entered sendSecurityOtpEmail()");
-  console.log("========================");
+  const brevoApiKey = process.env.BREVO_API_KEY || process.env["BREVO_API_KEY"];
+  const senderEmail =
+    process.env.SENDER_EMAIL ||
+    process.env.EMAIL_USER ||
+    "security@myyoutube.com";
+
+  if (!brevoApiKey) {
+    console.warn(
+      "⚠️ BREVO_API_KEY missing in environment variables. Skipping live email dispatch.",
+    );
+    console.log(`🔑 [DEV MODE] Security OTP Code for ${userEmail}: ${otp}`);
+    return;
+  }
+
+  const locationText = locationInfo
+    ? `${locationInfo.city || "Unknown City"}, ${locationInfo.state || "Unknown State"} (${locationInfo.device || "Unknown Device"})`
+    : "New Device / Location";
 
   try {
-    const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
-    const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
-    const cleanPass = rawPass ? rawPass.trim().replace(/\s+/g, "") : "";
-
-    // STEP 5 — Print environment variables
-    console.log("EMAIL_USER =", rawUser);
-    console.log("EMAIL_PASS exists =", !!rawPass);
-    console.log("Password Length =", cleanPass.length);
-
-    console.log("Creating transporter...");
-
-    // Transporter configuration with explicit 10s connection timeouts
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: rawUser ? rawUser.trim() : "",
-        pass: cleanPass,
-      },
-      family: 4,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    });
-
-    const locationText = locationInfo
-      ? `${locationInfo.city || "Unknown City"}, ${locationInfo.state || "Unknown State"} (${locationInfo.device || "Unknown Device"})`
-      : "New Device / Location";
-
-    const mailOptions = {
-      from: `"My YouTube Security" <${rawUser ? rawUser.trim() : "security@myyoutube.com"}>`,
-      to: userEmail,
-      subject: `🔒 Security Check: Verification Code for New Login`,
-      text: `Hi ${userName || "User"},\n\nWe detected a login attempt from a new city, state, or device:\nLocation & Device: ${locationText}\n\nYour 6-digit Security Verification Code (OTP) is:\n👉 ${otp} 👈\n\nThis code is valid for 10 minutes. If you did not initiate this login, please protect your account.\n\n— My YouTube Security Team`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; rounded: 16px;">
+    const payload = {
+      sender: { name: "My YouTube Security", email: senderEmail },
+      to: [{ email: userEmail, name: userName || "User" }],
+      subject: "🔒 Security Check: Verification Code for New Login",
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 16px;">
           <h2 style="color: #111827; margin-bottom: 8px;">🔒 Security Verification Required</h2>
           <p style="color: #4b5563; font-size: 14px;">Hi <strong>${userName || "User"}</strong>,</p>
           <p style="color: #4b5563; font-size: 14px;">We detected a login from a new city, state, or device:</p>
@@ -177,114 +158,81 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
       `,
     };
 
-    // STEP 7 — Before sendMail()
-    console.log("About to send email...");
+    const res = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      {
+        headers: {
+          "api-key": brevoApiKey,
+          "Content-Type": "application/json",
+          accept: "application/json",
+        },
+        timeout: 5000,
+      },
+    );
 
-    // STEP 8 — After sendMail()
-    const info = await transporter.sendMail(mailOptions);
-    console.log("EMAIL SENT");
-    console.log(info);
+    console.log(
+      `🔒 Brevo Security OTP email sent to ${userEmail}! MessageId: ${res.data?.messageId}`,
+    );
   } catch (err) {
-    // STEP 9 — Improve catch block
-    console.error("========================");
-    console.error("EMAIL ERROR");
-    console.error(err);
-    console.error(err.code);
-    console.error(err.command);
-    console.error(err.response);
-    console.error("========================");
-    throw err;
+    console.error(
+      "❌ Brevo Email Dispatch Error:",
+      err.response?.data || err.message,
+    );
   }
 };
 
-// STEP 14 — Diagnostic test endpoint with transporter.verify()
+// Diagnostic test endpoint for Brevo email dispatch
 export const testEmailDispatcher = async (req, res) => {
-  const targetEmail =
-    req.query.email || process.env.EMAIL_USER || "test@gmail.com";
+  const targetEmail = req.query.email || "test@gmail.com";
+  const brevoApiKey = process.env.BREVO_API_KEY || process.env["BREVO_API_KEY"];
+  const senderEmail =
+    process.env.SENDER_EMAIL ||
+    process.env.EMAIL_USER ||
+    "security@myyoutube.com";
+
+  if (!brevoApiKey) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing BREVO_API_KEY in server environment variables.",
+    });
+  }
+
   try {
-    const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
-    const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
-    const cleanPass = rawPass ? rawPass.trim().replace(/\s+/g, "") : "";
-
-    const debugInfo = {
-      rawUserConfigured: !!rawUser,
-      userValue: rawUser ? rawUser.trim() : "NOT SET",
-      rawPassConfigured: !!rawPass,
-      passLength: cleanPass.length,
-    };
-
-    console.log("🔍 Email Dispatcher Debug:", debugInfo);
-
-    if (!rawUser || !rawPass) {
-      return res.status(400).json({
-        success: false,
-        error:
-          "Missing EMAIL_USER or EMAIL_PASS in server environment variables.",
-        debugInfo,
-      });
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: rawUser.trim(),
-        pass: cleanPass,
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { name: "My YouTube Security Test", email: senderEmail },
+        to: [{ email: targetEmail }],
+        subject: "🧪 Brevo Security OTP Live Test Dispatch",
+        textContent:
+          "This is a live test email from your deployed My YouTube server via Brevo API!",
       },
-      family: 4,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    });
-
-    console.log("Verifying test SMTP connection...");
-    await transporter.verify();
-    console.log("SMTP VERIFIED in testEmailDispatcher");
-
-    const info = await transporter.sendMail({
-      from: `"My YouTube Security Test" <${rawUser.trim()}>`,
-      to: targetEmail,
-      subject: "🧪 Security OTP Live Test Dispatch",
-      text: "This is a live test email from your deployed My YouTube server!",
-    });
-
-    console.log("✅ Live Test Email Dispatched Successfully:", info.messageId);
+      {
+        headers: {
+          "api-key": brevoApiKey,
+          "Content-Type": "application/json",
+          accept: "application/json",
+        },
+        timeout: 5000,
+      },
+    );
 
     return res.status(200).json({
       success: true,
-      message: `Test email sent successfully to ${targetEmail}!`,
-      messageId: info.messageId,
-      debugInfo,
+      message: `Test email sent successfully via Brevo to ${targetEmail}!`,
+      messageId: response.data?.messageId,
     });
   } catch (err) {
-    console.error("========================");
-    console.error("TEST EMAIL ERROR");
-    console.error(err);
-    console.error(err.code);
-    console.error(err.command);
-    console.error(err.response);
-    console.error("========================");
     return res.status(500).json({
       success: false,
-      errorName: err.name,
-      errorCode: err.code,
-      command: err.command,
-      errorMessage: err.message,
-      response: err.response,
+      error: err.response?.data || err.message,
     });
   }
 };
 
 export const login = async (req, res) => {
   const { email, name, image, deviceId } = req.body;
-
-  // STEP 1 — Log when login() is entered
-  console.log("========================");
-  console.log("LOGIN API HIT");
-  console.log("Email:", email);
-  console.log("========================");
-
   const rawUserAgent = req.headers["user-agent"] || "Standard Web Browser";
   const device = parseUserAgentDetailed(rawUserAgent);
 
@@ -358,11 +306,7 @@ export const login = async (req, res) => {
 
         let otp = existingUser.loginOtp;
         if (!isRecentOtp) {
-          // STEP 2 & 10 — Log whether OTP is actually generated and print it
           otp = generateSecureOtp();
-          console.log("Generated OTP:", otp);
-          console.log("Saving OTP to MongoDB...");
-
           await users.findByIdAndUpdate(existingUser._id, {
             $set: {
               ...updateFields,
@@ -372,16 +316,13 @@ export const login = async (req, res) => {
             },
           });
 
-          // STEP 3 & 10 — Await sendSecurityOtpEmail directly for step-by-step tracing (no catch swallowing)
-          await sendSecurityOtpEmail(
+          // Dispatch OTP email asynchronously via Brevo REST API
+          sendSecurityOtpEmail(
             existingUser.email,
             existingUser.name,
             otp,
             currentLocation,
-          );
-
-          console.log("sendSecurityOtpEmail() finished");
-          console.log("OTP =", otp);
+          ).catch((err) => console.error("Brevo Email Error:", err));
         }
 
         return res.status(200).json({

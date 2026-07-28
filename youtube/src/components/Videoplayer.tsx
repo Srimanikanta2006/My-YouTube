@@ -382,7 +382,7 @@ export default function VideoPlayer({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
       onTouchEnd={handleTouchEnd}
-      className="relative aspect-video w-full max-w-full max-h-full bg-black rounded-2xl overflow-hidden group select-none shadow-2xl border border-zinc-900 mx-auto flex items-center justify-center"
+      className="relative aspect-video w-full min-h-[210px] sm:min-h-[300px] max-w-full max-h-full bg-black rounded-none sm:rounded-2xl overflow-hidden group select-none shadow-2xl border-0 sm:border border-zinc-900 mx-auto flex items-center justify-center"
     >
       {/* Video Element */}
       <video

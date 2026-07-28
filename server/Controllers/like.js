@@ -9,17 +9,30 @@ export const handlelike = async (req, res) => {
       viewer: userId,
       videoid: videoId,
     });
+    let updatedVideo;
     if (exisitinglike) {
       await like.findByIdAndDelete(exisitinglike._id);
-      await video.findByIdAndUpdate(videoId, { $inc: { Like: -1 } });
-      return res.status(200).json({ liked: false });
+      const v = await video.findById(videoId);
+      const newLike = Math.max(0, (v?.Like || 1) - 1);
+      updatedVideo = await video.findByIdAndUpdate(
+        videoId,
+        { $set: { Like: newLike } },
+        { returnDocument: "after" }
+      );
+      return res.status(200).json({ liked: false, likes: updatedVideo ? updatedVideo.Like : 0 });
     } else {
       await like.create({ viewer: userId, videoid: videoId });
-      await video.findByIdAndUpdate(videoId, { $inc: { Like: 1 } });
-      return res.status(200).json({ liked: true });
+      const v = await video.findById(videoId);
+      const newLike = (v?.Like || 0) + 1;
+      updatedVideo = await video.findByIdAndUpdate(
+        videoId,
+        { $set: { Like: newLike } },
+        { returnDocument: "after" }
+      );
+      return res.status(200).json({ liked: true, likes: updatedVideo ? updatedVideo.Like : 0 });
     }
   } catch (error) {
-    console.error(" error:", error);
+    console.error("Like error:", error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -46,10 +59,17 @@ export const handledislike = async (req, res) => {
   const { videoId } = req.params;
   const { increment } = req.body; // true to increment, false to decrement
   try {
-    const val = increment ? 1 : -1;
+    const v = await video.findById(videoId);
+    let newDislike = v?.Dislike || 0;
+    if (increment) {
+      newDislike = newDislike + 1;
+    } else {
+      newDislike = Math.max(0, newDislike - 1);
+    }
+
     const updated = await video.findByIdAndUpdate(
       videoId,
-      { $inc: { Dislike: val } },
+      { $set: { Dislike: newDislike } },
       { returnDocument: "after" }
     );
     return res.status(200).json({ dislikeCount: updated ? updated.Dislike : 0 });

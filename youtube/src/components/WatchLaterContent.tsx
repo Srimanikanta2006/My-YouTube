@@ -83,19 +83,21 @@ export default function WatchLaterContent() {
   }
 
   return (
-    <div className="space-y-6 text-zinc-900 dark:text-zinc-100 max-w-5xl">
+    <div className="pt-3 sm:pt-0 space-y-6 text-zinc-900 dark:text-zinc-100 max-w-5xl px-3 sm:px-0">
       <div className="flex justify-between items-center border-b border-gray-200 dark:border-zinc-800 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Watch Later</h1>
+        <div className="pl-1 sm:pl-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white">Watch Later</h1>
           <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-0.5">{watchLater.length} videos</p>
         </div>
         {watchLater.length > 0 && (
-          <Link href={`/watch/${watchLater[0].videoid._id}`}>
-            <Button className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-5 flex items-center gap-2 cursor-pointer">
-              <Play className="w-4 h-4 fill-white" />
-              <span>Play All</span>
-            </Button>
-          </Link>
+          <div className="pr-1 sm:pr-0">
+            <Link href={`/watch/${watchLater[0].videoid._id}`}>
+              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-full px-4 sm:px-5 flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
+                <span>Play All</span>
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 

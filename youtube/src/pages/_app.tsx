@@ -27,6 +27,8 @@ function Layout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isWatchPage = router.pathname.startsWith("/watch");
+
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-14 w-full overflow-x-hidden transition-colors duration-200">
       <Head>
@@ -35,7 +37,9 @@ function Layout({ children }: { children: React.ReactNode }) {
       <Header />
       <div className="flex w-full overflow-x-hidden">
         <Sidebar />
-        <main className={`flex-1 min-w-0 p-4 transition-all duration-200 ${
+        <main className={`flex-1 min-w-0 transition-all duration-200 ${
+          isWatchPage ? "p-0 sm:p-4" : "p-3 sm:p-4"
+        } ${
           isSidebarCollapsed ? "md:pl-[80px]" : "md:pl-[272px]"
         }`}>
           {children}

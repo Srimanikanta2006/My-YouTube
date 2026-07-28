@@ -135,15 +135,23 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       const res = await axiosInstance.post(`/like/${video._id}`, {
         userId: user?._id,
       });
-      
+
       const currentlyLiked = res.data.liked;
       setIsLiked(currentlyLiked);
-      
+
       if (currentlyLiked) {
-        setlikes((prev: any) => prev + 1);
+        if (typeof res.data.likes === "number") {
+          setlikes(res.data.likes);
+        } else {
+          setlikes((prev: any) => Math.max(0, (prev || 0) + 1));
+        }
+
         if (isDisliked) {
-          setDislikes((prev: any) => Math.max(0, prev - 1));
           setIsDisliked(false);
+          setDislikes((prev: any) => Math.max(0, (prev || 0) - 1));
+          await axiosInstance.post(`/like/dislike/${video._id}`, {
+            increment: false,
+          });
           if (typeof window !== "undefined") {
             let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
             dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
@@ -151,10 +159,14 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           }
         }
       } else {
-        setlikes((prev: any) => Math.max(0, prev - 1));
+        if (typeof res.data.likes === "number") {
+          setlikes(res.data.likes);
+        } else {
+          setlikes((prev: any) => Math.max(0, (prev || 0) - 1));
+        }
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error toggling like:", error);
     }
   };
 
@@ -179,14 +191,19 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     try {
       const currentlyDisliked = !isDisliked;
       setIsDisliked(currentlyDisliked);
-      
+
       // Update database dislike count
-      await axiosInstance.post(`/like/dislike/${video._id}`, {
-        increment: currentlyDisliked
+      const res = await axiosInstance.post(`/like/dislike/${video._id}`, {
+        increment: currentlyDisliked,
       });
 
+      if (typeof res.data?.dislikeCount === "number") {
+        setDislikes(res.data.dislikeCount);
+      } else {
+        setDislikes((prev: any) => (currentlyDisliked ? (prev || 0) + 1 : Math.max(0, (prev || 0) - 1)));
+      }
+
       if (currentlyDisliked) {
-        setDislikes((prev: any) => prev + 1);
         if (typeof window !== "undefined") {
           const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
           if (!dislikedVids.includes(video._id)) {
@@ -194,16 +211,15 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
             localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
           }
         }
-        
+
         if (isLiked) {
+          setIsLiked(false);
+          setlikes((prev: any) => Math.max(0, (prev || 0) - 1));
           await axiosInstance.post(`/like/${video._id}`, {
             userId: user?._id,
           });
-          setIsLiked(false);
-          setlikes((prev: any) => Math.max(0, prev - 1));
         }
       } else {
-        setDislikes((prev: any) => Math.max(0, prev - 1));
         if (typeof window !== "undefined") {
           let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
           dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
@@ -211,7 +227,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
         }
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error toggling dislike:", error);
     }
   };
 

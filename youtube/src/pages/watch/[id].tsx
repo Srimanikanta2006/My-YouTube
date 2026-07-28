@@ -136,9 +136,9 @@ export default function WatchPage() {
           </div>
         </div>
 
-        {/* Right sidebar: Related Videos (Wider layout like authentic YouTube) */}
-        <div className="w-full lg:w-[33%] xl:w-[31%] space-y-4">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Up Next</h2>
+        {/* Right sidebar: Related Videos (Edge-to-edge mobile alignment) */}
+        <div className="w-full lg:w-[33%] xl:w-[31%] space-y-3 px-3 sm:px-0">
+          <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 px-0.5">Up Next</h2>
           {relatedVideos.length === 0 ? (
             <p className="text-sm text-gray-500 italic">No other videos available.</p>
           ) : (

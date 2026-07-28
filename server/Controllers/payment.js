@@ -1,6 +1,6 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import axios from "axios";
 import user from "../Modals/auth.js";
 import payment from "../Modals/payment.js";
 
@@ -11,39 +11,17 @@ const PLAN_PRICES = {
   Gold: 499, // ₹499
 };
 
-// Helper function to send subscription confirmation email via Nodemailer
+// Helper function to send subscription confirmation email via Brevo REST API
 const sendSubscriptionEmail = async (invoice) => {
+  const brevoApiKey = process.env.BREVO_API_KEY || process.env["BREVO_API_KEY"];
+  const senderEmail = process.env.SENDER_EMAIL || process.env.EMAIL_USER || "subscriptions@myyoutube.com";
+
+  if (!brevoApiKey) {
+    console.warn("⚠️ BREVO_API_KEY missing in environment variables. Skipping subscription confirmation email.");
+    return;
+  }
+
   try {
-    let transporter;
-
-    const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
-    const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
-
-    if (rawUser && rawPass) {
-      const cleanPass = rawPass.trim().replace(/\s+/g, "");
-      transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: {
-          user: rawUser.trim(),
-          pass: cleanPass,
-        },
-      });
-    } else {
-      // Create an automatic Ethereal test account to generate real viewable email links
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    }
-
     const formattedDate = new Date(invoice.paidAt).toLocaleDateString("en-GB", {
       day: "numeric",
       month: "long",
@@ -53,34 +31,11 @@ const sendSubscriptionEmail = async (invoice) => {
     const downloadsCount =
       invoice.plan === "Gold" ? "50" : invoice.plan === "Silver" ? "15" : "5";
 
-    const mailOptions = {
-      from: `"My YouTube Subscriptions" <${process.env.EMAIL_USER || "subscriptions@myyoutube.com"}>`,
-      to: invoice.userEmail,
+    const payload = {
+      sender: { name: "My YouTube Subscriptions", email: senderEmail },
+      to: [{ email: invoice.userEmail, name: invoice.userName }],
       subject: `🎉 Subscription Confirmed - ${invoice.plan} Plan`,
-      text: `🎉 Subscription Confirmed
-
-Hi ${invoice.userName},
-
-Your ${invoice.plan} subscription is now active.
-
------------------------------
-Plan          : ${invoice.plan}
-Amount Paid   : ₹${invoice.totalAmount}
-Payment ID    : ${invoice.transactionId}
-Order ID      : ${invoice.orderId}
-Date          : ${formattedDate}
------------------------------
-
-You can now enjoy:
-
-✅ Premium Videos
-✅ ${downloadsCount} Downloads/Day
-${["Silver", "Gold"].includes(invoice.plan) ? "✅ Ad-Free Viewing" : "✅ Priority Video Streaming"}
-
-Thank you for supporting our platform!
-
-— Video Platform Team`,
-      html: `
+      htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 16px; padding: 28px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
           <div style="text-align: center; border-bottom: 2px solid #f3f4f6; padding-bottom: 20px;">
             <h1 style="color: #d97706; margin: 0; font-size: 24px;">🎉 Subscription Confirmed</h1>
@@ -128,14 +83,18 @@ Date          : ${formattedDate}
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✉️ Subscription confirmation email sent to ${invoice.userEmail}`);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-      console.log(`🔗 Live Email Preview URL: ${previewUrl}`);
-    }
+    const res = await axios.post("https://api.brevo.com/v3/smtp/email", payload, {
+      headers: {
+        "api-key": brevoApiKey,
+        "Content-Type": "application/json",
+        "accept": "application/json",
+      },
+      timeout: 5000,
+    });
+
+    console.log(`✉️ Brevo subscription confirmation email sent to ${invoice.userEmail}! MessageId: ${res.data?.messageId}`);
   } catch (emailErr) {
-    console.error("Nodemailer dispatch error:", emailErr);
+    console.error("Brevo Subscription Email Error:", emailErr.response?.data || emailErr.message);
   }
 };
 

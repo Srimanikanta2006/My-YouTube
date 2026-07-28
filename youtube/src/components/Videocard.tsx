@@ -8,7 +8,7 @@ import axiosInstance from "../lib/axiosinstance";
 import { Crown, MoreVertical } from "lucide-react";
 import { useRouter } from "next/router";
 
-export default function VideoCard({ video }: any) {
+export default function VideoCard({ video, horizontal }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { user } = useUser();
   const router = useRouter();
@@ -54,15 +54,15 @@ export default function VideoCard({ video }: any) {
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsEditing(true);
     setIsMenuOpen(false);
+    setIsEditing(true);
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDeleting(true);
     setIsMenuOpen(false);
+    setIsDeleting(true);
   };
 
   const handleSaveTitle = async (e: React.MouseEvent) => {
@@ -101,6 +101,60 @@ export default function VideoCard({ video }: any) {
       setLoadingAction(false);
     }
   };
+
+  if (horizontal) {
+    return (
+      <div
+        className="group relative flex gap-3.5 w-full rounded-2xl p-1 sm:p-1.5 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 transition-all duration-200"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <Link
+          href={`/watch/${video?._id}`}
+          className="relative w-36 xs:w-40 sm:w-44 aspect-video rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 shadow-xs border border-zinc-200/50 dark:border-zinc-800/80"
+        >
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="object-cover w-full h-full"
+          />
+          {video?.isPremium && (
+            <div className="absolute top-1.5 left-1.5 bg-amber-500 text-white font-black text-[9px] uppercase px-1.5 py-0.5 rounded shadow flex items-center gap-0.5">
+              <Crown className="w-2.5 h-2.5 text-white fill-white" />
+              <span>PREMIUM</span>
+            </div>
+          )}
+          <div className="absolute bottom-1 right-1 bg-black/75 text-white font-mono text-[10px] px-1 py-0.5 rounded">
+            {video?.videoduration || "00:00"}
+          </div>
+        </Link>
+
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <Link href={`/watch/${video?._id}`} className="block">
+            <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug tracking-tight hover:text-red-600 transition-colors">
+              {video?.videotitle}
+            </h4>
+          </Link>
+
+          <Link
+            href={`/channel/${video?.uploader}`}
+            className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-white transition-colors mt-1 block truncate"
+          >
+            {channelDisplayName}
+          </Link>
+
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-normal">
+            {video?.views?.toLocaleString() || 0} views •{" "}
+            {video?.createdAt ? formatDistanceToNow(new Date(video.createdAt)) : "recently"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isEditing) {
     return (
@@ -244,22 +298,22 @@ export default function VideoCard({ video }: any) {
         <div className="absolute right-2 bottom-3 z-20">
           <button
             onClick={handleMenuToggle}
-            className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-all opacity-100 md:opacity-0 group-hover:opacity-100 focus:opacity-100 text-zinc-600 dark:text-zinc-300 cursor-pointer"
+            className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-all opacity-100 text-zinc-600 dark:text-zinc-300 cursor-pointer"
             title="Video options"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
           {isMenuOpen && (
-            <div className="absolute right-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1.5 w-48 z-30 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute right-0 bottom-full mb-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1 w-36 sm:w-40 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <button
                 onClick={handleEditClick}
-                className="w-full text-left px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer transition-colors"
               >
                 <span>✏️</span> Edit Title
               </button>
               <button
                 onClick={handleDeleteClick}
-                className="w-full text-left px-3.5 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 cursor-pointer transition-colors"
               >
                 <span>🗑️</span> Delete permanently
               </button>

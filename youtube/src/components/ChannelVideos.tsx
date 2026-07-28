@@ -9,9 +9,9 @@ export default function ChannelVideos({ videos, title = "Videos" }: any) {
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="w-full">
+      <h2 className="text-lg font-bold mb-3 text-zinc-900 dark:text-zinc-100">{title}</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-4.5 w-full">
         {videos.map((video: any) => (
           <VideoCard key={video._id} video={video} />
         ))}

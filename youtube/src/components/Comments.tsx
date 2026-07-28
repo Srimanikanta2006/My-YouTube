@@ -236,7 +236,16 @@ const Comments = ({ videoId }: { videoId: string }) => {
       );
       const data = await res.json();
 
-      const translated = data?.responseData?.translatedText || comment.commentbody;
+      let translated = data?.responseData?.translatedText || comment.commentbody;
+      if (
+        !translated ||
+        translated.toUpperCase().includes("PLEASE SELECT TWO DISTINCT LANGUAGES") ||
+        data?.responseStatus === "403" ||
+        data?.responseStatus === 403
+      ) {
+        translated = comment.commentbody;
+      }
+
       const detectedLang = data?.responseData?.detectedLanguage || "auto";
 
       setTranslations((prev) => ({
@@ -325,10 +334,10 @@ const Comments = ({ videoId }: { videoId: string }) => {
   }
 
   return (
-    <div className="space-y-6 text-zinc-900 dark:text-zinc-100 max-w-4xl">
+    <div className="space-y-6 text-zinc-900 dark:text-zinc-100 max-w-4xl px-3 sm:px-0">
       {/* Header & Comment Count */}
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
-        <h2 className="text-xl font-bold flex items-center gap-2">
+        <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 pl-2 sm:pl-0">
           {comments.length} Comments
         </h2>
       </div>
