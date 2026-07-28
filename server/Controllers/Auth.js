@@ -136,7 +136,7 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
 
     console.log("Creating transporter...");
 
-    // Transporter configuration (Host smtp.gmail.com + port 587 + family 4)
+    // Transporter configuration with explicit 10s connection timeouts
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
@@ -146,6 +146,9 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
         pass: cleanPass,
       },
       family: 4,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
 
     const locationText = locationInfo
@@ -230,6 +233,9 @@ export const testEmailDispatcher = async (req, res) => {
         pass: cleanPass,
       },
       family: 4,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
 
     console.log("Verifying test SMTP connection...");
