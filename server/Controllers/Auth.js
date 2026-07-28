@@ -127,12 +127,18 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
     if (rawUser && rawPass) {
       const cleanPass = rawPass.trim().replace(/\s+/g, "");
       transporter = nodemailer.createTransport({
+        service: "gmail",
         host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        family: 4, // Force IPv4 family to resolve ENETUNREACH on Render cloud hosts
         auth: {
           user: rawUser.trim(),
           pass: cleanPass,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       });
     } else {
@@ -216,9 +222,17 @@ export const testEmailDispatcher = async (req, res) => {
     
     const transporter = nodemailer.createTransport({
       service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      family: 4, // Force IPv4 family to resolve ENETUNREACH on Render cloud hosts
       auth: {
         user: rawUser.trim(),
         pass: cleanPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
       },
     });
 
