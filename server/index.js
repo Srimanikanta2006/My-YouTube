@@ -31,6 +31,13 @@ app.get("/", (req, res) => {
   res.send("You tube backend is working");
 });
 app.use(bodyParser.json());
+
+// Express Middleware Logger (Step 11)
+app.use((req, res, next) => {
+  console.log(`📡 [EXPRESS] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use("/user", userroutes);
 app.use("/video", videoroutes);
 app.use("/like", likeroutes);

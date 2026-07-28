@@ -119,40 +119,43 @@ const getIstTheme = () => {
 
 // Helper to send security OTP email
 const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
+  // STEP 4 — Entering email function
+  console.log("========================");
+  console.log("Entered sendSecurityOtpEmail()");
+  console.log("========================");
+
   try {
     const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
     const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
+    const cleanPass = rawPass ? rawPass.trim().replace(/\s+/g, "") : "";
 
-    let transporter;
-    if (rawUser && rawPass) {
-      const cleanPass = rawPass.trim().replace(/\s+/g, "");
-      transporter = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        family: 4, // Force IPv4 family to resolve ENETUNREACH on Render cloud hosts
-        auth: {
-          user: rawUser.trim(),
-          pass: cleanPass,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    }
+    // STEP 5 — Print environment variables
+    console.log("EMAIL_USER =", rawUser);
+    console.log("EMAIL_PASS exists =", !!rawPass);
+    console.log("Password Length =", cleanPass.length);
+
+    console.log("Creating transporter...");
+    
+    // STEP 15 & 16 — Standardized Transporter with verify()
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      family: 4,
+      auth: {
+        user: rawUser ? rawUser.trim() : "",
+        pass: cleanPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    // STEP 6 — Verify SMTP before sending
+    await transporter.verify();
+    console.log("SMTP VERIFIED");
 
     const locationText = locationInfo
       ? `${locationInfo.city || "Unknown City"}, ${locationInfo.state || "Unknown State"} (${locationInfo.device || "Unknown Device"})`
@@ -180,32 +183,40 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
       `,
     };
 
+    // STEP 7 — Before sendMail()
+    console.log("About to send email...");
+
+    // STEP 8 — After sendMail()
     const info = await transporter.sendMail(mailOptions);
-    console.log(`🔒 Security OTP sent to: ${userEmail}`);
-    console.log(`🔑 [DEV MODE] 6-Digit OTP Code for ${userEmail}: ${otp}`);
-    if (!rawUser) {
-      console.log(
-        "🔗 Live Security Email Preview URL:",
-        nodemailer.getTestMessageUrl(info),
-      );
-    }
+    console.log("EMAIL SENT");
+    console.log(info);
+
   } catch (err) {
-    console.error("❌ Error sending OTP email:", err.message || err);
+    // STEP 9 — Improve catch block
+    console.error("========================");
+    console.error("EMAIL ERROR");
+    console.error(err);
+    console.error(err.code);
+    console.error(err.command);
+    console.error(err.response);
+    console.error("========================");
+    throw err;
   }
 };
 
-// Diagnostic test endpoint to test email dispatch live on Render
+// STEP 14 — Diagnostic test endpoint with transporter.verify()
 export const testEmailDispatcher = async (req, res) => {
   const targetEmail = req.query.email || process.env.EMAIL_USER || "test@gmail.com";
   try {
     const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
     const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
+    const cleanPass = rawPass ? rawPass.trim().replace(/\s+/g, "") : "";
 
     const debugInfo = {
       rawUserConfigured: !!rawUser,
       userValue: rawUser ? rawUser.trim() : "NOT SET",
       rawPassConfigured: !!rawPass,
-      passLength: rawPass ? rawPass.trim().replace(/\s+/g, "").length : 0,
+      passLength: cleanPass.length,
     };
 
     console.log("🔍 Email Dispatcher Debug:", debugInfo);
@@ -218,15 +229,13 @@ export const testEmailDispatcher = async (req, res) => {
       });
     }
 
-    const cleanPass = rawPass.trim().replace(/\s+/g, "");
-    
     const transporter = nodemailer.createTransport({
       service: "gmail",
       host: "smtp.gmail.com",
       port: 587,
       secure: false,
       requireTLS: true,
-      family: 4, // Force IPv4 family to resolve ENETUNREACH on Render cloud hosts
+      family: 4,
       auth: {
         user: rawUser.trim(),
         pass: cleanPass,
@@ -235,6 +244,10 @@ export const testEmailDispatcher = async (req, res) => {
         rejectUnauthorized: false,
       },
     });
+
+    console.log("Verifying test SMTP connection...");
+    await transporter.verify();
+    console.log("SMTP VERIFIED in testEmailDispatcher");
 
     const info = await transporter.sendMail({
       from: `"My YouTube Security Test" <${rawUser.trim()}>`,
@@ -252,7 +265,13 @@ export const testEmailDispatcher = async (req, res) => {
       debugInfo,
     });
   } catch (err) {
-    console.error("❌ Live Email Test Failed:", err);
+    console.error("========================");
+    console.error("TEST EMAIL ERROR");
+    console.error(err);
+    console.error(err.code);
+    console.error(err.command);
+    console.error(err.response);
+    console.error("========================");
     return res.status(500).json({
       success: false,
       errorName: err.name,
@@ -266,6 +285,13 @@ export const testEmailDispatcher = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, name, image, deviceId } = req.body;
+
+  // STEP 1 — Log when login() is entered
+  console.log("========================");
+  console.log("LOGIN API HIT");
+  console.log("Email:", email);
+  console.log("========================");
+
   const rawUserAgent = req.headers["user-agent"] || "Standard Web Browser";
   const device = parseUserAgentDetailed(rawUserAgent);
 
@@ -335,7 +361,11 @@ export const login = async (req, res) => {
 
         let otp = existingUser.loginOtp;
         if (!isRecentOtp) {
+          // STEP 2 & 10 — Log whether OTP is actually generated and print it
           otp = generateSecureOtp();
+          console.log("Generated OTP:", otp);
+          console.log("Saving OTP to MongoDB...");
+
           await users.findByIdAndUpdate(existingUser._id, {
             $set: {
               ...updateFields,
@@ -345,15 +375,16 @@ export const login = async (req, res) => {
             },
           });
 
-          // Dispatch OTP email asynchronously in background so response returns instantly!
-          sendSecurityOtpEmail(
+          // STEP 3 & 10 — Await sendSecurityOtpEmail directly for step-by-step tracing (no catch swallowing)
+          await sendSecurityOtpEmail(
             existingUser.email,
             existingUser.name,
             otp,
             currentLocation
-          ).catch((emailErr) => {
-            console.error("⚠️ Security OTP email dispatch error (non-fatal):", emailErr);
-          });
+          );
+
+          console.log("sendSecurityOtpEmail() finished");
+          console.log("OTP =", otp);
         }
 
         return res.status(200).json({
