@@ -135,8 +135,8 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
     console.log("Password Length =", cleanPass.length);
 
     console.log("Creating transporter...");
-    
-    // Transporter configuration (Simplified host + port 587 + family 4)
+
+    // Transporter configuration (Host smtp.gmail.com + port 587 + family 4)
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
@@ -147,10 +147,6 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
       },
       family: 4,
     });
-
-    // STEP 6 — Verify SMTP before sending
-    await transporter.verify();
-    console.log("SMTP VERIFIED");
 
     const locationText = locationInfo
       ? `${locationInfo.city || "Unknown City"}, ${locationInfo.state || "Unknown State"} (${locationInfo.device || "Unknown Device"})`
@@ -185,7 +181,6 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
     const info = await transporter.sendMail(mailOptions);
     console.log("EMAIL SENT");
     console.log(info);
-
   } catch (err) {
     // STEP 9 — Improve catch block
     console.error("========================");
@@ -201,7 +196,8 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
 
 // STEP 14 — Diagnostic test endpoint with transporter.verify()
 export const testEmailDispatcher = async (req, res) => {
-  const targetEmail = req.query.email || process.env.EMAIL_USER || "test@gmail.com";
+  const targetEmail =
+    req.query.email || process.env.EMAIL_USER || "test@gmail.com";
   try {
     const rawUser = process.env.EMAIL_USER || process.env["EMAIL USER"];
     const rawPass = process.env.EMAIL_PASS || process.env["EMAIL PASS"];
@@ -219,7 +215,8 @@ export const testEmailDispatcher = async (req, res) => {
     if (!rawUser || !rawPass) {
       return res.status(400).json({
         success: false,
-        error: "Missing EMAIL_USER or EMAIL_PASS in server environment variables.",
+        error:
+          "Missing EMAIL_USER or EMAIL_PASS in server environment variables.",
         debugInfo,
       });
     }
@@ -336,10 +333,13 @@ export const login = async (req, res) => {
         knownLocationsList.some(
           (loc) =>
             (deviceId && loc.deviceId === deviceId) ||
-            (loc.device?.toLowerCase() === currentLocation.device.toLowerCase() &&
-             loc.city?.toLowerCase() === currentLocation.city.toLowerCase()) ||
-            (loc.device?.toLowerCase() === currentLocation.device.toLowerCase() &&
-             loc.country?.toLowerCase() === currentLocation.country.toLowerCase())
+            (loc.device?.toLowerCase() ===
+              currentLocation.device.toLowerCase() &&
+              loc.city?.toLowerCase() === currentLocation.city.toLowerCase()) ||
+            (loc.device?.toLowerCase() ===
+              currentLocation.device.toLowerCase() &&
+              loc.country?.toLowerCase() ===
+                currentLocation.country.toLowerCase()),
         );
 
       if (!isKnownDevice) {
@@ -347,7 +347,8 @@ export const login = async (req, res) => {
         const isRecentOtp =
           existingUser.loginOtp &&
           existingUser.otpExpiresAt &&
-          new Date(existingUser.otpExpiresAt).getTime() - Date.now() > 9 * 60 * 1000;
+          new Date(existingUser.otpExpiresAt).getTime() - Date.now() >
+            9 * 60 * 1000;
 
         let otp = existingUser.loginOtp;
         if (!isRecentOtp) {
@@ -370,7 +371,7 @@ export const login = async (req, res) => {
             existingUser.email,
             existingUser.name,
             otp,
-            currentLocation
+            currentLocation,
           );
 
           console.log("sendSecurityOtpEmail() finished");
@@ -381,7 +382,8 @@ export const login = async (req, res) => {
           otpRequired: true,
           userId: existingUser._id,
           email: existingUser.email,
-          message: "Security Verification Required: New city, state, or device detected.",
+          message:
+            "Security Verification Required: New city, state, or device detected.",
           locationInfo: currentLocation,
         });
       }
@@ -395,7 +397,7 @@ export const login = async (req, res) => {
             lastLocation: currentLocation,
           },
         },
-        { returnDocument: "after" }
+        { returnDocument: "after" },
       );
 
       return res.status(200).json({ result: updatedUser });
@@ -419,7 +421,9 @@ export const verifyOtp = async (req, res) => {
   try {
     const userDetail = await users.findById(userId);
     if (!userDetail) {
-      return res.status(200).json({ success: false, message: "User not found" });
+      return res
+        .status(200)
+        .json({ success: false, message: "User not found" });
     }
 
     if (!userDetail.loginOtp || userDetail.loginOtp !== otp) {
@@ -435,7 +439,8 @@ export const verifyOtp = async (req, res) => {
     ) {
       return res.status(200).json({
         success: false,
-        message: "Verification OTP code has expired. Please request a new code.",
+        message:
+          "Verification OTP code has expired. Please request a new code.",
       });
     }
 
@@ -498,7 +503,10 @@ export const resendOtp = async (req, res) => {
         userDetail.pendingLoginLocation || userDetail.lastLocation,
       );
     } catch (emailErr) {
-      console.error("⚠️ Resend OTP email dispatch error (non-fatal):", emailErr);
+      console.error(
+        "⚠️ Resend OTP email dispatch error (non-fatal):",
+        emailErr,
+      );
     }
 
     return res.status(200).json({
