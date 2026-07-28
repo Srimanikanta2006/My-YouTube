@@ -136,21 +136,16 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
 
     console.log("Creating transporter...");
     
-    // STEP 15 & 16 — Standardized Transporter with verify()
+    // Transporter configuration (Simplified host + port 587 + family 4)
     const transporter = nodemailer.createTransport({
-      service: "gmail",
       host: "smtp.gmail.com",
       port: 587,
       secure: false,
-      requireTLS: true,
-      family: 4,
       auth: {
         user: rawUser ? rawUser.trim() : "",
         pass: cleanPass,
       },
-      tls: {
-        rejectUnauthorized: false,
-      },
+      family: 4,
     });
 
     // STEP 6 — Verify SMTP before sending
@@ -230,19 +225,14 @@ export const testEmailDispatcher = async (req, res) => {
     }
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
       host: "smtp.gmail.com",
       port: 587,
       secure: false,
-      requireTLS: true,
-      family: 4,
       auth: {
         user: rawUser.trim(),
         pass: cleanPass,
       },
-      tls: {
-        rejectUnauthorized: false,
-      },
+      family: 4,
     });
 
     console.log("Verifying test SMTP connection...");
