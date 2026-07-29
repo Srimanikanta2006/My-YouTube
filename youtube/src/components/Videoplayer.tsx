@@ -166,7 +166,7 @@ export default function VideoPlayer({
         case "k":
           e.preventDefault();
           e.stopPropagation();
-          togglePlay();
+          if (isHost) togglePlay();
           break;
         case "f":
           e.preventDefault();
@@ -182,13 +182,13 @@ export default function VideoPlayer({
         case "j":
           e.preventDefault();
           e.stopPropagation();
-          seekByAmount(-10);
+          if (isHost) seekByAmount(-10);
           break;
         case "arrowright":
         case "l":
           e.preventDefault();
           e.stopPropagation();
-          seekByAmount(10);
+          if (isHost) seekByAmount(10);
           break;
         case "arrowup":
           e.preventDefault();
@@ -205,7 +205,7 @@ export default function VideoPlayer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, isMuted, volume, duration]);
+  }, [isPlaying, isMuted, volume, duration, isHost]);
 
   // Native Volume Sync with Device / Hardware volume controls
   useEffect(() => {
@@ -225,6 +225,7 @@ export default function VideoPlayer({
 
   // Play / Pause Toggle
   const togglePlay = () => {
+    if (!isHost) return;
     if (!videoRef.current) return;
     if (isEnded) {
       setIsEnded(false);
@@ -251,6 +252,7 @@ export default function VideoPlayer({
 
   // Seek by Amount (+10s / -10s)
   const seekByAmount = (seconds: number) => {
+    if (!isHost) return;
     if (!videoRef.current) return;
     const targetDuration = duration || videoRef.current.duration || 100;
     const newTime = Math.min(Math.max(videoRef.current.currentTime + seconds, 0), targetDuration);
@@ -304,6 +306,7 @@ export default function VideoPlayer({
 
   // Scrubber Progress Bar Seek
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isHost) return;
     const targetTime = parseFloat(e.target.value);
     setCurrentTime(targetTime);
     if (videoRef.current) {
@@ -343,6 +346,7 @@ export default function VideoPlayer({
 
   // Double-tap Mobile Gestures (<50% rewind, >=50% skip)
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isHost) return;
     const now = Date.now();
     const touch = e.changedTouches[0];
     if (!containerRef.current || !touch) return;
@@ -388,7 +392,7 @@ export default function VideoPlayer({
       <video
         ref={videoRef}
         src={videoSrc}
-        onClick={togglePlay}
+        onClick={() => { if (isHost) togglePlay(); }}
         onTimeUpdate={updateProgress}
         onLoadedMetadata={() => videoRef.current && setDuration(videoRef.current.duration)}
         onSeeking={() => setIsBuffering(true)}
@@ -403,7 +407,7 @@ export default function VideoPlayer({
           setIsEnded(true);
           setShowControls(true);
         }}
-        className="w-full h-full object-contain cursor-pointer"
+        className={`w-full h-full object-contain ${isHost ? "cursor-pointer" : "cursor-default"}`}
         playsInline
       />
 
@@ -471,21 +475,23 @@ export default function VideoPlayer({
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => {
-                setIsEnded(false);
-                if (videoRef.current) {
-                  videoRef.current.currentTime = 0;
-                  videoRef.current.play();
-                }
-              }}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-semibold border border-zinc-700 transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Replay
-            </button>
+            {isHost && (
+              <button
+                onClick={() => {
+                  setIsEnded(false);
+                  if (videoRef.current) {
+                    videoRef.current.currentTime = 0;
+                    videoRef.current.play();
+                  }
+                }}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-semibold border border-zinc-700 transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Replay
+              </button>
+            )}
 
-            {hasNextVideo && onNextVideo && (
+            {isHost && hasNextVideo && onNextVideo && (
               <button
                 onClick={onNextVideo}
                 className="px-5 py-2 bg-white hover:bg-gray-100 text-black font-bold rounded-xl text-xs shadow transition-transform hover:scale-105 flex items-center gap-2 cursor-pointer"
@@ -542,10 +548,11 @@ export default function VideoPlayer({
             max={duration || 100}
             value={currentTime}
             tabIndex={-1}
+            disabled={!isHost}
             onChange={handleSeekChange}
             onMouseMove={handleScrubberMouseMove}
             onMouseLeave={handleScrubberMouseLeave}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            className={`absolute inset-0 w-full h-full opacity-0 z-10 ${isHost ? "cursor-pointer" : "cursor-not-allowed"}`}
           />
         </div>
 
@@ -556,8 +563,11 @@ export default function VideoPlayer({
             {/* Play / Pause */}
             <button
               onClick={togglePlay}
-              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer shrink-0"
-              title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+              disabled={!isHost}
+              className={`p-1 rounded-lg text-white transition-colors shrink-0 ${
+                isHost ? "hover:bg-white/10 cursor-pointer" : "opacity-40 cursor-not-allowed"
+              }`}
+              title={isHost ? (isPlaying ? "Pause (Space)" : "Play (Space)") : "Controlled by Watch Party Host"}
             >
               {isPlaying ? (
                 <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
@@ -566,26 +576,28 @@ export default function VideoPlayer({
               )}
             </button>
 
-            {/* Rewind -10s */}
-            <button
-              onClick={() => seekByAmount(-10)}
-              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-semibold shrink-0"
-              title="Rewind 10s (Left Arrow)"
-            >
-              <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            </button>
+            {/* Rewind -10s & Skip +10s (Host Only) */}
+            {isHost && (
+              <>
+                <button
+                  onClick={() => seekByAmount(-10)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-semibold shrink-0"
+                  title="Rewind 10s (Left Arrow)"
+                >
+                  <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </button>
+                <button
+                  onClick={() => seekByAmount(10)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-semibold shrink-0"
+                  title="Skip 10s (Right Arrow)"
+                >
+                  <RotateCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </button>
+              </>
+            )}
 
-            {/* Skip +10s */}
-            <button
-              onClick={() => seekByAmount(10)}
-              className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-semibold shrink-0"
-              title="Skip 10s (Right Arrow)"
-            >
-              <RotateCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            </button>
-
-            {/* Next Video Button */}
-            {hasNextVideo && onNextVideo && (
+            {/* Next Video Button (Host Only) */}
+            {isHost && hasNextVideo && onNextVideo && (
               <button
                 onClick={onNextVideo}
                 className="p-1 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold shrink-0"
@@ -630,6 +642,12 @@ export default function VideoPlayer({
               <span className="mx-0.5 text-gray-500">/</span>
               <span>{formatTime(duration)}</span>
             </div>
+
+            {!isHost && (
+              <span className="text-[9px] sm:text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ml-1">
+                Host Controlled
+              </span>
+            )}
           </div>
 
           {/* Right Controls Group: Fullscreen */}

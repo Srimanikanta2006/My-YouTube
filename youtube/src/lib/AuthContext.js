@@ -278,6 +278,10 @@ export const UserProvider = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsSidebarCollapsed(true);
+      return;
+    }
     const saved = localStorage.getItem("sidebarCollapsed");
     if (saved !== null) {
       setIsSidebarCollapsed(JSON.parse(saved));

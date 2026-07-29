@@ -29,6 +29,7 @@ export function initSignalingServer(server) {
                 rooms.set(roomId, {
                   clients: new Set(),
                   hostUid: uid, // Set first joining client as the host
+                  hostDisconnectTimeout: null,
                   deleteTimeout: null,
                 });
               } else {
@@ -47,7 +48,16 @@ export function initSignalingServer(server) {
               clearTimeout(roomObj.deleteTimeout);
               roomObj.deleteTimeout = null;
               console.log(
-                `User joined empty room ${roomId}. Cancelled deletion timeout.`,
+                `User joined room ${roomId}. Cancelled deletion timeout.`,
+              );
+            }
+
+            // If host reconnected during grace period (e.g. on page refresh), preserve host role
+            if (roomObj.hostUid === uid && roomObj.hostDisconnectTimeout) {
+              clearTimeout(roomObj.hostDisconnectTimeout);
+              roomObj.hostDisconnectTimeout = null;
+              console.log(
+                `Host ${name} (${uid}) reconnected to room ${roomId} before grace period expired. Maintained host role.`,
               );
             }
 
@@ -172,8 +182,12 @@ export function initSignalingServer(server) {
               roomObj.clients.delete(ws);
               console.log(`User ${userName} explicitly left Watch Party room ${currentRoomId}. Remaining: ${roomObj.clients.size}`);
 
-              // Host transfer logic
+              // Immediate host transfer when host explicitly leaves
               if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
+                if (roomObj.hostDisconnectTimeout) {
+                  clearTimeout(roomObj.hostDisconnectTimeout);
+                  roomObj.hostDisconnectTimeout = null;
+                }
                 const nextClient = roomObj.clients.values().next().value;
                 if (nextClient) {
                   roomObj.hostUid = nextClient.userId;
@@ -194,6 +208,8 @@ export function initSignalingServer(server) {
 
               // Clean up empty room immediately
               if (roomObj.clients.size === 0) {
+                if (roomObj.hostDisconnectTimeout) clearTimeout(roomObj.hostDisconnectTimeout);
+                if (roomObj.deleteTimeout) clearTimeout(roomObj.deleteTimeout);
                 rooms.delete(currentRoomId);
                 console.log(`Watch Party room ${currentRoomId} is empty. Deleted room immediately.`);
               }
@@ -227,19 +243,30 @@ export function initSignalingServer(server) {
             `User ${userName} disconnected from Watch Party room ${currentRoomId}. Room size: ${roomObj.clients.size}`,
           );
 
-          // Host transfer logic: if the host left and there are remaining clients, elect a new host
-          if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
-            const nextClient = roomObj.clients.values().next().value;
-            if (nextClient) {
-              roomObj.hostUid = nextClient.userId;
-              console.log(
-                `Host left watch party room ${currentRoomId}. Transferred host role to ${nextClient.userName} (${nextClient.userId})`,
-              );
-              broadcastToRoom(currentRoomId, null, {
-                type: "new-host",
-                hostUid: roomObj.hostUid,
-              });
+          const isHost = roomObj.hostUid === userId;
+
+          // If host disconnected (e.g. page refresh), set 6s grace period before transferring host role
+          if (isHost && roomObj.clients.size > 0) {
+            if (roomObj.hostDisconnectTimeout) {
+              clearTimeout(roomObj.hostDisconnectTimeout);
             }
+            console.log(`Host ${userName} disconnected from room ${currentRoomId}. Grace period started...`);
+            roomObj.hostDisconnectTimeout = setTimeout(() => {
+              roomObj.hostDisconnectTimeout = null;
+              if (rooms.has(currentRoomId) && roomObj.clients.size > 0) {
+                const nextClient = roomObj.clients.values().next().value;
+                if (nextClient) {
+                  roomObj.hostUid = nextClient.userId;
+                  console.log(
+                    `Host grace period expired for room ${currentRoomId}. Transferred host role to ${nextClient.userName} (${nextClient.userId})`,
+                  );
+                  broadcastToRoom(currentRoomId, null, {
+                    type: "new-host",
+                    hostUid: roomObj.hostUid,
+                  });
+                }
+              }
+            }, 6000);
           }
 
           // Notify others that this peer left
@@ -251,10 +278,19 @@ export function initSignalingServer(server) {
           });
         }
 
-        // Clean up empty room immediately
+        // Clean up empty room after grace period
         if (roomObj.clients.size === 0) {
-          rooms.delete(currentRoomId);
-          console.log(`Watch Party room ${currentRoomId} is empty. Deleted room immediately.`);
+          if (!roomObj.deleteTimeout) {
+            roomObj.deleteTimeout = setTimeout(() => {
+              if (rooms.has(currentRoomId) && rooms.get(currentRoomId).clients.size === 0) {
+                if (rooms.get(currentRoomId).hostDisconnectTimeout) {
+                  clearTimeout(rooms.get(currentRoomId).hostDisconnectTimeout);
+                }
+                rooms.delete(currentRoomId);
+                console.log(`Watch Party room ${currentRoomId} is empty. Deleted room.`);
+              }
+            }, 6000);
+          }
         }
       }
     });

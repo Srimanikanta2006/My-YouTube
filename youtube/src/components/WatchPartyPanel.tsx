@@ -59,9 +59,12 @@ export default function WatchPartyPanel({
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<{ [uid: string]: MediaStream }>({});
 
+  // Refs for dynamic callbacks to avoid closing WebSocket connection on updates
+  const myUidRef = useRef<string>("");
+
   // Room Owner / Host authorization state
   const [roomHostUid, setRoomHostUid] = useState<string>("");
-  const isHost = user && user._id === roomHostUid;
+  const isHost = Boolean(roomHostUid && ((user && user._id === roomHostUid) || (myUidRef.current && myUidRef.current === roomHostUid)));
 
   // Retrieve user settings (Mute / Camera) from localStorage for persistence on refresh
   const [isMuted, setIsMuted] = useState(() => {
@@ -116,7 +119,6 @@ export default function WatchPartyPanel({
 
   // Refs for dynamic callbacks to avoid closing WebSocket connection on updates
   const videosListRef = useRef<any[]>(videosList);
-  const myUidRef = useRef<string>("");
   const selectedVideoRef = useRef<any>(null);
   const isHostRef = useRef<boolean>(false);
 
@@ -483,20 +485,24 @@ export default function WatchPartyPanel({
           case "video-control":
             if (!videoRef.current) return;
             isIncomingEvent.current = true;
+            const latency = data.sentAt ? Math.max(0, (Date.now() - data.sentAt) / 1000) : 0;
+            const targetTime = data.time + (data.action === "play" ? latency : 0);
 
             if (data.action === "play") {
-              videoRef.current.currentTime = data.time;
+              videoRef.current.currentTime = targetTime;
+              videoRef.current.playbackRate = 1.0;
               videoRef.current.play().catch(err => console.log("Play sync interrupted:", err));
             } else if (data.action === "pause") {
+              videoRef.current.playbackRate = 1.0;
               videoRef.current.pause();
               videoRef.current.currentTime = data.time;
             } else if (data.action === "seek") {
-              videoRef.current.currentTime = data.time;
+              videoRef.current.currentTime = targetTime;
             }
 
             setTimeout(() => {
               isIncomingEvent.current = false;
-            }, 500);
+            }, 400);
             break;
 
           case "select-video":
@@ -544,8 +550,41 @@ export default function WatchPartyPanel({
 
           case "user-sync-state":
             if (!videoRef.current) return;
-            const diff = videoRef.current.currentTime - data.time;
-            
+            const vid = videoRef.current;
+
+            // Non-host viewer continuous sub-second playback rate sync engine
+            if (data.uid === roomHostUid && !isHostRef.current) {
+              const msgLatency = data.sentAt ? Math.max(0, (Date.now() - data.sentAt) / 1000) : 0;
+              const hostPlayhead = data.time + (data.paused ? 0 : msgLatency);
+              const drift = vid.currentTime - hostPlayhead;
+
+              if (data.paused) {
+                if (!vid.paused) vid.pause();
+                if (Math.abs(drift) > 0.2) vid.currentTime = hostPlayhead;
+                vid.playbackRate = 1.0;
+              } else {
+                if (vid.paused && !data.isBuffering) {
+                  vid.play().catch(e => {});
+                }
+
+                if (Math.abs(drift) > 1.2) {
+                  // Hard jump if network drift > 1.2 seconds
+                  vid.currentTime = hostPlayhead;
+                  vid.playbackRate = 1.0;
+                } else if (drift < -0.12) {
+                  // Viewer is slightly behind host: smoothly speed up to catch up
+                  vid.playbackRate = 1.05;
+                } else if (drift > 0.12) {
+                  // Viewer is slightly ahead of host: smoothly slow down
+                  vid.playbackRate = 0.95;
+                } else {
+                  // In perfect sync (<120ms drift)
+                  vid.playbackRate = 1.0;
+                }
+              }
+            }
+
+            const diff = vid.currentTime - data.time;
             if (diff > 3 && data.isBuffering) {
               if (isHostRef.current && !videoRef.current.paused) {
                 videoRef.current.pause();
@@ -553,7 +592,8 @@ export default function WatchPartyPanel({
                 socket.send(JSON.stringify({
                   type: "video-control",
                   action: "pause",
-                  time: videoRef.current.currentTime
+                  time: videoRef.current.currentTime,
+                  sentAt: Date.now()
                 }));
                 
                 setTimeout(() => {
@@ -563,7 +603,8 @@ export default function WatchPartyPanel({
                     socket.send(JSON.stringify({
                       type: "video-control",
                       action: "play",
-                      time: videoRef.current.currentTime
+                      time: videoRef.current.currentTime,
+                      sentAt: Date.now()
                     }));
                   }
                 }, 3000);
@@ -625,7 +666,8 @@ export default function WatchPartyPanel({
       socketRef.current?.send(JSON.stringify({
         type: "video-control",
         action: "play",
-        time: videoEl.currentTime
+        time: videoEl.currentTime,
+        sentAt: Date.now()
       }));
     };
 
@@ -634,7 +676,8 @@ export default function WatchPartyPanel({
       socketRef.current?.send(JSON.stringify({
         type: "video-control",
         action: "pause",
-        time: videoEl.currentTime
+        time: videoEl.currentTime,
+        sentAt: Date.now()
       }));
     };
 
@@ -643,7 +686,8 @@ export default function WatchPartyPanel({
       socketRef.current?.send(JSON.stringify({
         type: "video-control",
         action: "seek",
-        time: videoEl.currentTime
+        time: videoEl.currentTime,
+        sentAt: Date.now()
       }));
     };
 
@@ -658,7 +702,7 @@ export default function WatchPartyPanel({
     };
   }, [selectedVideo, wsReady, isHost]);
 
-  // 5. Broadcast sync state every 2 seconds
+  // 5. Broadcast sync state every 1.2 seconds for sub-second precision
   useEffect(() => {
     if (!wsReady) return;
     const interval = setInterval(() => {
@@ -669,10 +713,12 @@ export default function WatchPartyPanel({
           uid: myUidRef.current,
           name: user?.name || "Guest",
           time: videoEl.currentTime,
+          paused: videoEl.paused,
+          sentAt: Date.now(),
           isBuffering: videoEl.seeking || videoEl.networkState === 2 || videoEl.readyState < 3
         }));
       }
-    }, 2000);
+    }, 1200);
     return () => clearInterval(interval);
   }, [wsReady]);
 
@@ -1727,25 +1773,7 @@ export default function WatchPartyPanel({
                 {activeEnlargedFeed.name?.[0]?.toUpperCase() || "G"}
               </div>
             ) : (
-              <video 
-                ref={(el) => {
-                  if (el && activeEnlargedFeed.stream) {
-                    el.srcObject = null;
-                    el.srcObject = activeEnlargedFeed.stream;
-                    el.play().catch(e => console.warn("Failed to autoplay enlarged stream:", e));
-                  }
-                }}
-                autoPlay 
-                playsInline 
-                className="object-contain transition-transform duration-200 origin-center flex-shrink-0"
-                style={{
-                  transform: `scale(${zoomLevel})`,
-                  maxHeight: zoomLevel > 1 ? "none" : "100%",
-                  maxWidth: zoomLevel > 1 ? "none" : "100%",
-                  width: zoomLevel > 1 ? `${zoomLevel * 100}%` : "100%",
-                  height: zoomLevel > 1 ? `${zoomLevel * 100}%` : "100%",
-                }}
-              />
+              <EnlargedWebcamStream stream={activeEnlargedFeed.stream} zoomLevel={zoomLevel} />
             )}
             <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-xl text-white font-bold text-sm pointer-events-none z-10 flex items-center gap-2">
               <span>{activeEnlargedFeed.name}</span>
@@ -1798,6 +1826,32 @@ function VideoCardKey({ stream, name, uid, isScreenSharing }: { stream: MediaStr
       autoPlay
       playsInline
       className="object-cover w-full h-full"
+    />
+  );
+}
+
+// Sub-component for smooth, zero-flicker enlarged webcam zoom
+function EnlargedWebcamStream({ stream, zoomLevel }: { stream: MediaStream; zoomLevel: number }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn("Failed to autoplay enlarged stream:", e));
+      }
+    }
+  }, [stream]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      className="object-contain transition-transform duration-75 ease-out origin-center flex-shrink-0 w-full h-full will-change-transform"
+      style={{
+        transform: `scale(${zoomLevel})`,
+      }}
     />
   );
 }
