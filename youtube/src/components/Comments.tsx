@@ -139,7 +139,11 @@ const Comments = ({ videoId }: { videoId: string }) => {
 
   // 1. Submit Comment with Moderation Pipeline
   const handleSubmitComment = async () => {
-    if (!user || !newComment.trim()) return;
+    if (!user) {
+      alert("Please sign in to post comments.");
+      return;
+    }
+    if (!newComment.trim()) return;
 
     setIsSubmitting(true);
     setModerationError(null);
@@ -170,9 +174,27 @@ const Comments = ({ videoId }: { videoId: string }) => {
     }
   };
 
-  // 2. Like Comment
+  // 2. Like Comment (Optimistic UI update)
   const handleLike = async (commentId: string) => {
-    if (!user) return;
+    if (!user) {
+      alert("Please sign in to like comments.");
+      return;
+    }
+
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c._id !== commentId) return c;
+        const likes = c.likes || [];
+        const dislikes = c.dislikes || [];
+        const isLiked = likes.includes(user._id);
+        const newLikes = isLiked
+          ? likes.filter((id) => id !== user._id)
+          : [...likes, user._id];
+        const newDislikes = dislikes.filter((id) => id !== user._id);
+        return { ...c, likes: newLikes, dislikes: newDislikes };
+      })
+    );
+
     try {
       const res = await axiosInstance.post(`/comment/like/${commentId}`, {
         userId: user._id,
@@ -182,12 +204,31 @@ const Comments = ({ videoId }: { videoId: string }) => {
       }
     } catch (err) {
       console.error("Error liking comment:", err);
+      loadComments();
     }
   };
 
-  // 3. Dislike Comment
+  // 3. Dislike Comment (Optimistic UI update)
   const handleDislike = async (commentId: string) => {
-    if (!user) return;
+    if (!user) {
+      alert("Please sign in to dislike comments.");
+      return;
+    }
+
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c._id !== commentId) return c;
+        const likes = c.likes || [];
+        const dislikes = c.dislikes || [];
+        const isDisliked = dislikes.includes(user._id);
+        const newDislikes = isDisliked
+          ? dislikes.filter((id) => id !== user._id)
+          : [...dislikes, user._id];
+        const newLikes = likes.filter((id) => id !== user._id);
+        return { ...c, likes: newLikes, dislikes: newDislikes };
+      })
+    );
+
     try {
       const res = await axiosInstance.post(`/comment/dislike/${commentId}`, {
         userId: user._id,
@@ -197,10 +238,11 @@ const Comments = ({ videoId }: { videoId: string }) => {
       }
     } catch (err) {
       console.error("Error disliking comment:", err);
+      loadComments();
     }
   };
 
-  // 4. Translate Comment (MyMemory Free API)
+  // 4. Translate Comment (Only 1 active translation box open at once)
   const handleTranslate = async (comment: Comment) => {
     const commentId = comment._id;
     const currentTrans = translations[commentId];
@@ -214,10 +256,19 @@ const Comments = ({ videoId }: { videoId: string }) => {
       return;
     }
 
+    // Helper to deactivate all other translation boxes so only 1 remains open
+    const deactivateOthers = (prev: any) => {
+      const next: any = {};
+      Object.keys(prev).forEach((key) => {
+        next[key] = { ...prev[key], active: false };
+      });
+      return next;
+    };
+
     // Toggle on if text already cached
     if (currentTrans && currentTrans.text) {
       setTranslations((prev) => ({
-        ...prev,
+        ...deactivateOthers(prev),
         [commentId]: { ...prev[commentId], active: true },
       }));
       return;
@@ -225,7 +276,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
 
     // Fetch translation
     setTranslations((prev) => ({
-      ...prev,
+      ...deactivateOthers(prev),
       [commentId]: { text: "", loading: true, active: false },
     }));
 
@@ -249,7 +300,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
       const detectedLang = data?.responseData?.detectedLanguage || "auto";
 
       setTranslations((prev) => ({
-        ...prev,
+        ...deactivateOthers(prev),
         [commentId]: {
           text: translated,
           loading: false,
@@ -260,7 +311,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
     } catch (err) {
       console.error("Translation error:", err);
       setTranslations((prev) => ({
-        ...prev,
+        ...deactivateOthers(prev),
         [commentId]: {
           text: comment.commentbody,
           loading: false,

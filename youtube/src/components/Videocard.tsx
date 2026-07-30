@@ -304,16 +304,16 @@ export default function VideoCard({ video, horizontal }: any) {
             <MoreVertical className="w-4 h-4" />
           </button>
           {isMenuOpen && (
-            <div className="absolute right-0 bottom-full mb-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1 w-36 sm:w-40 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="absolute right-0 bottom-full mb-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-0.5 w-36 sm:w-40 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150 overflow-hidden">
               <button
                 onClick={handleEditClick}
-                className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="w-full text-left px-3.5 py-2 text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors first:rounded-t-xl"
               >
                 <span>✏️</span> Edit Title
               </button>
               <button
                 onClick={handleDeleteClick}
-                className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="w-full text-left px-3.5 py-2 text-[11px] font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-2 cursor-pointer transition-colors last:rounded-b-xl"
               >
                 <span>🗑️</span> Delete permanently
               </button>

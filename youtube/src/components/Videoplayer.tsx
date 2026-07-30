@@ -130,6 +130,20 @@ export default function VideoPlayer({
     };
   }, []);
 
+  // Immediate state reset when a new video is loaded (e.g. Watch Party catalog switch)
+  useEffect(() => {
+    setCurrentTime(0);
+    setBufferedPercent(0);
+    setDuration(0);
+    setIsPlaying(false);
+    setIsBuffering(true);
+    setIsEnded(false);
+    setCountdown(5);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+    }
+  }, [video?._id, video?.filepath]);
+
   // 3. Autoplay End Screen Countdown Timer
   useEffect(() => {
     let timer: NodeJS.Timeout;

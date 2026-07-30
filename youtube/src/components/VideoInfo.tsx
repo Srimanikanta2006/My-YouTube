@@ -49,13 +49,10 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setDislikes(video.Dislike || 0);
 
     if (typeof window !== "undefined" && video?._id) {
-      // Load Dislike state from localStorage
+      // Load Dislike state from localStorage without mutating count
       const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
       const currentDisliked = dislikedVids.includes(video._id);
       setIsDisliked(currentDisliked);
-      if (currentDisliked) {
-        setDislikes((prev: any) => prev + 1);
-      }
 
       // Load Subscribe state from localStorage
       const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
@@ -114,7 +111,6 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
         const res = await axiosInstance.get(`/video/get/${video._id}`);
         if (res.data) {
           setlikes(res.data.Like || 0);
-          // Only sync database dislikes if not locally toggling
           setDislikes(res.data.Dislike || 0);
         }
       } catch (err) {
@@ -130,40 +126,36 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   }, [video?._id]);
 
   const handleLike = async () => {
-    if (!user) return;
+    if (!user) {
+      alert("Please sign in to like videos.");
+      return;
+    }
+    
+    // Optimistic UI updates
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    if (nextLiked) {
+      setlikes((prev: number) => prev + 1);
+      if (isDisliked) {
+        setIsDisliked(false);
+        setDislikes((prev: number) => Math.max(0, prev - 1));
+        if (typeof window !== "undefined") {
+          let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
+          dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
+          localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
+        }
+        axiosInstance.post(`/like/dislike/${video._id}`, { increment: false }).catch(() => {});
+      }
+    } else {
+      setlikes((prev: number) => Math.max(0, prev - 1));
+    }
+
     try {
       const res = await axiosInstance.post(`/like/${video._id}`, {
         userId: user?._id,
       });
-
-      const currentlyLiked = res.data.liked;
-      setIsLiked(currentlyLiked);
-
-      if (currentlyLiked) {
-        if (typeof res.data.likes === "number") {
-          setlikes(res.data.likes);
-        } else {
-          setlikes((prev: any) => Math.max(0, (prev || 0) + 1));
-        }
-
-        if (isDisliked) {
-          setIsDisliked(false);
-          setDislikes((prev: any) => Math.max(0, (prev || 0) - 1));
-          await axiosInstance.post(`/like/dislike/${video._id}`, {
-            increment: false,
-          });
-          if (typeof window !== "undefined") {
-            let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-            dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
-            localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
-          }
-        }
-      } else {
-        if (typeof res.data.likes === "number") {
-          setlikes(res.data.likes);
-        } else {
-          setlikes((prev: any) => Math.max(0, (prev || 0) - 1));
-        }
+      if (typeof res.data?.likes === "number") {
+        setlikes(res.data.likes);
       }
     } catch (error) {
       console.error("Error toggling like:", error);
@@ -171,60 +163,63 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   };
 
   const handleWatchLater = async () => {
-    if (!user) return;
+    if (!user) {
+      alert("Please sign in to save videos to Watch Later.");
+      return;
+    }
+    const nextWatchLater = !isWatchLater;
+    setIsWatchLater(nextWatchLater);
     try {
       const res = await axiosInstance.post(`/watch/${video._id}`, {
         userId: user?._id,
       });
-      if (res.data.watchlater) {
-        setIsWatchLater(!isWatchLater);
-      } else {
-        setIsWatchLater(false);
+      if (res.data?.watchlater !== undefined) {
+        setIsWatchLater(Boolean(res.data.watchlater));
       }
     } catch (error) {
       console.log(error);
+      setIsWatchLater(!nextWatchLater);
     }
   };
 
   const handleDislike = async () => {
-    if (!user) return;
-    try {
-      const currentlyDisliked = !isDisliked;
-      setIsDisliked(currentlyDisliked);
+    if (!user) {
+      alert("Please sign in to dislike videos.");
+      return;
+    }
 
-      // Update database dislike count
-      const res = await axiosInstance.post(`/like/dislike/${video._id}`, {
-        increment: currentlyDisliked,
-      });
-
-      if (typeof res.data?.dislikeCount === "number") {
-        setDislikes(res.data.dislikeCount);
-      } else {
-        setDislikes((prev: any) => (currentlyDisliked ? (prev || 0) + 1 : Math.max(0, (prev || 0) - 1)));
-      }
-
-      if (currentlyDisliked) {
-        if (typeof window !== "undefined") {
-          const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-          if (!dislikedVids.includes(video._id)) {
-            dislikedVids.push(video._id);
-            localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
-          }
-        }
-
-        if (isLiked) {
-          setIsLiked(false);
-          setlikes((prev: any) => Math.max(0, (prev || 0) - 1));
-          await axiosInstance.post(`/like/${video._id}`, {
-            userId: user?._id,
-          });
-        }
-      } else {
-        if (typeof window !== "undefined") {
-          let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-          dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
+    const nextDisliked = !isDisliked;
+    setIsDisliked(nextDisliked);
+    if (nextDisliked) {
+      setDislikes((prev: number) => prev + 1);
+      if (typeof window !== "undefined") {
+        const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
+        if (!dislikedVids.includes(video._id)) {
+          dislikedVids.push(video._id);
           localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
         }
+      }
+
+      if (isLiked) {
+        setIsLiked(false);
+        setlikes((prev: number) => Math.max(0, prev - 1));
+        axiosInstance.post(`/like/${video._id}`, { userId: user?._id }).catch(() => {});
+      }
+    } else {
+      setDislikes((prev: number) => Math.max(0, prev - 1));
+      if (typeof window !== "undefined") {
+        let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
+        dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
+        localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
+      }
+    }
+
+    try {
+      const res = await axiosInstance.post(`/like/dislike/${video._id}`, {
+        increment: nextDisliked,
+      });
+      if (typeof res.data?.dislikeCount === "number") {
+        setDislikes(res.data.dislikeCount);
       }
     } catch (error) {
       console.error("Error toggling dislike:", error);
@@ -232,7 +227,10 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   };
 
   const handleSubscribe = () => {
-    if (!user) return;
+    if (!user) {
+      alert("Please sign in to subscribe to channels.");
+      return;
+    }
     if (typeof window !== "undefined" && video?.videochanel) {
       let subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
       const name = video.videochanel;
