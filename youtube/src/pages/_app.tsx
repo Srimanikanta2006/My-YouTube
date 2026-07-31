@@ -50,6 +50,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 }
 
 import OtpModal from "@/components/OtpModal";
+import AuthLoadingOverlay from "@/components/AuthLoadingOverlay";
 
 export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <Layout>
         <Component {...pageProps} />
         <OtpModal />
+        <AuthLoadingOverlay />
       </Layout>
     </AuthProvider>
   );

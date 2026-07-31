@@ -196,13 +196,19 @@ export const UserProvider = ({ children }) => {
     return deviceId;
   };
 
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [authLoadingMessage, setAuthLoadingMessage] = useState("Signing in with Google...");
+
   const isAuthProcessingRef = useRef(false);
 
   const handlegooglesignin = async () => {
     if (isAuthProcessingRef.current) return;
     isAuthProcessingRef.current = true;
+    setIsAuthLoading(true);
+    setAuthLoadingMessage("Signing in with Google...");
     try {
       const result = await signInWithPopup(auth, provider);
+      setAuthLoadingMessage("Checking device security & location...");
       const firebaseuser = result.user;
       const clientLocation = await fetchClientLocation();
       const payload = {
@@ -212,9 +218,12 @@ export const UserProvider = ({ children }) => {
         location: clientLocation,
         deviceId: getOrCreateDeviceId(),
       };
+      setAuthLoadingMessage("Verifying login & generating security code...");
       const response = await axiosInstance.post("/user/login", payload);
+      setIsAuthLoading(false);
       processLoginResponse(response.data);
     } catch (error) {
+      setIsAuthLoading(false);
       console.warn("Popup Sign-in blocked or failed, falling back to redirect:", error);
       if (
         error.code === "auth/popup-blocked" ||
@@ -228,6 +237,7 @@ export const UserProvider = ({ children }) => {
         }
       }
     } finally {
+      setIsAuthLoading(false);
       isAuthProcessingRef.current = false;
     }
   };
@@ -340,6 +350,8 @@ export const UserProvider = ({ children }) => {
         cancelOtp,
         verifyLoginOtp,
         resendLoginOtp,
+        isAuthLoading,
+        authLoadingMessage,
       }}
     >
       {children}
