@@ -790,12 +790,33 @@ export default function WatchPartyPanel({
           isScreenSharing: false
         }));
       } else {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-          alert("Screen sharing is not supported by mobile web browsers due to device security restrictions. Please use a laptop or desktop computer to share your screen.");
+        if (typeof navigator === "undefined" || !navigator.mediaDevices) {
+          alert("Your browser does not support media devices.");
           return;
         }
+
+        const getDisplayMediaFn = 
+          navigator.mediaDevices.getDisplayMedia || 
+          (navigator as any).getDisplayMedia;
+
+        if (!getDisplayMediaFn) {
+          alert("Screen sharing is restricted by your mobile operating system (e.g. iOS Safari). Please try Google Chrome on Android or use a laptop/desktop computer.");
+          return;
+        }
+
         try {
-          const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+          let screenStream: MediaStream;
+          try {
+            screenStream = await getDisplayMediaFn.call(navigator.mediaDevices, {
+              video: true,
+              audio: false
+            });
+          } catch (firstErr) {
+            screenStream = await getDisplayMediaFn.call(navigator.mediaDevices, {
+              video: true
+            });
+          }
+
           screenStreamRef.current = screenStream;
           const screenTrack = screenStream.getVideoTracks()[0];
           
