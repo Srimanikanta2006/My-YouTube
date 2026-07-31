@@ -18,6 +18,10 @@ function Layout({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-gray-950 text-white w-full overflow-hidden">
         <Head>
+          <title>Watch Party - YouTube</title>
+          <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+          <link rel="alternate icon" href="/favicon.ico" type="image/x-icon" />
+          <link rel="apple-touch-icon" href="/favicon.svg" />
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         </Head>
         <main className="w-full h-screen p-0 flex flex-col">
@@ -32,6 +36,10 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-14 w-full overflow-x-hidden transition-colors duration-200">
       <Head>
+        <title>YouTube</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
       <Header />
