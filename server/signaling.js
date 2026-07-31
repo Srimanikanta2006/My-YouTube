@@ -151,27 +151,37 @@ export function initSignalingServer(server) {
           }
 
           case "video-control": {
-            // Broadcast playback sync commands (play, pause, seek) to everyone else in the room
+            // Broadcast playback sync commands (play, pause, seek) ONLY IF sender is room host
             const { action, time } = data;
-            if (currentRoomId) {
-              broadcastToRoom(currentRoomId, ws, {
-                type: "video-control",
-                senderUid: userId,
-                action: action,
-                time: time,
-              });
+            if (currentRoomId && rooms.has(currentRoomId)) {
+              const roomObj = rooms.get(currentRoomId);
+              if (roomObj.hostUid === userId) {
+                broadcastToRoom(currentRoomId, ws, {
+                  type: "video-control",
+                  senderUid: userId,
+                  action: action,
+                  time: time,
+                });
+              } else {
+                console.warn(`Non-host user ${userName} (${userId}) attempted video-control in room ${currentRoomId}. Request ignored.`);
+              }
             }
             break;
           }
 
           case "select-video": {
-            // Broadcast active selected video changes to everyone else in the room
+            // Broadcast active selected video changes ONLY IF sender is room host
             const { videoId } = data;
-            if (currentRoomId) {
-              broadcastToRoom(currentRoomId, ws, {
-                type: "select-video",
-                videoId: videoId,
-              });
+            if (currentRoomId && rooms.has(currentRoomId)) {
+              const roomObj = rooms.get(currentRoomId);
+              if (roomObj.hostUid === userId) {
+                broadcastToRoom(currentRoomId, ws, {
+                  type: "select-video",
+                  videoId: videoId,
+                });
+              } else {
+                console.warn(`Non-host user ${userName} (${userId}) attempted select-video in room ${currentRoomId}. Request ignored.`);
+              }
             }
             break;
           }

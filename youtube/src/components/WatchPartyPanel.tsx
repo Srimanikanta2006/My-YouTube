@@ -230,12 +230,25 @@ export default function WatchPartyPanel({
 
         setLocalStream(stream);
         localStreamRef.current = stream;
+        
+        // Dynamically attach media tracks to any existing peer connections if they connected before camera was ready
+        Object.keys(peerConnectionsRef.current).forEach(uid => {
+          const pc = peerConnectionsRef.current[uid];
+          stream.getTracks().forEach(track => {
+            const hasTrack = pc.getSenders().some(s => s.track?.kind === track.kind);
+            if (!hasTrack) {
+              pc.addTrack(track, stream);
+            }
+          });
+        });
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
-        console.log("Local camera stream active");
-      } catch (err) {
-        console.error("Camera access failed (hardware lock or permission). Falling back to mic-only:", err);
+
+        console.log("Local camera & audio stream initialized successfully");
+      } catch (mediaErr) {
+        console.warn("Camera/Microphone capture declined or unavailable, trying audio-only fallback:", mediaErr);
         try {
           const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
           audioStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
