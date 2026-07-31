@@ -56,19 +56,41 @@ export const UserProvider = ({ children }) => {
       const initialTheme = getIstThemeClient();
       setTheme(initialTheme);
     }
-  }, [user]);
+  }, [user?.theme]);
 
   const toggleTheme = async () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     if (user?._id) {
-      updateUserData({ theme: nextTheme });
+      setUser((prev) => (prev ? { ...prev, theme: nextTheme } : null));
+      if (typeof window !== "undefined") {
+        const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        if (savedUser._id) {
+          savedUser.theme = nextTheme;
+          localStorage.setItem("user", JSON.stringify(savedUser));
+        }
+      }
       try {
         await axiosInstance.patch(`/user/update/${user._id}`, { theme: nextTheme });
       } catch (err) {
         console.error("Error updating saved theme on server:", err);
       }
     }
+  };
+
+  const updateUserData = (updatedFields) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedFields };
+      localStorage.setItem("user", JSON.stringify(updated));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("user-profile-updated"));
+        if (updatedFields.channelname !== undefined || updatedFields.description !== undefined) {
+          window.dispatchEvent(new Event("video-list-changed"));
+        }
+      }
+      return updated;
+    });
   };
 
   const login = (userdata) => {
@@ -297,19 +319,6 @@ export const UserProvider = ({ children }) => {
       const next = !prev;
       localStorage.setItem("sidebarCollapsed", JSON.stringify(next));
       return next;
-    });
-  };
-
-  const updateUserData = (updatedFields) => {
-    setUser((prev) => {
-      if (!prev) return null;
-      const updated = { ...prev, ...updatedFields };
-      localStorage.setItem("user", JSON.stringify(updated));
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("user-profile-updated"));
-        window.dispatchEvent(new Event("video-list-changed"));
-      }
-      return updated;
     });
   };
 

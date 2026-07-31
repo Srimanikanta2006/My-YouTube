@@ -43,9 +43,9 @@ const ChannelDetailPage = () => {
   };
 
   // Fetch the channel creator's videos from the database
-  const fetchChannelVideos = async () => {
+  const fetchChannelVideos = async (showLoading = true) => {
     if (!id) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const res = await axiosInstance.get("/video/getall");
       const channelVids = res.data.filter((vid: any) => vid.uploader === id);
@@ -53,7 +53,7 @@ const ChannelDetailPage = () => {
     } catch (error) {
       console.error("Error fetching channel videos:", error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -65,15 +65,13 @@ const ChannelDetailPage = () => {
     setLoading(true);
 
     fetchChannelDetails();
-    fetchChannelVideos();
+    fetchChannelVideos(true);
   }, [id, router.isReady]);
 
   useEffect(() => {
     const handleListChange = () => {
-      setTimeout(() => {
-        fetchChannelDetails();
-        fetchChannelVideos();
-      }, 0);
+      fetchChannelDetails();
+      fetchChannelVideos(false);
     };
     window.addEventListener("video-list-changed", handleListChange);
     window.addEventListener("user-profile-updated", handleListChange);

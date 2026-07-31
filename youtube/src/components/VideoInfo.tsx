@@ -380,7 +380,9 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
                 <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors text-sm sm:text-base">
                   {user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel}
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">1.2M subscribers</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  @{((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "channel").toLowerCase().replace(/\s+/g, "")}
+                </p>
               </div>
             </Link>
             {user && user._id === video.uploader ? (

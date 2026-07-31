@@ -61,7 +61,7 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
   };
 
   return (
-    <div className="w-full text-zinc-900 dark:text-zinc-100">
+    <div className="w-full text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
       {/* 1. Shorter Banner */}
       <div className="relative h-24 md:h-36 lg:h-44 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 rounded-2xl overflow-hidden shadow-sm"></div>
 
@@ -69,8 +69,8 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
       <div className="px-1 sm:px-2 pt-0 pb-4">
         <div className="flex flex-col md:flex-row gap-4 md:gap-5 items-start">
           {/* Overlapping Avatar */}
-          <Avatar className="w-16 h-16 md:w-24 md:h-24 -mt-8 md:-mt-12 border-4 border-white dark:border-zinc-950 shadow-md flex-shrink-0 z-10">
-            <AvatarFallback className="text-xl md:text-2xl font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+          <Avatar className="w-16 h-16 md:w-24 md:h-24 -mt-8 md:-mt-12 border-4 border-white dark:border-zinc-950 shadow-md flex-shrink-0 z-10 transition-colors duration-300">
+            <AvatarFallback className="text-xl md:text-2xl font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 transition-colors duration-300">
               {channel?.channelname?.[0] || user?.name?.[0] || "C"}
             </AvatarFallback>
           </Avatar>
@@ -78,7 +78,7 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
           <div className="flex-1 space-y-1.5 min-w-0 pt-1">
             {/* Title + Upload Button */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl md:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
+              <h1 className="text-xl md:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight transition-colors duration-300">
                 {(user && user._id === channel?._id ? (user.channelname || channel?.channelname) : channel?.channelname) || user?.name || "Channel"}
               </h1>
               {user && user._id === channel?._id && onUploadClick && (
@@ -92,21 +92,21 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-4 text-xs md:text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+            <div className="flex flex-wrap gap-4 text-xs md:text-sm text-zinc-600 dark:text-zinc-400 font-medium transition-colors duration-300">
               <span>
                 @{(user && user._id === channel?._id ? (user.channelname || channel?.channelname) : channel?.channelname) ? ((user && user._id === channel?._id ? (user.channelname || channel?.channelname) : channel?.channelname).toLowerCase().replace(/\s+/g, "")) : user?.name?.toLowerCase().replace(/\s+/g, "") || "channel"}
               </span>
             </div>
 
             {(user && user._id === channel?._id ? (user.description || channel?.description) : channel?.description) && (
-              <p className="text-xs md:text-sm text-zinc-700 dark:text-zinc-300 max-w-2xl leading-relaxed">
+              <p className="text-xs md:text-sm text-zinc-700 dark:text-zinc-300 max-w-2xl leading-relaxed transition-colors duration-300">
                 {(user && user._id === channel?._id ? (user.description || channel?.description) : channel?.description)}
               </p>
             )}
             
             {/* Compact Membership Card */}
             {user && user._id === channel?._id && (
-              <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-xl text-xs text-amber-900 dark:text-amber-200 font-medium mt-1">
+              <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-xl text-xs text-amber-900 dark:text-amber-200 font-medium mt-1 transition-colors duration-300">
                 <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                 <span>{user?.plan && user.plan !== "Free" ? `${user.plan} Member` : "Free Member"}</span>
                 {user?.subscriptionStartDate && (
@@ -124,8 +124,8 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
                 onClick={handleSubscribeToggle}
                 className={
                   isSubscribed
-                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-semibold rounded-full px-5 h-9 text-xs flex items-center gap-1.5"
-                    : "bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full px-5 h-9 text-xs shadow-md"
+                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-semibold rounded-full px-5 h-9 text-xs flex items-center gap-1.5 transition-colors duration-300"
+                    : "bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full px-5 h-9 text-xs shadow-md transition-colors duration-300"
                 }
               >
                 {isSubscribed ? (

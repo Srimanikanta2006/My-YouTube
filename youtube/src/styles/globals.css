@@ -94,6 +94,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+  video, img, iframe, canvas, input[type="range"] {
+    transition: none !important;
   }
   html {
     @apply font-sans;
@@ -101,7 +105,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
