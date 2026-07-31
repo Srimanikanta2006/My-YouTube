@@ -256,7 +256,7 @@ export default function DownloadsContent() {
                       />
                       <Link
                         href={`/watch/${item.videoid._id}`}
-                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                        className="absolute inset-0 bg-black/30 md:bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
                       >
                         <div className="bg-red-600 p-3 rounded-full shadow-lg transform group-hover:scale-110 transition-transform">
                           <Play className="w-5 h-5 fill-white" />

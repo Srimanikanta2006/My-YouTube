@@ -182,7 +182,7 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
       </div>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full focus:outline-none flex items-center justify-center cursor-pointer transition-opacity">
+        <DropdownMenuTrigger className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full focus:outline-none flex items-center justify-center cursor-pointer transition-opacity">
           <MoreVertical className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xl">
