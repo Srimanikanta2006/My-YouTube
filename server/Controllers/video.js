@@ -81,15 +81,29 @@ export const uploadvideo = async (req, res) => {
     }
   }
 };
+import like from "../Modals/like.js";
+import dislike from "../Modals/dislike.js";
+
 export const getallvideo = async (req, res) => {
   try {
     const files = await video.find();
-    return res.status(200).send(files);
+    const result = await Promise.all(
+      files.map(async (file) => {
+        const likesCount = await like.countDocuments({ videoid: file._id });
+        const dislikesCount = await dislike.countDocuments({ videoid: file._id });
+        const obj = file.toObject();
+        obj.Like = likesCount;
+        obj.Dislike = dislikesCount;
+        return obj;
+      })
+    );
+    return res.status(200).send(result);
   } catch (error) {
     console.error(" error:", error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 export const getvideoById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -100,7 +114,12 @@ export const getvideoById = async (req, res) => {
     if (!file) {
       return res.status(404).json({ message: "Video not found" });
     }
-    return res.status(200).send(file);
+    const likesCount = await like.countDocuments({ videoid: id });
+    const dislikesCount = await dislike.countDocuments({ videoid: id });
+    const fileObj = file.toObject();
+    fileObj.Like = likesCount;
+    fileObj.Dislike = dislikesCount;
+    return res.status(200).send(fileObj);
   } catch (error) {
     console.error(" error:", error);
     return res.status(500).json({ message: "Something went wrong" });
