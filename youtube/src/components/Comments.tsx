@@ -356,7 +356,16 @@ const Comments = ({ videoId }: { videoId: string }) => {
         commentbody: editText,
       });
       if (res.data) {
-        setComments((prev) => prev.map((c) => (c._id === editingCommentId ? res.data : c)));
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === editingCommentId ? { ...c, commentbody: editText } : c
+          )
+        );
+        setTranslations((prev) => {
+          const next = { ...prev };
+          delete next[editingCommentId];
+          return next;
+        });
         setEditingCommentId(null);
         setEditText("");
         showSuccessMsg("Comment updated!");
@@ -632,18 +641,62 @@ const Comments = ({ videoId }: { videoId: string }) => {
                           <span>{dislikesCount > 0 ? dislikesCount : ""}</span>
                         </button>
 
-                        {/* Translate Toggle */}
-                        <button
-                          onClick={() => handleTranslate(comment)}
-                          className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors cursor-pointer font-medium"
-                        >
-                          {transState?.loading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Languages className="w-3.5 h-3.5" />
-                          )}
-                          <span>{transState?.active ? "Show Original" : "Translate"}</span>
-                        </button>
+                        {/* Translate Toggle (Disabled for pure English or Emojis) */}
+                        {(() => {
+                          const isOnlyEnglishOrEmoji = (text: string) => {
+                            if (!text || !text.trim()) return true;
+
+                            // 1. Check for non-ASCII foreign characters (e.g. á, é, í, ó, ú, ñ, ¿, ¡, or non-Latin scripts)
+                            const nonEmojiText = text.replace(/[\p{Emoji}\p{Extended_Pictographic}]/gu, "");
+                            if (/[^\x00-\x7F]/.test(nonEmojiText)) {
+                              return false;
+                            }
+
+                            // 2. Extract normalized words
+                            const words = text.toLowerCase().match(/[a-z]+/g) || [];
+                            if (words.length === 0) return true;
+
+                            // Spanish & non-English indicator words
+                            const nonEnglishWords = new Set([
+                              "como", "el", "la", "los", "las", "del", "un", "una", "unos", "unas",
+                              "poderosa", "poderoso", "infierno", "que", "para", "por", "con", "sin",
+                              "hola", "gracias", "mucho", "amigo", "amiga", "bien", "todo", "toda",
+                              "todos", "todas", "pero", "mas", "estoy", "esta", "este", "muy",
+                              "tambien", "siempre", "nunca", "hacer", "hace", "tiempo", "vida", "amor",
+                              "bueno", "buena", "sobre", "entre", "cuando", "donde", "quien", "porque",
+                              "asi", "aqui", "alli", "alla", "mismo", "misma", "otro", "otra", "nada",
+                              "nadie", "algo", "alguien", "chapeau", "bonjour", "merci", "gut", "danke",
+                              "ciao", "bella", "grazie"
+                            ]);
+
+                            const hasForeignWord = words.some((w) => nonEnglishWords.has(w));
+                            if (hasForeignWord) return false;
+
+                            return true;
+                          };
+
+                          const isEnglishOrEmoji = isOnlyEnglishOrEmoji(comment.commentbody);
+
+                          return (
+                            <button
+                              onClick={() => !isEnglishOrEmoji && handleTranslate(comment)}
+                              disabled={isEnglishOrEmoji || transState?.loading}
+                              title={isEnglishOrEmoji ? "Comment is in English / Emojis (No translation needed)" : "Translate comment to English"}
+                              className={`flex items-center gap-1 transition-colors ${
+                                isEnglishOrEmoji
+                                  ? "text-zinc-400 dark:text-zinc-600 cursor-not-allowed opacity-50"
+                                  : "text-zinc-500 dark:text-zinc-400 hover:text-blue-500 cursor-pointer font-medium"
+                              }`}
+                            >
+                              {transState?.loading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Languages className="w-3.5 h-3.5" />
+                              )}
+                              <span>{transState?.active ? "Show Original" : "Translate"}</span>
+                            </button>
+                          );
+                        })()}
 
                         {/* Report Button */}
                         {user && !isAuthor && (
