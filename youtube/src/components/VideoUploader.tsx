@@ -20,43 +20,69 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlefilechange = (e: ChangeEvent<HTMLInputElement>) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const processFile = (file: File) => {
     setUploadError("");
+    if (!file.type.startsWith("video/")) {
+      setUploadError("Please upload a valid video file format (e.g. MP4, WebM, AVI).");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setUploadError("File size exceeds the 100MB limit. Please compress your video or select a smaller file.");
+      return;
+    }
+    setVideoFile(file);
+    const filename = file.name;
+    if (!videoTitle) {
+      setVideoTitle(filename);
+    }
+
+    const videoEl = document.createElement("video");
+    videoEl.preload = "metadata";
+    videoEl.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(videoEl.src);
+      const durationSecs = videoEl.duration;
+      const hours = Math.floor(durationSecs / 3600);
+      const minutes = Math.floor((durationSecs % 3600) / 60);
+      const seconds = Math.floor(durationSecs % 60);
+      
+      let formatted = "";
+      if (hours > 0) {
+        formatted += `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      } else {
+        formatted += `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      }
+      setVideoDuration(formatted);
+    };
+    videoEl.src = URL.createObjectURL(file);
+  };
+
+  const handlefilechange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const file = files[0];
-      if (!file.type.startsWith("video/")) {
-        setUploadError("Please upload a valid video file format (e.g. MP4, WebM, AVI).");
-        return;
-      }
-      if (file.size > 100 * 1024 * 1024) {
-        setUploadError("File size exceeds the 100MB limit. Please compress your video or select a smaller file.");
-        return;
-      }
-      setVideoFile(file);
-      const filename = file.name;
-      if (!videoTitle) {
-        setVideoTitle(filename);
-      }
+      processFile(files[0]);
+    }
+  };
 
-      const videoEl = document.createElement("video");
-      videoEl.preload = "metadata";
-      videoEl.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(videoEl.src);
-        const durationSecs = videoEl.duration;
-        const hours = Math.floor(durationSecs / 3600);
-        const minutes = Math.floor((durationSecs % 3600) / 60);
-        const seconds = Math.floor(durationSecs % 60);
-        
-        let formatted = "";
-        if (hours > 0) {
-          formatted += `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        } else {
-          formatted += `${minutes}:${seconds.toString().padStart(2, "0")}`;
-        }
-        setVideoDuration(formatted);
-      };
-      videoEl.src = URL.createObjectURL(file);
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -163,8 +189,15 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
       <div className="space-y-4">
         {!videoFile ? (
           <div
-            className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-8 text-center cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-red-500 transition-all"
+            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+              isDragOver
+                ? "border-red-500 bg-red-50/50 dark:bg-red-950/30 scale-[1.01]"
+                : "border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-red-500"
+            }`}
             onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
             <Upload className="w-12 h-12 mx-auto text-zinc-400 dark:text-zinc-500 mb-2 animate-bounce" />
             <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
