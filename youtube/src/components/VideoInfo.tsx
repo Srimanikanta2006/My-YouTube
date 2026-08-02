@@ -125,37 +125,72 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     return () => clearInterval(interval);
   }, [video?._id]);
 
+  const [subscriberCount, setSubscriberCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!video?._id) return;
+    const fetchReactionStatus = async () => {
+      if (!user?._id) return;
+      try {
+        const res = await axiosInstance.get(`/like/status/${video._id}/${user._id}`);
+        if (res.data) {
+          setIsLiked(res.data.liked);
+          setIsDisliked(res.data.disliked);
+        }
+      } catch (err) {}
+    };
+    fetchReactionStatus();
+
+    if (video?.uploader) {
+      axiosInstance
+        .get(`/user/${video.uploader}`)
+        .then((res) => {
+          if (res.data?.subscribers && Array.isArray(res.data.subscribers)) {
+            setSubscriberCount(res.data.subscribers.length);
+          } else {
+            const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+            const count = subscribedChannels.includes(video.videochanel) ? 1 : 0;
+            setSubscriberCount(count);
+          }
+        })
+        .catch(() => {
+          const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+          const count = subscribedChannels.includes(video.videochanel) ? 1 : 0;
+          setSubscriberCount(count);
+        });
+    }
+  }, [user?._id, video?._id, video?.uploader, video?.videochanel]);
+
   const handleLike = async () => {
     if (!user) {
       alert("Please sign in to like videos.");
       return;
     }
-    
-    // Optimistic UI updates
-    const nextLiked = !isLiked;
-    setIsLiked(nextLiked);
-    if (nextLiked) {
+
+    const prevIsLiked = isLiked;
+    const prevIsDisliked = isDisliked;
+
+    if (prevIsLiked) {
+      setIsLiked(false);
+      setlikes((prev: number) => Math.max(0, prev - 1));
+    } else {
+      setIsLiked(true);
       setlikes((prev: number) => prev + 1);
-      if (isDisliked) {
+      if (prevIsDisliked) {
         setIsDisliked(false);
         setDislikes((prev: number) => Math.max(0, prev - 1));
-        if (typeof window !== "undefined") {
-          let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-          dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
-          localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
-        }
-        axiosInstance.post(`/like/dislike/${video._id}`, { increment: false }).catch(() => {});
       }
-    } else {
-      setlikes((prev: number) => Math.max(0, prev - 1));
     }
 
     try {
       const res = await axiosInstance.post(`/like/${video._id}`, {
-        userId: user?._id,
+        userId: user._id,
       });
-      if (typeof res.data?.likes === "number") {
-        setlikes(res.data.likes);
+      if (res.data) {
+        setIsLiked(Boolean(res.data.liked));
+        setIsDisliked(Boolean(res.data.disliked));
+        if (typeof res.data.likes === "number") setlikes(res.data.likes);
+        if (typeof res.data.dislikes === "number") setDislikes(res.data.dislikes);
       }
     } catch (error) {
       console.error("Error toggling like:", error);
@@ -188,38 +223,30 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       return;
     }
 
-    const nextDisliked = !isDisliked;
-    setIsDisliked(nextDisliked);
-    if (nextDisliked) {
-      setDislikes((prev: number) => prev + 1);
-      if (typeof window !== "undefined") {
-        const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-        if (!dislikedVids.includes(video._id)) {
-          dislikedVids.push(video._id);
-          localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
-        }
-      }
+    const prevIsDisliked = isDisliked;
+    const prevIsLiked = isLiked;
 
-      if (isLiked) {
+    if (prevIsDisliked) {
+      setIsDisliked(false);
+      setDislikes((prev: number) => Math.max(0, prev - 1));
+    } else {
+      setIsDisliked(true);
+      setDislikes((prev: number) => prev + 1);
+      if (prevIsLiked) {
         setIsLiked(false);
         setlikes((prev: number) => Math.max(0, prev - 1));
-        axiosInstance.post(`/like/${video._id}`, { userId: user?._id }).catch(() => {});
-      }
-    } else {
-      setDislikes((prev: number) => Math.max(0, prev - 1));
-      if (typeof window !== "undefined") {
-        let dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
-        dislikedVids = dislikedVids.filter((id: string) => id !== video._id);
-        localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVids));
       }
     }
 
     try {
       const res = await axiosInstance.post(`/like/dislike/${video._id}`, {
-        increment: nextDisliked,
+        userId: user._id,
       });
-      if (typeof res.data?.dislikeCount === "number") {
-        setDislikes(res.data.dislikeCount);
+      if (res.data) {
+        setIsLiked(Boolean(res.data.liked));
+        setIsDisliked(Boolean(res.data.disliked));
+        if (typeof res.data.likes === "number") setlikes(res.data.likes);
+        if (typeof res.data.dislikes === "number") setDislikes(res.data.dislikes);
       }
     } catch (error) {
       console.error("Error toggling dislike:", error);
@@ -245,10 +272,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           (c: string) => c !== name && c !== uploaderId
         );
         setIsSubscribed(false);
+        setSubscriberCount((prev) => Math.max(0, prev - 1));
       } else {
         if (name && !subscribedChannels.includes(name)) subscribedChannels.push(name);
         if (uploaderId && !subscribedChannels.includes(uploaderId)) subscribedChannels.push(uploaderId);
         setIsSubscribed(true);
+        setSubscriberCount((prev) => prev + 1);
       }
       localStorage.setItem("subscribedChannels", JSON.stringify(subscribedChannels));
       window.dispatchEvent(new Event("subscription-changed"));
@@ -267,13 +296,11 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     if (!video?.filepath) return "";
     if (video.filepath.startsWith("http")) return video.filepath;
     
-    // Normalise slashes and remove leading slash
     let relativePath = video.filepath.replace(/\\/g, "/");
     if (relativePath.startsWith("/")) {
       relativePath = relativePath.slice(1);
     }
     
-    // Strip trailing slash from backend URL
     const backendUrl = getBackendUrl();
     const cleanBackendUrl = backendUrl.endsWith("/") ? backendUrl.slice(0, -1) : backendUrl;
     
@@ -302,13 +329,11 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setDownloadState("loading");
 
     try {
-      // 1. Check & track daily quota with backend
       await axiosInstance.post("/download/track", {
         userId: user._id,
         videoId: video._id,
       });
 
-      // 2. Perform video file stream download
       const response = await fetch(videoSrc);
       if (!response.ok) {
         window.open(videoSrc, "_blank");
@@ -345,88 +370,72 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     }
   };
 
-  const handleUpgradePlan = async () => {
-    if (!user) return;
-    try {
-      setIsUpgradingPlan(true);
-      await axiosInstance.patch("/download/plan", {
-        userId: user._id,
-        plan: "Premium",
-      });
-      setShowLimitModal(false);
-      showToast("🎉 Upgraded to Premium! Enjoy 10 daily downloads!");
-    } catch (err) {
-      console.error("Upgrade error:", err);
-      showToast("Failed to upgrade plan.");
-    } finally {
-      setIsUpgradingPlan(false);
-    }
-  };
+  const isVideoOwner = Boolean(
+    user && (user._id === video?.uploader || (video?.videochanel && user?.channelname === video.videochanel))
+  );
 
   return (
     <div className="space-y-3 sm:space-y-4 px-3 sm:px-0 text-zinc-900 dark:text-zinc-100">
-      <h1 className="text-xl font-bold">{video.videotitle}</h1>
+      <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight leading-snug">{video.videotitle}</h1>
 
-      <div className="flex flex-col gap-3.5 xl:flex-row xl:items-center xl:justify-between border-b border-gray-200 dark:border-zinc-800 pb-4">
-        <div className="flex items-center justify-between w-full xl:w-auto shrink-0">
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer shrink-0">
-              <Avatar className="w-10 h-10 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
-                <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
-                  {((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div className="shrink-0">
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors text-sm sm:text-base">
-                  {user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel}
-                </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                  @{((user && user._id === video.uploader ? (user.channelname || video.videochanel) : video.videochanel) || "channel").toLowerCase().replace(/\s+/g, "")}
-                </p>
-              </div>
-            </Link>
-            {user && user._id === video.uploader ? (
-              <span className="ml-2 sm:ml-3 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                Owner
-              </span>
-            ) : (
-              <Button
-                onClick={handleSubscribe}
-                className={`ml-2 sm:ml-3 rounded-full transition-all duration-200 cursor-pointer min-w-[96px] h-8 text-xs shrink-0 text-center flex items-center justify-center ${
-                  isSubscribed
-                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-medium"
-                    : "bg-red-600 text-white hover:bg-red-700 font-semibold"
-                }`}
-              >
-                {isSubscribed ? "Subscribed" : "Subscribe"}
-              </Button>
-            )}
-          </div>
+      <div className="flex flex-col min-[1100px]:flex-row min-[1100px]:items-center justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
+        {/* Channel Info & Subscribe Button */}
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer shrink-0">
+            <Avatar className="w-10 h-10 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
+              <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
+                {((user && isVideoOwner ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="shrink-0">
+              <h3 className="font-bold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors text-sm sm:text-base">
+                {user && isVideoOwner ? (user.channelname || video.videochanel) : video.videochanel}
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                {subscriberCount} {subscriberCount === 1 ? "subscriber" : "subscribers"}
+              </p>
+            </div>
+          </Link>
+
+          {!isVideoOwner && (
+            <Button
+              onClick={handleSubscribe}
+              className={`rounded-full transition-all duration-200 cursor-pointer min-w-[96px] h-9 text-xs shrink-0 text-center flex items-center justify-center ${
+                isSubscribed
+                  ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-medium"
+                  : "bg-red-600 text-white hover:bg-red-700 font-bold"
+              }`}
+            >
+              {isSubscribed ? "Subscribed" : "Subscribe"}
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none w-full xl:w-auto shrink-0 py-0.5 max-w-full">
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full shrink-0 text-zinc-900 dark:text-zinc-100 h-8">
+
+        {/* Action Buttons Row */}
+        <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none shrink-0 py-0.5 max-w-full">
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full shrink-0 text-zinc-900 dark:text-zinc-100 h-8 md:h-10">
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-l-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer h-8 px-2.5 text-xs"
+              className="rounded-l-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer h-8 md:h-10 px-3 md:px-4 text-xs md:text-sm font-semibold"
               onClick={handleLike}
             >
               <ThumbsUp
-                className={`w-3.5 h-3.5 mr-1.5 ${
+                className={`w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 ${
                   isLiked ? "fill-zinc-800 text-zinc-800 dark:fill-zinc-200 dark:text-zinc-200" : ""
                 }`}
               />
               {likes.toLocaleString()}
             </Button>
-            <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700" />
+            <div className="w-px h-4 md:h-5 bg-zinc-300 dark:bg-zinc-700" />
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-r-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer h-8 px-2.5 text-xs"
+              className="rounded-r-full hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer h-8 md:h-10 px-3 md:px-4 text-xs md:text-sm font-semibold"
               onClick={handleDislike}
             >
               <ThumbsDown
-                className={`w-3.5 h-3.5 mr-1.5 ${
+                className={`w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 ${
                   isDisliked ? "fill-zinc-800 text-zinc-800 dark:fill-zinc-200 dark:text-zinc-200" : ""
                 }`}
               />
@@ -436,18 +445,18 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer min-w-[105px] h-8 text-xs px-3 text-center flex items-center justify-center transition-colors ${
+            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-8 md:h-10 text-xs md:text-sm px-3 md:px-4.5 font-semibold text-center flex items-center justify-center transition-colors ${
               isWatchLater ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold" : ""
             }`}
             onClick={handleWatchLater}
           >
-            <Clock className="w-3.5 h-3.5 mr-1.5" />
+            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5" />
             {isWatchLater ? "Saved" : "Watch Later"}
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-8 text-xs px-3"
+            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-8 md:h-10 text-xs md:text-sm px-3 md:px-4 font-semibold"
             onClick={handleShare}
           >
             <Share className="w-3.5 h-3.5 mr-1.5" />
@@ -456,7 +465,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer min-w-[95px] h-8 text-xs px-3 text-center flex items-center justify-center ${
+            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer min-w-[95px] md:min-w-[110px] h-8 md:h-10 text-xs md:text-sm px-3 md:px-4.5 font-semibold text-center flex items-center justify-center ${
               downloadState === "success" ? "bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300 hover:bg-green-200" : ""
             }`}
             onClick={handleDownload}

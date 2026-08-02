@@ -34,7 +34,7 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
             <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 items-start w-full">
               
               {/* Video Thumbnail Box */}
-              <div className="relative aspect-video w-full md:w-40 xl:w-44 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 shadow-xs border border-zinc-200/50 dark:border-zinc-800/80">
+              <div className="relative aspect-video w-full md:w-44 xl:w-48 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 shadow-xs border border-zinc-200/50 dark:border-zinc-800/80">
                 <video
                   src={videoSrc}
                   muted
@@ -79,13 +79,13 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
 
                 {/* Desktop View ONLY (>= md): Title on top, Channel & Meta below (NO Avatar Icon) */}
                 <div className="hidden md:flex md:flex-col justify-center min-w-0 h-full py-0.5">
-                  <h3 className="font-semibold text-xs xl:text-sm line-clamp-2 text-zinc-900 dark:text-zinc-100 group-hover:text-red-600 leading-snug tracking-tight transition-colors">
+                  <h3 className="font-bold text-xs md:text-sm lg:text-base line-clamp-2 text-zinc-900 dark:text-zinc-100 group-hover:text-red-600 leading-snug tracking-tight transition-colors">
                     {video.videotitle}
                   </h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium truncate mt-1">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium truncate mt-1">
                     {channelDisplayName}
                   </p>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal mt-0.5">
                     {video.views?.toLocaleString() || 0} views •{" "}
                     {video.createdAt ? formatDistanceToNow(new Date(video.createdAt)) : "recently"} ago
                   </p>
