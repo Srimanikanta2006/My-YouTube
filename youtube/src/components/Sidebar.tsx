@@ -109,12 +109,17 @@ const Sidebar = () => {
                     {!isSidebarCollapsed && <span>Downloads</span>}
                   </Button>
                 </Link>
+
+                <div className="border-t border-gray-200 dark:border-zinc-800 my-1.5" />
+
                 <Link href="/membership">
                   <Button variant="ghost" className={getButtonClass("/membership")}>
                     <Crown className={`w-5 h-5 text-amber-500 ${isSidebarCollapsed ? "" : "mr-3"}`} />
                     {!isSidebarCollapsed && <span>Membership Plans</span>}
                   </Button>
                 </Link>
+
+                <div className="border-t border-gray-200 dark:border-zinc-800 my-1.5" />
                 {user?.channelname ? (
                   <Link href={`/channel/${user._id}`}>
                     <Button variant="ghost" className={getButtonClass(`/channel/${user._id}`)}>

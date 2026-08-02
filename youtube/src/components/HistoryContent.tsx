@@ -177,7 +177,7 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
           {item.videoid.createdAt ? formatDistanceToNow(new Date(item.videoid.createdAt)) : "some time"} ago
         </p>
         <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 font-mono font-medium flex items-center gap-1">
-          <Clock className="w-3 h-3 inline" /> Watched {relativeWatchTime} ago {formattedWatchTime ? `(${formattedWatchTime})` : ""}
+          <Clock className="w-3 h-3 inline" /> Watched {relativeWatchTime} ago
         </p>
       </div>
 
