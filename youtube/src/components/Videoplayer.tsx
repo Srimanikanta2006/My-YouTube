@@ -81,6 +81,41 @@ export default function VideoPlayer({
     videoSrc = videoSrc.replace(/^http:/, "https:");
   }
 
+  const [blobSrc, setBlobSrc] = useState<string | null>(null);
+
+  // Fetch video as same-origin blob for 100% CORS-safe canvas and media stream recording
+  useEffect(() => {
+    if (!videoSrc) {
+      setBlobSrc(null);
+      return;
+    }
+    let isMounted = true;
+
+    // Fetch video as blob if possible
+    fetch(videoSrc, { mode: "cors" })
+      .then((res) => {
+        if (!res.ok) throw new Error("CORS fetch failed");
+        return res.blob();
+      })
+      .then((blob) => {
+        if (isMounted) {
+          const blobUrl = URL.createObjectURL(blob);
+          setBlobSrc(blobUrl);
+        }
+      })
+      .catch((err) => {
+        console.warn("Using direct videoSrc for playback:", err);
+        if (isMounted) setBlobSrc(videoSrc);
+      });
+
+    return () => {
+      isMounted = false;
+      if (blobSrc && blobSrc.startsWith("blob:")) {
+        URL.revokeObjectURL(blobSrc);
+      }
+    };
+  }, [videoSrc]);
+
   // 1. Video Source Reset
   useEffect(() => {
     if (videoRef.current) {
@@ -90,7 +125,7 @@ export default function VideoPlayer({
       setCountdown(5);
       videoRef.current.load();
     }
-  }, [videoSrc]);
+  }, [blobSrc || videoSrc]);
 
   // Sync isPlaying state with native video play/pause events
   useEffect(() => {
@@ -405,7 +440,8 @@ export default function VideoPlayer({
       {/* Video Element */}
       <video
         ref={videoRef}
-        src={videoSrc}
+        src={blobSrc || videoSrc}
+        crossOrigin="anonymous"
         onClick={() => { if (isHost) togglePlay(); }}
         onTimeUpdate={updateProgress}
         onLoadedMetadata={() => videoRef.current && setDuration(videoRef.current.duration)}

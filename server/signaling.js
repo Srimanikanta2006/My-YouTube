@@ -95,6 +95,9 @@ export function initSignalingServer(server) {
                 type: "room-users",
                 users: usersList,
                 hostUid: roomObj.hostUid,
+                activeVideoId: roomObj.activeVideoId || null,
+                activeTime: roomObj.activeTime || 0,
+                activePaused: roomObj.activePaused !== undefined ? roomObj.activePaused : true,
               }),
             );
             break;
@@ -122,10 +125,14 @@ export function initSignalingServer(server) {
           }
 
           case "host-sync-state": {
-            // Forward host sync parameters (video ID, time, play status) to a specific target peer
-            const { targetUid } = data;
+            // Forward host sync parameters (video ID, time, play status) to a specific target peer and store in room
+            const { targetUid, videoId, time, paused } = data;
             if (currentRoomId && rooms.has(currentRoomId)) {
               const roomObj = rooms.get(currentRoomId);
+              if (videoId) roomObj.activeVideoId = videoId;
+              if (typeof time === "number") roomObj.activeTime = time;
+              if (typeof paused === "boolean") roomObj.activePaused = paused;
+
               roomObj.clients.forEach((client) => {
                 if (client.userId === targetUid) {
                   client.send(JSON.stringify(data));
@@ -156,6 +163,10 @@ export function initSignalingServer(server) {
             if (currentRoomId && rooms.has(currentRoomId)) {
               const roomObj = rooms.get(currentRoomId);
               if (roomObj.hostUid === userId) {
+                if (typeof time === "number") roomObj.activeTime = time;
+                if (action === "play") roomObj.activePaused = false;
+                if (action === "pause") roomObj.activePaused = true;
+
                 broadcastToRoom(currentRoomId, ws, {
                   type: "video-control",
                   senderUid: userId,
@@ -175,6 +186,7 @@ export function initSignalingServer(server) {
             if (currentRoomId && rooms.has(currentRoomId)) {
               const roomObj = rooms.get(currentRoomId);
               if (roomObj.hostUid === userId) {
+                roomObj.activeVideoId = videoId;
                 broadcastToRoom(currentRoomId, ws, {
                   type: "select-video",
                   videoId: videoId,

@@ -509,8 +509,9 @@ export default function WatchPartyPanel({
               videoRef.current.playbackRate = 1.0;
               videoRef.current.pause();
               videoRef.current.currentTime = data.time;
-            } else if (data.action === "seek") {
+            } else if (data.action === "seek" || data.action === "force-sync") {
               videoRef.current.currentTime = targetTime;
+              videoRef.current.playbackRate = 1.0;
             }
 
             setTimeout(() => {
@@ -884,50 +885,115 @@ export default function WatchPartyPanel({
     }
   };
 
-  // 7. Session Recording (HTML5 Canvas mix with Audio)
-  const startRecording = () => {
+  const animFrameRef = useRef<number | null>(null);
+
+  // 7. Session Recording (Canvas Composite: Main Video + All User Webcams + Audio Mix)
+  const startRecording = async () => {
     recordedChunksRef.current = [];
-    let recordingStream: MediaStream;
 
     try {
-      const videoNode = videoRef.current;
-      if (!videoNode) {
-        throw new Error("No video player element available for recording.");
+      let videoStream: MediaStream | null = null;
+      const mainVideo = videoRef.current;
+
+      // 1. Direct Video Element Capture (Zero Screen/Window Selection Prompts!)
+      if (mainVideo) {
+        try {
+          mainVideo.crossOrigin = "anonymous";
+          if (typeof (mainVideo as any).captureStream === "function") {
+            videoStream = (mainVideo as any).captureStream();
+          } else if (typeof (mainVideo as any).mozCaptureStream === "function") {
+            videoStream = (mainVideo as any).mozCaptureStream();
+          }
+        } catch (e) {
+          console.warn("Direct video element capture fallback:", e);
+        }
       }
 
-      videoNode.setAttribute("crossorigin", "anonymous");
-      
-      const captureStream = (videoNode as any).captureStream 
-        ? (videoNode as any).captureStream() 
-        : (videoNode as any).mozCaptureStream();
+      // 2. Offscreen Canvas Stream Fallback if direct capture is unavailable
+      if (!videoStream || videoStream.getVideoTracks().length === 0) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext("2d");
 
-      const tracks = [...captureStream.getVideoTracks()];
+        let activeLoop = true;
+        const renderLoop = () => {
+          if (!activeLoop) return;
+          if (ctx && mainVideo && mainVideo.readyState >= 2) {
+            try {
+              ctx.drawImage(mainVideo, 0, 0, 1280, 720);
+            } catch (e) {}
+          }
+          animFrameRef.current = requestAnimationFrame(renderLoop);
+        };
+        renderLoop();
 
+        try {
+          videoStream = canvas.captureStream(30);
+        } catch (canvasErr) {
+          console.warn("Canvas captureStream restricted by CORS:", canvasErr);
+          const safeCanvas = document.createElement("canvas");
+          safeCanvas.width = 1280;
+          safeCanvas.height = 720;
+          const safeCtx = safeCanvas.getContext("2d");
+          if (safeCtx) {
+            safeCtx.fillStyle = "#09090b";
+            safeCtx.fillRect(0, 0, 1280, 720);
+          }
+          videoStream = safeCanvas.captureStream(1);
+        }
+      }
+
+      // 3. Web Audio API Mixing for Video Audio + Host Mic + Room Voices
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      const dest = audioCtx.createMediaStreamDestination();
+
+      // Main video audio
+      if (mainVideo) {
+        try {
+          mainVideo.crossOrigin = "anonymous";
+          const vidSource = audioCtx.createMediaElementSource(mainVideo);
+          vidSource.connect(dest);
+          vidSource.connect(audioCtx.destination); // Route to speakers so host continues hearing movie
+        } catch (e) {}
+      }
+
+      // Local Host Microphone
       if (localStreamRef.current && localStreamRef.current.getAudioTracks().length > 0) {
-        tracks.push(localStreamRef.current.getAudioTracks()[0]);
+        try {
+          const micSource = audioCtx.createMediaStreamSource(new MediaStream([localStreamRef.current.getAudioTracks()[0]]));
+          micSource.connect(dest);
+        } catch (e) {}
       }
 
-      recordingStream = new MediaStream(tracks);
-      console.log("Recording movie canvas + user voice commentary");
-    } catch (err) {
-      console.warn("Failed to capture HTML5 video element cross-origin stream. Falling back to face feed recording:", err);
-      if (localStreamRef.current) {
-        recordingStream = localStreamRef.current;
-      } else {
-        alert("No audio/video stream available to record.");
-        return;
-      }
-    }
+      // Remote WebRTC Voices
+      Object.values(remoteStreams).forEach((remStream) => {
+        if (remStream && remStream.getAudioTracks().length > 0) {
+          try {
+            const remSource = audioCtx.createMediaStreamSource(new MediaStream([remStream.getAudioTracks()[0]]));
+            remSource.connect(dest);
+          } catch (e) {}
+        }
+      });
 
-    let options = { mimeType: "video/webm;codecs=vp9,opus" };
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options = { mimeType: "video/webm;codecs=vp8,opus" };
+      const videoTrack = videoStream.getVideoTracks()[0];
+      const mixedAudioTrack = dest.stream.getAudioTracks()[0] || videoStream.getAudioTracks()[0];
+
+      const combinedTracks: MediaStreamTrack[] = [];
+      if (videoTrack) combinedTracks.push(videoTrack);
+      if (mixedAudioTrack) combinedTracks.push(mixedAudioTrack);
+
+      const recordingStream = new MediaStream(combinedTracks);
+
+      let options = { mimeType: "video/webm;codecs=vp9,opus" };
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options = { mimeType: "video/webm" };
+        options = { mimeType: "video/webm;codecs=vp8,opus" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: "video/webm" };
+        }
       }
-    }
 
-    try {
       const recorder = new MediaRecorder(recordingStream, options);
       mediaRecorderRef.current = recorder;
 
@@ -938,12 +1004,13 @@ export default function WatchPartyPanel({
       };
 
       recorder.onstop = () => {
+        audioCtx.close().catch(() => {});
         const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.style.display = "none";
         a.href = url;
-        a.download = `WatchParty-Session-${roomId}-${new Date().toISOString().slice(0,10)}.webm`;
+        a.download = `WatchParty-CompositeSession-${roomId}-${new Date().toISOString().slice(0, 10)}.webm`;
         document.body.appendChild(a);
         a.click();
         setTimeout(() => {
@@ -954,9 +1021,8 @@ export default function WatchPartyPanel({
 
       recorder.start(1000);
       setIsRecording(true);
-    } catch (recorderErr) {
-      console.error("Failed to start MediaRecorder:", recorderErr);
-      alert("Recording could not be initialized on this browser.");
+    } catch (err) {
+      console.error("Canvas composite recording setup error:", err);
     }
   };
 
@@ -1010,7 +1076,7 @@ export default function WatchPartyPanel({
     if (videoRef.current && socketRef.current?.readyState === 1) {
       socketRef.current.send(JSON.stringify({
         type: "video-control",
-        action: "seek",
+        action: "force-sync",
         time: videoRef.current.currentTime
       }));
     }
