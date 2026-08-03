@@ -79,43 +79,31 @@ export default function WatchPage() {
         {/* Left main content: Video Player, Info, Comments */}
         <div className="flex-1 lg:max-w-[67%] xl:max-w-[69%] space-y-4 sm:space-y-5">
           {isPremiumLocked ? (
-            <div className="aspect-video w-full bg-gradient-to-br from-zinc-900 via-gray-900 to-black rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white relative border border-zinc-800 shadow-2xl overflow-hidden">
-              <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mb-4 animate-bounce">
-                <Crown className="w-8 h-8" />
+            <div className="aspect-video w-full bg-gradient-to-br from-zinc-900 via-gray-900 to-black rounded-none sm:rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white relative border-0 sm:border border-zinc-800 shadow-2xl overflow-hidden">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mb-3 animate-bounce">
+                <Crown className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-black mb-2 tracking-tight text-white">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-black mb-5 tracking-tight text-white">
                 Premium Exclusive Video
               </h2>
 
               {!user ? (
-                <>
-                  <p className="text-xs md:text-sm text-gray-300 max-w-md mb-6 leading-relaxed">
-                    This video is premium exclusive. Please sign in to your account to watch or upgrade your plan.
-                  </p>
-
-                  <button
-                    onClick={handlegooglesignin}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Sign In to Watch
-                  </button>
-                </>
+                <button
+                  onClick={handlegooglesignin}
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-extrabold text-xs sm:text-sm px-6 py-3 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Sign In to Watch
+                </button>
               ) : (
-                <>
-                  <p className="text-xs md:text-sm text-gray-300 max-w-md mb-6 leading-relaxed">
-                    This content is restricted to Bronze, Silver, and Gold members. Upgrade your plan today to unlock instant ad-free viewing and offline downloads!
-                  </p>
-
-                  <button
-                    onClick={() => router.push("/membership")}
-                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Upgrade Membership (Starting at ₹99)
-                  </button>
-                </>
+                <button
+                  onClick={() => router.push("/membership")}
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs sm:text-sm px-6 py-3 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Upgrade Membership (Starting at ₹99)
+                </button>
               )}
             </div>
           ) : (

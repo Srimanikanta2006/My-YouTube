@@ -1,4 +1,5 @@
 import comment from "../Modals/comment.js";
+import user from "../Modals/auth.js";
 import mongoose from "mongoose";
 
 // List of profanity and abusive terms for server-side lexical evaluation
@@ -110,6 +111,14 @@ export const postcomment = async (req, res) => {
   }
 
   try {
+    // 0. Premium Plan Guard: Only paid tier members (Bronze, Silver, Gold) can post comments
+    const commentingUser = await user.findById(userid);
+    if (!commentingUser || !commentingUser.plan || commentingUser.plan === "Free") {
+      return res.status(403).json({
+        message: "Commenting is a Premium Plan feature. Upgrade your account to Bronze, Silver, or Gold to post comments on videos!",
+      });
+    }
+
     // 3. Time-Based Rate Limiting (Lightweight MongoDB Temporal Query: 1 comment every 10 seconds per user)
     const recentPostingCount = await comment.countDocuments({
       userid,

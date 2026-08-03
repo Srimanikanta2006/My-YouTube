@@ -18,6 +18,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { useUser } from "../lib/AuthContext";
 import Link from "next/link";
+import { addNotification } from "@/lib/notificationHelper";
 import { useRouter } from "next/router";
 import axiosInstance from "../lib/axiosinstance";
 import { getBackendUrl } from "../lib/urlHelper";
@@ -288,6 +289,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
         if (uploaderId && !subscribedChannels.includes(uploaderId)) subscribedChannels.push(uploaderId);
         setIsSubscribed(true);
         setSubscriberCount((prev) => prev + 1);
+        addNotification({
+          type: "subscribe",
+          title: `🔥 ${name || "User"} subscribed to your channel.`,
+          message: "Someone subscribed to your channel",
+          actionUrl: uploaderId ? `/channel/${uploaderId}` : "/",
+        });
       }
       localStorage.setItem("subscribedChannels", JSON.stringify(subscribedChannels));
       window.dispatchEvent(new Event("subscription-changed"));
@@ -379,6 +386,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       setTimeout(() => {
         setDownloadState("success");
         showToast("Video downloaded & saved!");
+        addNotification({
+          type: "download",
+          title: "⬇ Video downloaded successfully.",
+          message: `"${video.videotitle || "Video"}" saved to offline downloads.`,
+          actionUrl: "/downloads",
+        });
         setTimeout(() => {
           setDownloadState("idle");
           setDownloadProgress(0);
@@ -408,8 +421,8 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
       {/* Dynamic Responsive Meta Row (Drops all 4 action buttons together below channel info on screens under 1280px / 110% zoom) */}
       <div className="flex flex-col min-[1280px]:flex-row min-[1280px]:items-center justify-between gap-3 sm:gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
-        {/* Left Section: Channel Info & Subscribe Button */}
-        <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-nowrap">
+        {/* Left Section: Channel Info & Subscribe Button (Subscribe pushed to right corner on mobile) */}
+        <div className="flex items-center justify-between min-[1280px]:justify-start gap-3 sm:gap-4 w-full min-[1280px]:w-auto shrink-0 flex-nowrap">
           <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer shrink-0">
             <Avatar className="w-10 h-10 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
               <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
@@ -429,7 +442,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           {!isVideoOwner && (
             <Button
               onClick={handleSubscribe}
-              className={`rounded-full transition-all duration-200 cursor-pointer min-w-[96px] h-9 text-xs shrink-0 text-center flex items-center justify-center whitespace-nowrap ${
+              className={`ml-auto min-[1280px]:ml-0 rounded-full transition-all duration-200 cursor-pointer min-w-[96px] h-9 text-xs shrink-0 text-center flex items-center justify-center whitespace-nowrap ${
                 isSubscribed
                   ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-medium"
                   : "bg-red-600 text-white hover:bg-red-700 font-bold"
@@ -440,12 +453,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           )}
         </div>
 
-        {/* Right Section: All 4 Action Buttons Grouped Together (Drops to line 2 on screens under 1280px to prevent 110% zoom clipping) */}
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap shrink-0 overflow-x-auto scrollbar-none py-0.5 max-w-full">
-          {/* Merged Like / Dislike Pill Button */}
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full shrink-0 text-zinc-900 dark:text-zinc-100 h-9 md:h-10 border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden shadow-xs">
+        {/* Right Section: All 4 Action Buttons Grouped Together (Extends to 100% width with 0 gap on right on mobile screens) */}
+        <div className="flex items-center justify-between min-[1280px]:justify-start gap-2 sm:gap-2.5 flex-nowrap w-full min-[1280px]:w-auto shrink-0 overflow-x-auto scrollbar-none py-0.5 max-w-full">
+          {/* Merged Like / Dislike Pill Button (Uncompressed Natural Size via shrink-0) */}
+          <div className="flex items-center shrink-0 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-900 dark:text-zinc-100 h-9 md:h-10 border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden shadow-xs">
             <button
-              className="rounded-l-full hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 cursor-pointer h-9 md:h-10 px-3 sm:px-3.5 text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all select-none whitespace-nowrap"
+              className="hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 cursor-pointer h-9 md:h-10 px-3 sm:px-3.5 text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all select-none whitespace-nowrap shrink-0"
               onClick={handleLike}
               title="Like"
             >
@@ -462,7 +475,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
             </button>
             <div className="w-px h-4.5 bg-zinc-300 dark:bg-zinc-700 shrink-0" />
             <button
-              className="rounded-r-full hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 cursor-pointer h-9 md:h-10 px-3 sm:px-3.5 text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all select-none whitespace-nowrap"
+              className="hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 cursor-pointer h-9 md:h-10 px-3 sm:px-3.5 text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all select-none whitespace-nowrap shrink-0"
               onClick={handleDislike}
               title="Dislike"
             >
@@ -481,7 +494,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Watch Later / Save Button with Zero Layout Shift */}
           <button
-            className={`min-w-[40px] sm:min-w-[110px] md:min-w-[125px] flex items-center justify-center gap-1.5 h-9 md:h-10 px-2.5 sm:px-3.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full font-semibold text-xs md:text-sm shrink-0 cursor-pointer transition-all select-none whitespace-nowrap ${
+            className={`flex-1 min-[1280px]:flex-none min-w-[40px] sm:min-w-[110px] md:min-w-[125px] flex items-center justify-center gap-1.5 h-9 md:h-10 px-2.5 sm:px-3.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full font-semibold text-xs md:text-sm shrink-0 cursor-pointer transition-all select-none whitespace-nowrap ${
               isWatchLater ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold" : ""
             }`}
             onClick={handleWatchLater}
@@ -497,7 +510,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Share Button with Icon Swap Feedback */}
           <button
-            className="min-w-[40px] sm:min-w-[80px] md:min-w-[90px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold flex items-center justify-center gap-1.5 transition-all select-none whitespace-nowrap"
+            className="flex-1 min-[1280px]:flex-none min-w-[40px] sm:min-w-[80px] md:min-w-[90px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold flex items-center justify-center gap-1.5 transition-all select-none whitespace-nowrap"
             onClick={handleShare}
             title="Share Video"
           >
@@ -511,7 +524,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Download Button with SVG Circular Progress Ring & Scale-Bounce Checkmark */}
           <button
-            className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer min-w-[40px] sm:min-w-[110px] md:min-w-[125px] h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold text-center flex items-center justify-center select-none whitespace-nowrap ${
+            className={`flex-1 min-[1280px]:flex-none bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer min-w-[40px] sm:min-w-[110px] md:min-w-[125px] h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold text-center flex items-center justify-center select-none whitespace-nowrap ${
               downloadState === "success" ? "bg-green-100 dark:bg-green-950/80 text-green-800 dark:text-green-300 border border-green-300/50 dark:border-green-800/50" : ""
             }`}
             onClick={handleDownload}

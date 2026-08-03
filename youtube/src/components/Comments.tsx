@@ -5,8 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/router";
 import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
+import { addNotification } from "@/lib/notificationHelper";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -67,6 +69,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const { user } = useUser();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   // Privacy & Location
@@ -166,6 +169,12 @@ const Comments = ({ videoId }: { videoId: string }) => {
 
       setNewComment("");
       showSuccessMsg("Comment posted successfully!");
+      addNotification({
+        type: "comment",
+        title: `💬 ${user.name || user.channelname || "User"} commented on your video.`,
+        message: `Commented: "${newComment.substring(0, 35)}${newComment.length > 35 ? "..." : ""}"`,
+        actionUrl: `/watch/${videoId}`,
+      });
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Failed to post comment. Please try again.";
       showModerationAlert(errorMsg);
@@ -421,8 +430,8 @@ const Comments = ({ videoId }: { videoId: string }) => {
         </div>
       )}
 
-      {/* Comment Input Box */}
-      {user ? (
+      {/* Comment Input Box (Only rendered for Paid Membership Tier Accounts - Read-Only for Free Tier) */}
+      {user && user.plan && user.plan !== "Free" && (
         <div className="flex gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800">
           <Avatar className="w-10 h-10 border border-zinc-200 dark:border-zinc-700">
             <AvatarImage src={user.image || ""} />
@@ -453,19 +462,21 @@ const Comments = ({ videoId }: { videoId: string }) => {
                 <MapPin className="w-3.5 h-3.5" />
                 {shareLocation
                   ? `📍 Attach Location (${userLocation.city}, ${userLocation.country})`
-                  : "📍 Location Hidden (Privacy ON)"}
+                  : "Attach Location"}
               </button>
 
-              <div className="flex gap-2 justify-end">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={() => setNewComment("")}
                   disabled={!newComment.trim() || isSubmitting}
-                  className="text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full"
+                  className="rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-400"
                 >
                   Cancel
                 </Button>
                 <Button
+                  size="sm"
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isSubmitting}
                   className="bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full px-5"
@@ -481,10 +492,6 @@ const Comments = ({ videoId }: { videoId: string }) => {
               </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="p-4 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Sign in to join the conversation and post comments.
         </div>
       )}
 

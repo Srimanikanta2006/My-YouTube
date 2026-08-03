@@ -13,6 +13,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import Channeldialogue from "./channeldialogue";
+import NotificationBell from "./NotificationBell";
 import { useUser } from "@/lib/AuthContext";
 
 const Header = () => {
@@ -152,9 +153,7 @@ const Header = () => {
             >
               <VideoIcon className="w-6 h-6" />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
-              <Bell className="w-6 h-6 text-zinc-700 dark:text-zinc-300" />
-            </Button>
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger className="relative h-8 w-8 rounded-full flex items-center justify-center focus:outline-none hover:opacity-90 transition-opacity cursor-pointer">
                 <Avatar className="h-8 w-8">

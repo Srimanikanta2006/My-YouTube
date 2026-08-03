@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useUser } from "../lib/AuthContext";
+import { useRouter } from "next/router";
 import { getWsUrl, getBackendUrl } from "../lib/urlHelper";
 import { Button } from "./ui/button";
+import { addNotification } from "@/lib/notificationHelper";
 import { Input } from "./ui/input";
 import { 
   Users, Video, VideoOff, Mic, MicOff, PhoneOff, 
@@ -185,6 +187,12 @@ export default function WatchPartyPanel({
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
+    addNotification({
+      type: "watch_party",
+      title: `🎉 ${user?.name || user?.channelname || "Host"} invited you to a Watch Party.`,
+      message: `Click to join live room ${roomId}`,
+      actionUrl: `/watch-party?room=${roomId}`,
+    });
     setTimeout(() => setCopied(false), 2000);
   };
 

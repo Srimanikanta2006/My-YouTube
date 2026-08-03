@@ -3,8 +3,10 @@ import React, { ChangeEvent, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Progress } from "./ui/progress";
 import axiosInstance from "../lib/axiosinstance";
 import { useUser } from "../lib/AuthContext";
+import { addNotification } from "../lib/notificationHelper";
 import axios from "axios";
 
 const VideoUploader = ({ onUploadSuccess }: any) => {
@@ -159,6 +161,12 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
       });
 
       setUploadComplete(true);
+      addNotification({
+        type: "upload",
+        title: "🎬 Your upload is ready.",
+        message: `"${videoTitle}" has finished processing.`,
+        actionUrl: "/",
+      });
       setTimeout(() => {
         resetForm();
         if (onUploadSuccess) {

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Crown, Check, Sparkles, ShieldCheck, Download, Zap, Printer, X, CreditCard, Loader2 } from "lucide-react";
-import { useUser } from "../lib/AuthContext";
-import axiosInstance from "../lib/axiosinstance";
+import { useUser } from "@/lib/AuthContext";
+import axiosInstance from "@/lib/axiosinstance";
+import { addNotification } from "@/lib/notificationHelper";
 import { Button } from "./ui/button";
 import Head from "next/head";
 
@@ -186,6 +187,12 @@ export default function MembershipContent() {
           }
 
           setCurrentPlan(plan.name);
+          addNotification({
+            type: "payment",
+            title: `✅ ${plan.name} Membership activated.`,
+            message: `Premium payment succeeded for ${plan.name} plan. All features unlocked!`,
+            actionUrl: "/membership",
+          });
 
           // Construct bulletproof invoice data (from API response or fallback)
           const invoiceData = verifyRes.data?.invoice || {
