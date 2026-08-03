@@ -80,16 +80,24 @@ export default function SubscriptionsPage() {
       {/* Videos Section */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Latest Videos</h2>
-
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-1/2" />
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-6">
+            {[...Array(8)].map((_, i) => {
+              const titleWidths = ["w-11/12", "w-4/5", "w-full", "w-3/4", "w-5/6", "w-9/12"];
+              const metaWidths = ["w-1/2", "w-3/5", "w-2/5", "w-1/3", "w-4/6"];
+              return (
+                <div key={i} className="flex flex-col space-y-3 animate-pulse" style={{ animationDelay: `${i * 80}ms` }}>
+                  <div className="aspect-video bg-zinc-200 dark:bg-zinc-800/90 rounded-2xl relative overflow-hidden" />
+                  <div className="flex gap-3 items-start">
+                    <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800/90 flex-shrink-0" />
+                    <div className="flex-1 space-y-2 py-0.5">
+                      <div className={`h-4 bg-zinc-200 dark:bg-zinc-800/90 rounded-md ${titleWidths[i % titleWidths.length]}`} />
+                      <div className={`h-3 bg-zinc-200 dark:bg-zinc-800/70 rounded-md ${metaWidths[i % metaWidths.length]}`} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : videos.length === 0 ? (
           <div className="text-center py-12 border border-gray-200 dark:border-zinc-800 rounded-2xl bg-zinc-50 dark:bg-zinc-900">

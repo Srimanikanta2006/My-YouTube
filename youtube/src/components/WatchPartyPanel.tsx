@@ -1454,15 +1454,15 @@ export default function WatchPartyPanel({
               </Button>
             )}
 
-            {/* Leave Room Button */}
+            {/* Prominent Leave Room Button with Visual Priority */}
             <Button 
               variant="destructive" 
               onClick={handleLeave}
-              size="icon"
-              className="rounded-full h-10 w-10 shadow bg-red-600 hover:bg-red-700 text-white cursor-pointer flex-shrink-0"
+              className="rounded-full px-4 sm:px-5 py-2.5 h-10 shadow-lg shadow-red-950/50 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 border border-red-500/40 text-white font-bold text-xs flex items-center gap-2 cursor-pointer flex-shrink-0 transition-all hover:scale-105 active:scale-95 ml-2"
               title="Leave Watch Party"
             >
               <PhoneOff className="w-4 h-4" />
+              <span className="hidden sm:inline">Leave Room</span>
             </Button>
           </div>
         </div>

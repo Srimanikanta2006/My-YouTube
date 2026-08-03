@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import video from "../Modals/video.js";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
@@ -216,5 +217,75 @@ export const getCloudinarySignature = async (req, res) => {
   } catch (error) {
     console.error("Error generating Cloudinary signature:", error);
     return res.status(500).json({ message: "Failed to generate upload signature" });
+  }
+};
+
+// Stream Download Video with Signed Expiring Token Verification
+export const streamDownloadVideo = async (req, res) => {
+  const { id } = req.params;
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(401).json({ message: "Download token is required." });
+  }
+
+  try {
+    const parts = token.split(":");
+    if (parts.length !== 4) {
+      return res.status(400).json({ message: "Invalid download token format." });
+    }
+
+    const [userId, videoId, expiresAtStr, signature] = parts;
+    const expiresAt = parseInt(expiresAtStr, 10);
+
+    if (Date.now() > expiresAt) {
+      return res.status(403).json({ message: "Download link expired. Please request a new download." });
+    }
+
+    if (videoId !== id) {
+      return res.status(403).json({ message: "Token video ID mismatch." });
+    }
+
+    const secret =
+      process.env.DOWNLOAD_TOKEN_SECRET ||
+      process.env.JWT_SECRET ||
+      "youtube_dedicated_download_token_secret_key";
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(`${userId}:${videoId}:${expiresAtStr}`)
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      return res.status(403).json({ message: "Invalid download token signature." });
+    }
+
+    const videoDoc = await video.findById(id);
+    if (!videoDoc) {
+      return res.status(404).json({ message: "Video not found." });
+    }
+
+    // Set download attachment headers
+    const filename = videoDoc.filename || `${videoDoc.videotitle || 'video'}.mp4`;
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.setHeader("Content-Type", videoDoc.filetype || "video/mp4");
+
+    // Redirect or stream file (Inject fl_attachment for Cloudinary hosted URLs)
+    if (videoDoc.filepath.startsWith("http://") || videoDoc.filepath.startsWith("https://")) {
+      let targetUrl = videoDoc.filepath;
+      if (targetUrl.includes("cloudinary.com") && targetUrl.includes("/upload/")) {
+        targetUrl = targetUrl.replace("/upload/", "/upload/fl_attachment/");
+      }
+      return res.redirect(targetUrl);
+    } else {
+      const filePath = path.resolve(videoDoc.filepath);
+      if (fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
+      } else {
+        return res.status(404).json({ message: "Video file not found on server storage." });
+      }
+    }
+  } catch (error) {
+    console.error("Error in streamDownloadVideo:", error);
+    return res.status(500).json({ message: "Server error streaming download." });
   }
 };

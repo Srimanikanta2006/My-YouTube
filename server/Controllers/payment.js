@@ -100,11 +100,18 @@ Date          : ${formattedDate}
 
 // Initialize Razorpay SDK instance
 const getRazorpayInstance = () => {
-  const key_id = process.env.RAZORPAY_KEY_ID || "rzp_test_MyYouTubeKey";
-  const key_secret = process.env.RAZORPAY_KEY_SECRET || "rzp_test_secret_12345";
+  const key_id = process.env.RAZORPAY_KEY_ID;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!key_id || !key_secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Missing required Razorpay credentials (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET) in environment variables.");
+    }
+  }
+
   return new Razorpay({
-    key_id,
-    key_secret,
+    key_id: key_id || "rzp_test_MyYouTubeKey",
+    key_secret: key_secret || "rzp_test_secret_12345",
   });
 };
 
@@ -117,29 +124,32 @@ export const createOrder = async (req, res) => {
   }
 
   if (!PLAN_PRICES[plan]) {
-    return res.status(400).json({ message: "Invalid plan selected." });
+    return res.status(400).json({ message: "Invalid plan selected. Allowed plans: Bronze, Silver, Gold." });
   }
 
   try {
-    const amountInRupees = PLAN_PRICES[plan];
-    const amountInPaise = amountInRupees * 100; // Razorpay expects amount in smallest currency unit
-
-    const razorpay = getRazorpayInstance();
-    const options = {
-      amount: amountInPaise,
-      currency: "INR",
-      receipt: `receipt_${Date.now()}_${userId.slice(-4)}`,
-      notes: {
-        userId,
-        plan,
-      },
-    };
+    const basePrice = PLAN_PRICES[plan];
+    const totalAmountWithGst = Math.round(basePrice * 1.18); // Base price + 18% GST
+    const amountInPaise = totalAmountWithGst * 100; // Razorpay expects smallest currency unit (paise)
 
     let order;
     try {
+      const razorpay = getRazorpayInstance();
+      const options = {
+        amount: amountInPaise,
+        currency: "INR",
+        receipt: `receipt_${Date.now()}_${userId.slice(-4)}`,
+        notes: {
+          userId,
+          plan,
+        },
+      };
       order = await razorpay.orders.create(options);
     } catch (rzpErr) {
-      console.warn("Razorpay API live connection note, creating fallback test order ID:", rzpErr.message);
+      if (process.env.NODE_ENV === "production") {
+        throw rzpErr;
+      }
+      console.warn("Razorpay live API unavailable in dev mode, creating fallback test order ID:", rzpErr.message);
       order = {
         id: `order_test_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         amount: amountInPaise,
@@ -152,7 +162,7 @@ export const createOrder = async (req, res) => {
       userId,
       orderId: order.id,
       plan,
-      amount: amountInRupees,
+      amount: totalAmountWithGst,
       currency: "INR",
       status: "created",
     });
@@ -162,7 +172,9 @@ export const createOrder = async (req, res) => {
       success: true,
       orderId: order.id,
       amount: amountInPaise,
-      amountInRupees,
+      amountInRupees: totalAmountWithGst,
+      basePrice,
+      gstAmount: Math.round(basePrice * 0.18),
       currency: "INR",
       keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_MyYouTubeKey",
       plan,
@@ -177,25 +189,32 @@ export const createOrder = async (req, res) => {
 export const verifyPayment = async (req, res) => {
   const { userId, orderId, paymentId, signature, plan } = req.body;
 
-  if (!userId || !orderId || !plan) {
-    return res.status(400).json({ message: "Missing required payment verification details." });
+  // Strict mandatory input verification
+  if (!userId || !orderId || !paymentId || !signature || !plan) {
+    return res.status(400).json({ message: "Payment verification failed: userId, orderId, paymentId, signature, and plan are mandatory." });
+  }
+
+  // Strict plan string validation
+  if (!PLAN_PRICES[plan]) {
+    return res.status(400).json({ message: "Invalid plan specified. Allowed plans: Bronze, Silver, Gold." });
   }
 
   try {
     const secret = process.env.RAZORPAY_KEY_SECRET || "rzp_test_secret_12345";
-    
-    let isSignatureValid = true;
-    if (signature && paymentId && !orderId.startsWith("order_test_")) {
+
+    // Signature HMAC SHA-256 verification
+    const isDevTestOrder = orderId.startsWith("order_test_");
+
+    if (!isDevTestOrder) {
       const body = orderId + "|" + paymentId;
       const expectedSignature = crypto
         .createHmac("sha256", secret)
         .update(body.toString())
         .digest("hex");
-      isSignatureValid = expectedSignature === signature;
-    }
 
-    if (!isSignatureValid) {
-      return res.status(400).json({ message: "Invalid payment signature verification failed." });
+      if (expectedSignature !== signature) {
+        return res.status(400).json({ message: "Invalid payment signature verification failed." });
+      }
     }
 
     // Calculate subscription validity (30 days from today)
@@ -221,31 +240,35 @@ export const verifyPayment = async (req, res) => {
     const paymentRecord = await payment.findOneAndUpdate(
       { orderId },
       {
-        paymentId: paymentId || `pay_test_${Date.now()}`,
-        signature: signature || "simulated_test_signature",
+        paymentId,
+        signature,
         status: "paid",
         paidAt: startDate,
       },
       { returnDocument: "after" }
     );
 
-    // Generate Invoice Summary metadata
+    const basePrice = PLAN_PRICES[plan];
+    const gstAmount = Math.round(basePrice * 0.18);
+    const totalAmount = Math.round(basePrice * 1.18);
+
+    // Generate Invoice Summary metadata matching charged Razorpay total
     const invoice = {
       invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-      transactionId: paymentId || `pay_test_${Date.now()}`,
+      transactionId: paymentId,
       orderId,
       userEmail: updatedUser.email,
       userName: updatedUser.name || updatedUser.channelname || "Subscriber",
       plan,
-      amount: PLAN_PRICES[plan] || 99,
+      basePrice,
+      gstAmount,
+      totalAmount,
       currency: "INR",
-      gstAmount: Math.round((PLAN_PRICES[plan] || 99) * 0.18),
-      totalAmount: Math.round((PLAN_PRICES[plan] || 99) * 1.18),
       paidAt: startDate,
       expiresAt: expiresDate,
     };
 
-    // Dispatch automated confirmation email via Nodemailer (non-fatal, never blocks invoice modal)
+    // Dispatch automated confirmation email via Nodemailer/Brevo (non-fatal, never blocks invoice modal)
     try {
       await sendSubscriptionEmail(invoice);
     } catch (emailErr) {

@@ -31,18 +31,8 @@ const parseUserAgentDetailed = (uaString = "") => {
   return `${browser} on ${os}`;
 };
 
-// Real Location Resolver: Uses client payload or multi-provider server-side Geo-IP lookup
+// Real Location Resolver: Server-side Geo-IP lookup is primary source of truth
 const resolveRealLocation = async (req) => {
-  // 1. Prioritize client location payload if available
-  if (req.body?.location?.city && req.body.location.city !== "Unknown") {
-    return {
-      city: req.body.location.city,
-      state: req.body.location.state || req.body.location.city,
-      country: req.body.location.country || "India",
-    };
-  }
-
-  // 2. Extract Client IP
   let ip =
     req.headers["x-forwarded-for"] || req.socket?.remoteAddress || req.ip || "";
   if (typeof ip === "string" && ip.includes(",")) {
@@ -57,33 +47,48 @@ const resolveRealLocation = async (req) => {
     ip.startsWith("192.168.") ||
     ip.startsWith("10.");
 
-  // Provider 1: ipwho.is (Fast, reliable, HTTPS support)
-  try {
-    const apiUrl = isLocal ? "https://ipwho.is/" : `https://ipwho.is/${ip}`;
-    const res = await axios.get(apiUrl, { timeout: 2000 });
-    if (res.data && res.data.success && res.data.city) {
-      return {
-        city: res.data.city,
-        state: res.data.region || res.data.city,
-        country: res.data.country || "India",
-      };
-    }
-  } catch (err) {}
+  // If public remote IP, server-side Geo-IP is the sole source of truth (prevents client spoofing)
+  if (!isLocal) {
+    // Provider 1: ipwho.is
+    try {
+      const res = await axios.get(`https://ipwho.is/${ip}`, { timeout: 3000 });
+      if (res.data && res.data.success && res.data.city) {
+        return {
+          city: res.data.city,
+          state: res.data.region || res.data.city,
+          country: res.data.country || "India",
+        };
+      }
+    } catch (err) {}
 
-  // Provider 2: ipapi.co fallback
-  try {
-    const apiUrl = isLocal
-      ? "https://ipapi.co/json/"
-      : `https://ipapi.co/${ip}/json/`;
-    const res = await axios.get(apiUrl, { timeout: 2000 });
-    if (res.data && res.data.city) {
-      return {
-        city: res.data.city,
-        state: res.data.region || res.data.region_code || "Telangana",
-        country: res.data.country_name || "India",
-      };
-    }
-  } catch (err) {}
+    // Provider 2: ipapi.co fallback
+    try {
+      const res = await axios.get(`https://ipapi.co/${ip}/json/`, { timeout: 3000 });
+      if (res.data && res.data.city) {
+        return {
+          city: res.data.city,
+          state: res.data.region || res.data.region_code || "Telangana",
+          country: res.data.country_name || "India",
+        };
+      }
+    } catch (err) {}
+
+    // For public IPs, if both Geo-IP services fail, fall back directly to server default (NEVER client hint)
+    return {
+      city: "Hyderabad",
+      state: "Telangana",
+      country: "India",
+    };
+  }
+
+  // Use client payload hint ONLY for local/dev environments
+  if (req.body?.location?.city && req.body.location.city !== "Unknown") {
+    return {
+      city: req.body.location.city,
+      state: req.body.location.state || req.body.location.city,
+      country: req.body.location.country || "India",
+    };
+  }
 
   return {
     city: "Hyderabad",
@@ -273,27 +278,24 @@ export const login = async (req, res) => {
         updateFields.plan = "Free";
       }
 
-      // If user hasn't explicitly saved a theme, set based on IST time
-      if (!existingUser.theme) {
+      // If user hasn't explicitly set a custom theme preference, dynamically re-evaluate theme on login based on IST time
+      if (!existingUser.themeIsUserSet) {
         updateFields.theme = calculatedTheme;
       }
 
       const knownLocationsList = existingUser.knownLocations || [];
       const knownDevicesList = existingUser.knownDevices || [];
 
-      // A device is TRUSTED if its deviceId matches knownDevices OR if device & city match knownLocations
+      // A login is TRUSTED ONLY IF:
+      // 1. deviceId matches an entry in knownDevices, OR
+      // 2. Both exact City AND State match a previously verified knownLocation entry
       const isKnownDevice =
         (deviceId && knownDevicesList.includes(deviceId)) ||
         knownLocationsList.some(
           (loc) =>
             (deviceId && loc.deviceId === deviceId) ||
-            (loc.device?.toLowerCase() ===
-              currentLocation.device.toLowerCase() &&
-              loc.city?.toLowerCase() === currentLocation.city.toLowerCase()) ||
-            (loc.device?.toLowerCase() ===
-              currentLocation.device.toLowerCase() &&
-              loc.country?.toLowerCase() ===
-                currentLocation.country.toLowerCase()),
+            (loc.city?.toLowerCase() === currentLocation.city.toLowerCase() &&
+              loc.state?.toLowerCase() === currentLocation.state.toLowerCase())
         );
 
       if (!isKnownDevice) {
@@ -476,7 +478,10 @@ export const updateprofile = async (req, res) => {
     const updateFields = {};
     if (channelname !== undefined) updateFields.channelname = channelname;
     if (description !== undefined) updateFields.description = description;
-    if (theme !== undefined) updateFields.theme = theme;
+    if (theme !== undefined) {
+      updateFields.theme = theme;
+      updateFields.themeIsUserSet = true;
+    }
 
     const updatedata = await users.findByIdAndUpdate(
       _id,

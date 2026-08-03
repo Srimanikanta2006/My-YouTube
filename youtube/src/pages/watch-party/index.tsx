@@ -101,20 +101,24 @@ export default function WatchPartyPortal() {
   if (!room) {
     return (
       <div className="max-w-[1200px] mx-auto p-3 sm:p-4 pt-2 md:pt-3 space-y-4 sm:space-y-6 animate-in fade-in duration-200">
-        {/* Banner */}
-        <div className="bg-gradient-to-r from-red-600 to-rose-700 rounded-3xl p-6 sm:p-8 md:p-10 text-white relative overflow-hidden shadow-xl">
-          <div className="absolute right-0 top-0 opacity-10 transform translate-x-12 -translate-y-12 pointer-events-none">
-            <Tv className="w-96 h-96" />
+        {/* Asymmetric Premium Studio Banner */}
+        <div className="bg-gradient-to-br from-zinc-900 via-red-950/60 to-zinc-950 border border-red-500/20 rounded-3xl p-6 sm:p-8 md:p-10 text-white relative overflow-hidden shadow-2xl">
+          {/* Ambient Glows */}
+          <div className="absolute -top-20 -left-20 w-80 h-80 bg-red-600/20 blur-3xl rounded-full pointer-events-none"></div>
+          <div className="absolute top-1/2 right-10 w-96 h-96 bg-rose-600/10 blur-3xl rounded-full pointer-events-none"></div>
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-10 pointer-events-none hidden md:block">
+            <Tv className="w-80 h-80 text-red-500" />
           </div>
-          <div className="max-w-xl space-y-3 relative z-10">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold backdrop-blur-sm">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" /> New Dedicated Theater Portal
+
+          <div className="max-w-xl space-y-4 relative z-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold backdrop-blur-md">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Synced Theater Room
             </span>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none">
-              Stream Together, Synchronized.
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+              Watch Videos Together in Real Time.
             </h1>
-            <p className="text-sm md:text-base text-red-100 font-medium leading-relaxed">
-              Create a room, share the invite URL with friends, and enjoy real-time synced videos with integrated WebRTC video calling and chat!
+            <p className="text-sm md:text-base text-zinc-300 font-medium leading-relaxed">
+              Create a private room, share your link with friends, and enjoy synchronized video playback with live video calls and room chat.
             </p>
           </div>
         </div>

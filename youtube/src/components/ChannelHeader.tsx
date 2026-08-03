@@ -62,8 +62,14 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
 
   return (
     <div className="w-full text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-      {/* 1. Shorter Banner */}
-      <div className="relative h-24 md:h-36 lg:h-44 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 rounded-2xl overflow-hidden shadow-sm"></div>
+      {/* 1. Asymmetric Modern Channel Cover Banner */}
+      <div className="relative h-28 md:h-44 lg:h-52 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-slate-900 to-zinc-950 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-md">
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+        {/* Ambient color glows */}
+        <div className="absolute -top-12 -right-12 w-80 h-80 bg-indigo-500/20 blur-3xl rounded-full pointer-events-none"></div>
+        <div className="absolute -bottom-16 left-1/3 w-96 h-96 bg-purple-500/10 blur-3xl rounded-full pointer-events-none"></div>
+      </div>
 
       {/* 2. Raised Profile Info section with Overlapping Avatar */}
       <div className="px-1 sm:px-2 pt-0 pb-4">

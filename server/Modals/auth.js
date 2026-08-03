@@ -12,6 +12,7 @@ const userschema = mongoose.Schema({
   subscriptionStartDate: { type: Date },
   subscriptionExpiresAt: { type: Date },
   theme: { type: String, default: "dark" },
+  themeIsUserSet: { type: Boolean, default: false },
   lastLocation: {
     city: { type: String },
     state: { type: String },

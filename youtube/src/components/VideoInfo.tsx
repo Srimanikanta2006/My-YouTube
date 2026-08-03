@@ -329,14 +329,15 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setDownloadState("loading");
 
     try {
-      await axiosInstance.post("/download/track", {
+      const trackRes = await axiosInstance.post("/download/track", {
         userId: user._id,
         videoId: video._id,
       });
 
-      const response = await fetch(videoSrc);
+      const targetUrl = trackRes.data?.downloadUrl || videoSrc;
+      const response = await fetch(targetUrl);
       if (!response.ok) {
-        window.open(videoSrc, "_blank");
+        window.open(targetUrl, "_blank");
       } else {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
