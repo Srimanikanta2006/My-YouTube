@@ -32,80 +32,7 @@ export interface NotificationItem {
   isRead: boolean;
 }
 
-const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "notif-1",
-    type: "subscribe",
-    title: "🔥 Madara subscribed to your channel.",
-    message: "Someone subscribed to your channel",
-    actionUrl: "/",
-    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5m ago
-    isRead: false,
-  },
-  {
-    id: "notif-2",
-    type: "comment",
-    title: "💬 Naruto commented on your video.",
-    message: 'Commented: "Dattebayo! Awesome animation!"',
-    actionUrl: "/",
-    createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(), // 18m ago
-    isRead: false,
-  },
-  {
-    id: "notif-3",
-    type: "reply",
-    title: "💬 Sakura replied to your comment.",
-    message: 'Replied: "Cha! Totally agree with you!"',
-    actionUrl: "/",
-    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45m ago
-    isRead: false,
-  },
-  {
-    id: "notif-4",
-    type: "payment",
-    title: "✅ Gold Membership activated.",
-    message: "Premium payment succeeded - All features unlocked.",
-    actionUrl: "/membership",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2h ago
-    isRead: true,
-  },
-  {
-    id: "notif-5",
-    type: "expiring",
-    title: "⚠ Gold membership expires tomorrow.",
-    message: "Renew your plan to maintain uninterrupted downloads.",
-    actionUrl: "/membership",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), // 12h ago
-    isRead: true,
-  },
-  {
-    id: "notif-6",
-    type: "watch_party",
-    title: "🎉 Madara invited you to a Watch Party.",
-    message: "Click to join room live",
-    actionUrl: "/watch-party",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1d ago
-    isRead: true,
-  },
-  {
-    id: "notif-7",
-    type: "upload",
-    title: "🎬 Your upload is ready.",
-    message: "Video uploaded successfully and published.",
-    actionUrl: "/",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), // 1.5d ago
-    isRead: true,
-  },
-  {
-    id: "notif-8",
-    type: "download",
-    title: "⬇ Video downloaded successfully.",
-    message: "Download completed and saved.",
-    actionUrl: "/downloads",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2d ago
-    isRead: true,
-  },
-];
+const DEFAULT_NOTIFICATIONS: NotificationItem[] = [];
 
 export default function NotificationBell() {
   const { user } = useUser();
@@ -115,17 +42,17 @@ export default function NotificationBell() {
   const [badgeAnimating, setBadgeAnimating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load saved notifications from localStorage or fallback to defaults
+  // Load saved notifications from localStorage or initialize empty
   useEffect(() => {
     try {
       const saved = localStorage.getItem("myyoutube_notifications");
       if (saved) {
         setNotifications(JSON.parse(saved));
       } else {
-        setNotifications(DEFAULT_NOTIFICATIONS);
+        setNotifications([]);
       }
     } catch {
-      setNotifications(DEFAULT_NOTIFICATIONS);
+      setNotifications([]);
     }
   }, []);
 
