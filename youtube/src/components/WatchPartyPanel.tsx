@@ -218,7 +218,6 @@ export default function WatchPartyPanel({
   useEffect(() => {
     const initLocalMedia = async () => {
       try {
-        console.log("Requesting camera and microphone access...");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, frameRate: 15 },
           audio: true
@@ -245,8 +244,6 @@ export default function WatchPartyPanel({
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
-
-        console.log("Local camera & audio stream initialized successfully");
       } catch (mediaErr) {
         console.warn("Camera/Microphone capture declined or unavailable, trying audio-only fallback:", mediaErr);
         try {
@@ -257,7 +254,6 @@ export default function WatchPartyPanel({
           localStreamRef.current = audioStream;
           setIsVideoOff(true);
           localStorage.setItem("watchparty_isVideoOff", "true");
-          console.log("Local audio-only stream active");
         } catch (audioErr) {
           console.error("Audio-only capture also failed:", audioErr);
         }
@@ -282,8 +278,6 @@ export default function WatchPartyPanel({
     if (peerConnectionsRef.current[targetUid]) {
       return peerConnectionsRef.current[targetUid];
     }
-
-    console.log(`Creating RTCPeerConnection for target: ${targetName} (${targetUid}), initiator: ${isInitiator}`);
     
     const pc = new RTCPeerConnection({
       iceServers: [
@@ -310,7 +304,6 @@ export default function WatchPartyPanel({
     };
 
     pc.ontrack = (event) => {
-      console.log(`Received remote track from peer: ${targetName}`);
       const remoteStream = event.streams[0];
       setRemoteStreams(prev => ({
         ...prev,
@@ -319,7 +312,6 @@ export default function WatchPartyPanel({
     };
 
     pc.onconnectionstatechange = () => {
-      console.log(`Connection state with ${targetName}: ${pc.connectionState}`);
       if (
         pc.connectionState === "disconnected" || 
         pc.connectionState === "failed" || 
@@ -350,13 +342,10 @@ export default function WatchPartyPanel({
     if (!localMediaReady) return;
 
     const wsUrl = getWsUrl();
-    
-    console.log(`Connecting to WebSocket signaling: ${wsUrl}`);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log("WebSocket connection established");
       setWsReady(true);
       (window as any).partyWs = socket;
       
@@ -441,7 +430,6 @@ export default function WatchPartyPanel({
             break;
 
           case "new-host":
-            console.log("Room host transferred to:", data.hostUid);
             setRoomHostUid(data.hostUid);
             break;
 
@@ -449,7 +437,6 @@ export default function WatchPartyPanel({
             if (videosListRef.current) {
               const video = videosListRef.current.find((v: any) => v._id === data.videoId);
               if (video) {
-                console.log("Joined room, synced with host video:", video.videotitle);
                 setSelectedVideo(video);
                 selectedVideoRef.current = video;
 
@@ -504,7 +491,7 @@ export default function WatchPartyPanel({
             if (data.action === "play") {
               videoRef.current.currentTime = targetTime;
               videoRef.current.playbackRate = 1.0;
-              videoRef.current.play().catch(err => console.log("Play sync interrupted:", err));
+              videoRef.current.play().catch(() => {});
             } else if (data.action === "pause") {
               videoRef.current.playbackRate = 1.0;
               videoRef.current.pause();
@@ -523,7 +510,6 @@ export default function WatchPartyPanel({
             if (videosListRef.current) {
               const video = videosListRef.current.find((v: any) => v._id === data.videoId);
               if (video) {
-                console.log("Remote peer changed theater video:", video.videotitle);
                 setSelectedVideo(video);
               }
             }
@@ -646,7 +632,6 @@ export default function WatchPartyPanel({
     };
 
     socket.onclose = () => {
-      console.log("WebSocket connection closed");
       setWsReady(false);
       (window as any).partyWs = null;
     };

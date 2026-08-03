@@ -91,8 +91,6 @@ Date          : ${formattedDate}
       },
       timeout: 5000,
     });
-
-    console.log(`✉️ Brevo subscription confirmation email sent to ${invoice.userEmail}! MessageId: ${res.data?.messageId}`);
   } catch (emailErr) {
     console.error("Brevo Subscription Email Error:", emailErr.response?.data || emailErr.message);
   }

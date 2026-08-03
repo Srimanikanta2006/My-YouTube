@@ -288,7 +288,7 @@ export default function VideoPlayer({
       triggerCenterIcon("pause");
       setShowControls(true);
     } else {
-      videoRef.current.play().catch((err) => console.log("Play error:", err));
+      videoRef.current.play().catch(() => {});
       setIsPlaying(true);
       triggerCenterIcon("play");
       handleMouseMove();
@@ -380,9 +380,9 @@ export default function VideoPlayer({
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => console.log(err));
+      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err) => console.log(err));
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
     }
   };
 

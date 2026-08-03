@@ -33,7 +33,6 @@ export function initSignalingServer(server) {
                   deleteTimeout: null,
                 });
               } else {
-                console.log(`User ${name} (${uid}) attempted to join non-existent room: ${roomId}`);
                 ws.send(JSON.stringify({
                   type: "error",
                   message: "Watch Party room not found or has been closed."
@@ -47,18 +46,12 @@ export function initSignalingServer(server) {
             if (roomObj.deleteTimeout) {
               clearTimeout(roomObj.deleteTimeout);
               roomObj.deleteTimeout = null;
-              console.log(
-                `User joined room ${roomId}. Cancelled deletion timeout.`,
-              );
             }
 
             // If host reconnected during grace period (e.g. on page refresh), preserve host role
             if (roomObj.hostUid === uid && roomObj.hostDisconnectTimeout) {
               clearTimeout(roomObj.hostDisconnectTimeout);
               roomObj.hostDisconnectTimeout = null;
-              console.log(
-                `Host ${name} (${uid}) reconnected to room ${roomId} before grace period expired. Maintained host role.`,
-              );
             }
 
             // Attach user metadata directly to their WebSocket socket connection object
@@ -66,9 +59,6 @@ export function initSignalingServer(server) {
             ws.userName = name;
 
             roomObj.clients.add(ws);
-            console.log(
-              `User ${name} (${uid}) joined Watch Party room ${roomId}. Host: ${roomObj.hostUid}. Room size: ${roomObj.clients.size}`,
-            );
 
             // Notify other peers in the room that a new peer has joined, passing hostUid
             broadcastToRoom(roomId, ws, {
@@ -202,7 +192,6 @@ export function initSignalingServer(server) {
             if (currentRoomId && rooms.has(currentRoomId)) {
               const roomObj = rooms.get(currentRoomId);
               roomObj.clients.delete(ws);
-              console.log(`User ${userName} explicitly left Watch Party room ${currentRoomId}. Remaining: ${roomObj.clients.size}`);
 
               // Immediate host transfer when host explicitly leaves
               if (roomObj.hostUid === userId && roomObj.clients.size > 0) {
@@ -233,7 +222,6 @@ export function initSignalingServer(server) {
                 if (roomObj.hostDisconnectTimeout) clearTimeout(roomObj.hostDisconnectTimeout);
                 if (roomObj.deleteTimeout) clearTimeout(roomObj.deleteTimeout);
                 rooms.delete(currentRoomId);
-                console.log(`Watch Party room ${currentRoomId} is empty. Deleted room immediately.`);
               }
             }
             break;
@@ -247,7 +235,7 @@ export function initSignalingServer(server) {
             break;
 
           default:
-            console.log("Unknown WebSocket message type:", data.type);
+            break;
         }
       } catch (err) {
         console.error("Error processing WebSocket message:", err.message);
@@ -261,9 +249,6 @@ export function initSignalingServer(server) {
         // Check if the client was already removed by leave-room message
         if (roomObj.clients.has(ws)) {
           roomObj.clients.delete(ws);
-          console.log(
-            `User ${userName} disconnected from Watch Party room ${currentRoomId}. Room size: ${roomObj.clients.size}`,
-          );
 
           const isHost = roomObj.hostUid === userId;
 
@@ -272,16 +257,12 @@ export function initSignalingServer(server) {
             if (roomObj.hostDisconnectTimeout) {
               clearTimeout(roomObj.hostDisconnectTimeout);
             }
-            console.log(`Host ${userName} disconnected from room ${currentRoomId}. Grace period started...`);
             roomObj.hostDisconnectTimeout = setTimeout(() => {
               roomObj.hostDisconnectTimeout = null;
               if (rooms.has(currentRoomId) && roomObj.clients.size > 0) {
                 const nextClient = roomObj.clients.values().next().value;
                 if (nextClient) {
                   roomObj.hostUid = nextClient.userId;
-                  console.log(
-                    `Host grace period expired for room ${currentRoomId}. Transferred host role to ${nextClient.userName} (${nextClient.userId})`,
-                  );
                   broadcastToRoom(currentRoomId, null, {
                     type: "new-host",
                     hostUid: roomObj.hostUid,
@@ -309,7 +290,6 @@ export function initSignalingServer(server) {
                   clearTimeout(rooms.get(currentRoomId).hostDisconnectTimeout);
                 }
                 rooms.delete(currentRoomId);
-                console.log(`Watch Party room ${currentRoomId} is empty. Deleted room.`);
               }
             }, 6000);
           }

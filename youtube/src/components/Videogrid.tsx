@@ -32,8 +32,8 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
       try {
         const res = await axiosInstance.get("/video/getall");
         setvideo(res.data);
-      } catch (error) {
-        console.log(error);
+      } catch {
+        // Handle error silently
       } finally {
         setloading(false);
       }
@@ -61,7 +61,6 @@ const Videogrid = ({ selectedCategory = "All" }: VideogridProps) => {
               data.type === "global-video-deleted" ||
               data.type === "global-video-updated"
             ) {
-              console.log(`WebSocket event: ${data.type}, fetching updated list...`);
               fetchvideo();
             }
           } catch (err) {

@@ -144,7 +144,6 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
       );
 
       const downloadURL = response.data.secure_url;
-      console.log("Cloudinary upload successful:", downloadURL);
 
       await axiosInstance.post("/video/upload", {
         videotitle: videoTitle,

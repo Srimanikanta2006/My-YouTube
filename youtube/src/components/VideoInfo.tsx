@@ -219,8 +219,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       if (res.data?.watchlater !== undefined) {
         setIsWatchLater(Boolean(res.data.watchlater));
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
       setIsWatchLater(!nextWatchLater);
     }
   };

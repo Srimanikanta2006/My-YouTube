@@ -126,7 +126,7 @@ function VideoRowItem({ item, onRemove }: { item: any; onRemove: () => void }) {
 
   const handleMouseEnter = () => {
     if (videoRef.current) {
-      videoRef.current.play().catch((err) => console.log("Hover preview interrupted:", err));
+      videoRef.current.play().catch(() => {});
     }
   };
 

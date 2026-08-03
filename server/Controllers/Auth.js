@@ -175,10 +175,6 @@ const sendSecurityOtpEmail = async (userEmail, userName, otp, locationInfo) => {
         timeout: 5000,
       },
     );
-
-    console.log(
-      `🔒 Brevo Security OTP email sent to ${userEmail}! MessageId: ${res.data?.messageId}`,
-    );
   } catch (err) {
     console.error(
       "❌ Brevo Email Dispatch Error:",

@@ -33,7 +33,7 @@ export default function VideoCard({ video, horizontal }: any) {
 
   const handleMouseEnter = () => {
     if (videoRef.current) {
-      videoRef.current.play().catch((err) => console.log("Hover preview play interrupted:", err));
+      videoRef.current.play().catch(() => {});
     }
   };
 
