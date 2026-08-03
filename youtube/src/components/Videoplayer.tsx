@@ -54,6 +54,7 @@ export default function VideoPlayer({
   const [showControls, setShowControls] = useState(true);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState<number>(0);
+  const [aspectRatio, setAspectRatio] = useState<string>("16 / 9");
 
   // Gesture & Ripple States
   const [gestureRipple, setGestureRipple] = useState<{
