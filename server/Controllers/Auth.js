@@ -526,3 +526,100 @@ export const getuser = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const toggleSubscription = async (req, res) => {
+  const { subscriberId, targetChannelId, targetChannelName } = req.body;
+
+  if (!subscriberId) {
+    return res.status(400).json({ message: "Subscriber ID is required." });
+  }
+
+  try {
+    const subscriberUser = await users.findById(subscriberId);
+    if (!subscriberUser) {
+      return res.status(404).json({ message: "Subscriber user not found." });
+    }
+
+    let targetUser = null;
+    if (targetChannelId && mongoose.Types.ObjectId.isValid(targetChannelId)) {
+      targetUser = await users.findById(targetChannelId);
+    }
+    if (!targetUser && targetChannelName) {
+      targetUser = await users.findOne({
+        $or: [{ channelname: targetChannelName }, { name: targetChannelName }],
+      });
+    }
+
+    const targetIdStr = targetUser ? targetUser._id.toString() : targetChannelId || targetChannelName;
+
+    const isSubbed = Array.isArray(subscriberUser.subscriptions) && subscriberUser.subscriptions.includes(targetIdStr);
+
+    if (isSubbed) {
+      // Unsubscribe
+      subscriberUser.subscriptions = (subscriberUser.subscriptions || []).filter((id) => id !== targetIdStr);
+      await subscriberUser.save();
+
+      if (targetUser) {
+        targetUser.subscribers = (targetUser.subscribers || []).filter((id) => id !== subscriberId);
+        await targetUser.save();
+      }
+    } else {
+      // Subscribe
+      if (!subscriberUser.subscriptions) subscriberUser.subscriptions = [];
+      if (!subscriberUser.subscriptions.includes(targetIdStr)) {
+        subscriberUser.subscriptions.push(targetIdStr);
+      }
+      await subscriberUser.save();
+
+      if (targetUser) {
+        if (!targetUser.subscribers) targetUser.subscribers = [];
+        if (!targetUser.subscribers.includes(subscriberId)) {
+          targetUser.subscribers.push(subscriberId);
+        }
+        await targetUser.save();
+
+        // Dispatch targeted notification stored in MongoDB for the creator
+        const subName = subscriberUser.channelname || subscriberUser.name || "A user";
+        try {
+          const { sendTargetedNotification } = await import("./notification.js");
+          await sendTargetedNotification(req, {
+            recipientUserId: targetUser._id.toString(),
+            type: "subscribe",
+            title: `🎉 ${subName} subscribed to your channel.`,
+            message: "You have a new subscriber!",
+            actionUrl: `/channel/${subscriberId}`,
+            senderImage: subscriberUser.image || "",
+          });
+        } catch (e) {
+          console.error("Error sending subscribe notification:", e);
+        }
+      }
+    }
+
+    const updatedSubCount = targetUser
+      ? (targetUser.subscribers ? targetUser.subscribers.length : 0)
+      : (isSubbed ? 0 : 1);
+
+    // Broadcast WebSocket event to all active devices
+    try {
+      const { broadcastWebSocketMessage } = await import("./notification.js");
+      broadcastWebSocketMessage({
+        type: "subscribe-updated",
+        targetChannelId: targetIdStr,
+        subscriberCount: updatedSubCount,
+        subscribed: !isSubbed,
+      });
+    } catch (e) {
+      console.error("WebSocket broadcast error:", e);
+    }
+
+    return res.status(200).json({
+      subscribed: !isSubbed,
+      subscriberCount: updatedSubCount,
+      subscriptions: subscriberUser.subscriptions,
+    });
+  } catch (error) {
+    console.error("Subscription error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};

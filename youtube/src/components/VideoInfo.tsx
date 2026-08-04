@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -167,6 +167,8 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     };
   }, [user?._id, video?._id, video?.uploader, video?.videochanel]);
 
+  const likeActionSeqRef = useRef<number>(0);
+
   const handleLike = async () => {
     if (!user) {
       alert("Please sign in to like videos.");
@@ -176,6 +178,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setLikeAnimating(true);
     setTimeout(() => setLikeAnimating(false), 250);
 
+    const currentSeq = ++likeActionSeqRef.current;
     const prevIsLiked = isLiked;
     const prevIsDisliked = isDisliked;
 
@@ -195,7 +198,8 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       const res = await axiosInstance.post(`/like/${video._id}`, {
         userId: user._id,
       });
-      if (res.data) {
+      // Ignore stale out-of-order HTTP responses!
+      if (currentSeq === likeActionSeqRef.current && res.data) {
         setIsLiked(Boolean(res.data.liked));
         setIsDisliked(Boolean(res.data.disliked));
         if (typeof res.data.likes === "number") setlikes(res.data.likes);
@@ -234,6 +238,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setDislikeAnimating(true);
     setTimeout(() => setDislikeAnimating(false), 250);
 
+    const currentSeq = ++likeActionSeqRef.current;
     const prevIsDisliked = isDisliked;
     const prevIsLiked = isLiked;
 
@@ -253,7 +258,8 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       const res = await axiosInstance.post(`/like/dislike/${video._id}`, {
         userId: user._id,
       });
-      if (res.data) {
+      // Ignore stale out-of-order HTTP responses!
+      if (currentSeq === likeActionSeqRef.current && res.data) {
         setIsLiked(Boolean(res.data.liked));
         setIsDisliked(Boolean(res.data.disliked));
         if (typeof res.data.likes === "number") setlikes(res.data.likes);
@@ -264,40 +270,57 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     }
   };
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!user) {
       alert("Please sign in to subscribe to channels.");
       return;
     }
-    if (typeof window !== "undefined" && video?.videochanel) {
+    if (video?.videochanel || video?.uploader) {
+      const nextSubState = !isSubscribed;
+      setIsSubscribed(nextSubState);
+      setSubscriberCount((prev) => (nextSubState ? prev + 1 : Math.max(0, prev - 1)));
+
       let subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
       const name = video.videochanel;
       const uploaderId = video.uploader;
 
-      const isSub =
-        subscribedChannels.includes(name) ||
-        (uploaderId && subscribedChannels.includes(uploaderId));
-
-      if (isSub) {
+      if (nextSubState) {
+        if (name && !subscribedChannels.includes(name)) subscribedChannels.push(name);
+        if (uploaderId && !subscribedChannels.includes(uploaderId)) subscribedChannels.push(uploaderId);
+      } else {
         subscribedChannels = subscribedChannels.filter(
           (c: string) => c !== name && c !== uploaderId
         );
-        setIsSubscribed(false);
-        setSubscriberCount((prev) => Math.max(0, prev - 1));
-      } else {
-        if (name && !subscribedChannels.includes(name)) subscribedChannels.push(name);
-        if (uploaderId && !subscribedChannels.includes(uploaderId)) subscribedChannels.push(uploaderId);
-        setIsSubscribed(true);
-        setSubscriberCount((prev) => prev + 1);
-        addNotification({
-          type: "subscribe",
-          title: `🔥 ${name || "User"} subscribed to your channel.`,
-          message: "Someone subscribed to your channel",
-          actionUrl: uploaderId ? `/channel/${uploaderId}` : "/",
-        });
       }
       localStorage.setItem("subscribedChannels", JSON.stringify(subscribedChannels));
       window.dispatchEvent(new Event("subscription-changed"));
+
+      try {
+        const res = await axiosInstance.post("/user/subscribe", {
+          subscriberId: user._id,
+          targetChannelId: uploaderId,
+          targetChannelName: name,
+        });
+        if (res.data) {
+          setIsSubscribed(Boolean(res.data.subscribed));
+          if (typeof res.data.subscriberCount === "number") {
+            setSubscriberCount(res.data.subscriberCount);
+          }
+        }
+      } catch (err) {
+        console.error("Error saving subscription:", err);
+      }
+
+      if (nextSubState) {
+        addNotification({
+          recipientUserId: uploaderId,
+          type: "subscribe",
+          title: `🔥 ${user.channelname || user.name || "User"} subscribed to your channel.`,
+          message: "Someone subscribed to your channel",
+          actionUrl: uploaderId ? `/channel/${uploaderId}` : "/",
+          avatar: user.image || "",
+        });
+      }
     }
   };
   const [toastMessage, setToastMessage] = useState<string | null>(null);

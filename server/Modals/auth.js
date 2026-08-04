@@ -40,6 +40,8 @@ const userschema = mongoose.Schema({
     device: { type: String },
     deviceId: { type: String },
   },
+  subscribers: [{ type: String }],
+  subscriptions: [{ type: String }],
 });
 
 export default mongoose.model("user", userschema);
