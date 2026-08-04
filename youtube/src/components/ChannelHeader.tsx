@@ -63,7 +63,7 @@ const ChannelHeader = ({ channel, user, onUploadClick }: any) => {
   return (
     <div className="w-full text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
       {/* 1. Asymmetric Modern Channel Cover Banner */}
-      <div className="relative h-28 md:h-44 lg:h-52 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-slate-900 to-zinc-950 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-md">
+      <div className="relative h-28 md:h-44 lg:h-52 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-slate-900 to-zinc-950 border border-zinc-800/80 rounded-xl sm:rounded-3xl overflow-hidden shadow-md">
         {/* Subtle grid pattern overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
         {/* Ambient color glows */}

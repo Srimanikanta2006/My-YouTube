@@ -146,11 +146,12 @@ export const postcomment = async (req, res) => {
       });
     }
 
+    const authorChannelName = commentingUser?.channelname || usercommented || commentingUser?.name || "Channel";
     const newComment = new comment({
       videoid,
       userid,
       commentbody: sanitizedText,
-      usercommented: sanitizeInputText(usercommented || "User"),
+      usercommented: sanitizeInputText(authorChannelName),
       language: language || "en",
       location: {
         city: sanitizeInputText(location?.city || ""),

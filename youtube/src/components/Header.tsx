@@ -158,7 +158,7 @@ const Header = () => {
               <DropdownMenuTrigger className="relative h-8 w-8 rounded-full flex items-center justify-center focus:outline-none hover:opacity-90 transition-opacity cursor-pointer">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.image} />
-                  <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold border border-zinc-300/50 dark:border-zinc-700/50">{user.name?.[0] || "U"}</AvatarFallback>
+                  <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-300/50 dark:border-zinc-700/50">{(user.channelname || user.name)?.[0]?.toUpperCase() || "C"}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xl animate-in slide-in-from-top-2 duration-200" align="end">

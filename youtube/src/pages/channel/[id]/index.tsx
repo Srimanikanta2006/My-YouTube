@@ -197,7 +197,7 @@ const ChannelDetailPage = () => {
 
   return (
     <div className="flex-1 min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-1.5 sm:px-6 lg:px-8">
         <ChannelHeader channel={channel} user={user} onUploadClick={() => setIsUploadOpen(true)} />
         
         {/* Navigation Tabs Header */}

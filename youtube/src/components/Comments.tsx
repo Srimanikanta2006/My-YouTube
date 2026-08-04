@@ -152,11 +152,12 @@ const Comments = ({ videoId }: { videoId: string }) => {
     setModerationError(null);
 
     try {
+      const displayAuthorName = user.channelname || user.name || "Channel";
       const res = await axiosInstance.post("/comment/postcomment", {
         videoid: videoId,
         userid: user._id,
         commentbody: newComment,
-        usercommented: user.name || user.channelname || "User",
+        usercommented: displayAuthorName,
         location: userLocation,
         showLocation: shareLocation,
       });
@@ -171,7 +172,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
       showSuccessMsg("Comment posted successfully!");
       addNotification({
         type: "comment",
-        title: `💬 ${user.name || user.channelname || "User"} commented on your video.`,
+        title: `💬 ${displayAuthorName} commented on your video.`,
         message: `Commented: "${newComment.substring(0, 35)}${newComment.length > 35 ? "..." : ""}"`,
         actionUrl: `/watch/${videoId}`,
       });
@@ -436,7 +437,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
           <Avatar className="w-10 h-10 border border-zinc-200 dark:border-zinc-700">
             <AvatarImage src={user.image || ""} />
             <AvatarFallback className="bg-red-600 text-white font-bold">
-              {user.name?.[0] || user.channelname?.[0] || "U"}
+              {(user.channelname || user.name)?.[0]?.toUpperCase() || "C"}
             </AvatarFallback>
           </Avatar>
 
@@ -504,10 +505,10 @@ const Comments = ({ videoId }: { videoId: string }) => {
         ) : (
           comments.map((comment) => {
             const authorName =
-              comment.userid?.name ||
               comment.userid?.channelname ||
               comment.usercommented ||
-              "Anonymous";
+              comment.userid?.name ||
+              "Channel";
             const authorAvatar = comment.userid?.image || "";
             const isAuthor = user && (user._id === comment.userid?._id || user._id === comment.userid);
 
