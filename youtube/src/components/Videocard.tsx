@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { getBackendUrl } from "../lib/urlHelper";
 import { useUser } from "../lib/AuthContext";
 import axiosInstance from "../lib/axiosinstance";
@@ -265,7 +265,8 @@ export default function VideoCard({ video, horizontal }: any) {
             className="flex-shrink-0 mt-0.5"
           >
             <Avatar className="w-9 h-9 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs hover:opacity-85 transition-opacity">
-              <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-xs border border-zinc-300/50 dark:border-zinc-700/50">
+              <AvatarImage src={(isOwner ? user?.image : video?.uploaderImage || video?.channelImage || video?.userImage || video?.uploader?.image) || ""} />
+              <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-xs border border-zinc-300/50 dark:border-zinc-700/50">
                 {channelDisplayName?.[0]?.toUpperCase() || "V"}
               </AvatarFallback>
             </Avatar>

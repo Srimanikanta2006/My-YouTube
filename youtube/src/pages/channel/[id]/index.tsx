@@ -198,7 +198,7 @@ const ChannelDetailPage = () => {
   return (
     <div className="flex-1 min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       <div className="max-w-7xl mx-auto px-1.5 sm:px-6 lg:px-8">
-        <ChannelHeader channel={channel} user={user} onUploadClick={() => setIsUploadOpen(true)} />
+        <ChannelHeader channel={channel} user={user} videoCount={videos.length} onUploadClick={() => setIsUploadOpen(true)} />
         
         {/* Navigation Tabs Header */}
         <div className="border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between px-1 sm:px-2 pb-0">

@@ -266,6 +266,10 @@ export const login = async (req, res) => {
     } else {
       let updateFields = {};
 
+      if (image && image !== existingUser.image) {
+        updateFields.image = image;
+      }
+
       // Check subscription expiry
       if (
         existingUser.subscriptionExpiresAt &&

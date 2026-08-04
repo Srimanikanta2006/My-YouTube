@@ -12,6 +12,7 @@ import historyrroutes from "./Routes/history.js";
 import commentroutes from "./Routes/comment.js";
 import downloadroutes from "./Routes/download.js";
 import paymentroutes from "./Routes/payment.js";
+import notificationroutes from "./Routes/notification.js";
 import video from "./Modals/video.js";
 import { initSignalingServer } from "./signaling.js";
 dotenv.config();
@@ -39,6 +40,7 @@ app.use("/history", historyrroutes);
 app.use("/comment", commentroutes);
 app.use("/download", downloadroutes);
 app.use("/payment", paymentroutes);
+app.use("/notification", notificationroutes);
 const PORT = process.env.PORT || 5000;
 
 const DBURL = process.env.DB_URL;

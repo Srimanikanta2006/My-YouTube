@@ -20,19 +20,22 @@ import { useRouter } from "next/router";
 import { Button } from "./ui/button";
 import { getWsUrl } from "../lib/urlHelper";
 import { useUser } from "@/lib/AuthContext";
+import axiosInstance from "@/lib/axiosinstance";
 
 export interface NotificationItem {
-  id: string;
-  type: "comment" | "reply" | "subscribe" | "upload" | "download" | "watch_party" | "payment" | "expiring";
+  _id?: string;
+  id?: string;
+  recipientUserId?: string;
+  type: "comment" | "reply" | "subscribe" | "upload" | "download" | "watch_party" | "payment" | "expiring" | string;
   title: string;
   message: string;
   avatar?: string;
+  senderImage?: string;
   actionUrl?: string;
   createdAt: string;
-  isRead: boolean;
+  read?: boolean;
+  isRead?: boolean;
 }
-
-const DEFAULT_NOTIFICATIONS: NotificationItem[] = [];
 
 export default function NotificationBell() {
   const { user } = useUser();
@@ -42,54 +45,24 @@ export default function NotificationBell() {
   const [badgeAnimating, setBadgeAnimating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load saved notifications from localStorage or initialize empty
-  useEffect(() => {
+  // Fetch real targeted notifications from backend MongoDB database when user logs in
+  const fetchNotifications = async () => {
+    if (!user || !user._id) return;
     try {
-      const saved = localStorage.getItem("myyoutube_notifications");
-      if (saved) {
-        setNotifications(JSON.parse(saved));
-      } else {
-        setNotifications([]);
+      const res = await axiosInstance.get(`/notification/${user._id}`);
+      if (Array.isArray(res.data)) {
+        setNotifications(res.data);
       }
-    } catch {
-      setNotifications([]);
-    }
-  }, []);
-
-  // Custom Event Listener for real-time instant notifications across app without refresh
-  useEffect(() => {
-    const handleNewNotification = (e: Event) => {
-      const customEvent = e as CustomEvent<NotificationItem>;
-      if (customEvent.detail) {
-        const item = customEvent.detail;
-        setNotifications((prev) => {
-          if (prev.some((n) => n.id === item.id)) return prev;
-          const updated = [item, ...prev];
-          try {
-            localStorage.setItem("myyoutube_notifications", JSON.stringify(updated));
-          } catch {}
-          return updated;
-        });
-        setBadgeAnimating(true);
-        setTimeout(() => setBadgeAnimating(false), 400);
-      }
-    };
-
-    window.addEventListener("myyoutube-new-notification", handleNewNotification);
-    return () => window.removeEventListener("myyoutube-new-notification", handleNewNotification);
-  }, []);
-
-  // Save to localStorage when notifications update
-  const updateNotificationsState = (newList: NotificationItem[]) => {
-    setNotifications(newList);
-    try {
-      localStorage.setItem("myyoutube_notifications", JSON.stringify(newList));
-    } catch {
-      // Ignore storage quota errors
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
     }
   };
 
-  // Real-time WebSocket connection to receive instant notifications
+  useEffect(() => {
+    fetchNotifications();
+  }, [user]);
+
+  // Listen to live WebSocket events targeted to this user
   useEffect(() => {
     const wsUrl = getWsUrl();
     let ws: WebSocket | null = null;
@@ -101,25 +74,14 @@ export default function NotificationBell() {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === "global-video-uploaded") {
-              const newNotif: NotificationItem = {
-                id: `notif-${Date.now()}`,
-                type: "upload",
-                title: "🎬 Your upload is ready.",
-                message: `"${data.title || "Video"}" uploaded successfully.`,
-                actionUrl: data.videoId ? `/watch/${data.videoId}` : "/",
-                createdAt: new Date().toISOString(),
-                isRead: false,
-              };
-
-              setNotifications((prev) => {
-                const updated = [newNotif, ...prev];
-                try {
-                  localStorage.setItem("myyoutube_notifications", JSON.stringify(updated));
-                } catch {}
-                return updated;
-              });
-
+            if (
+              data.type === "new-notification" &&
+              data.notification &&
+              user &&
+              (data.recipientUserId === user._id || data.recipientUserId === user.channelname)
+            ) {
+              const item = data.notification;
+              setNotifications((prev) => [item, ...prev.filter((n) => (n._id || n.id) !== (item._id || item.id))]);
               setBadgeAnimating(true);
               setTimeout(() => setBadgeAnimating(false), 400);
             }
@@ -139,13 +101,26 @@ export default function NotificationBell() {
       }
     };
 
-    connectWs();
+    if (user) connectWs();
 
     return () => {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (ws) ws.close();
     };
-  }, []);
+  }, [user]);
+
+  // Custom Event Listener for local actions (e.g. offline download, subscription toggle)
+  useEffect(() => {
+    const handleNewNotification = (e: Event) => {
+      const customEvent = e as CustomEvent<NotificationItem>;
+      if (customEvent.detail) {
+        fetchNotifications();
+      }
+    };
+
+    window.addEventListener("myyoutube-new-notification", handleNewNotification);
+    return () => window.removeEventListener("myyoutube-new-notification", handleNewNotification);
+  }, [user]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -160,43 +135,48 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const userNotifications = notifications.filter((n: any) => {
-    if (!user) return n.recipientUserId === "all" || !n.recipientUserId;
-    return (
-      n.recipientUserId === "all" ||
-      !n.recipientUserId ||
-      n.recipientUserId === user._id ||
-      n.recipientUserId === user.channelname ||
-      n.recipientUserId === user.email
-    );
-  });
+  const unreadCount = notifications.filter((n) => !n.read && !n.isRead).length;
 
-  const unreadCount = userNotifications.filter((n) => !n.isRead).length;
-
-  const handleToggleOpen = () => {
+  const handleToggleOpen = async () => {
     const nextState = !isOpen;
     setIsOpen(nextState);
 
-    // Clear unread badge on panel open
-    if (nextState && unreadCount > 0) {
-      const readList = notifications.map((n) => ({ ...n, isRead: true }));
-      updateNotificationsState(readList);
+    // Clear unread badge on panel open and mark all read on backend
+    if (nextState && unreadCount > 0 && user) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true, isRead: true })));
+      try {
+        await axiosInstance.patch(`/notification/read-all/${user._id}`);
+      } catch (err) {
+        console.error("Error marking notifications as read:", err);
+      }
     }
   };
 
-  const handleMarkAllRead = (e: React.MouseEvent) => {
+  const handleMarkAllRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const readList = notifications.map((n) => ({ ...n, isRead: true }));
-    updateNotificationsState(readList);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true, isRead: true })));
+    if (user) {
+      try {
+        await axiosInstance.patch(`/notification/read-all/${user._id}`);
+      } catch (err) {
+        console.error("Error marking all read:", err);
+      }
+    }
   };
 
   const handleClearAll = (e: React.MouseEvent) => {
     e.stopPropagation();
-    updateNotificationsState([]);
+    setNotifications([]);
   };
 
-  const handleNotificationClick = (item: NotificationItem) => {
+  const handleNotificationClick = async (item: NotificationItem) => {
     setIsOpen(false);
+    const targetId = item._id || item.id;
+    if (targetId) {
+      try {
+        await axiosInstance.patch(`/notification/read/${targetId}`);
+      } catch {}
+    }
     if (item.actionUrl) {
       router.push(item.actionUrl);
     }
@@ -278,9 +258,9 @@ export default function NotificationBell() {
               <h3 className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
                 Notifications
               </h3>
-              {userNotifications.length > 0 && (
+              {notifications.length > 0 && (
                 <span className="text-[11px] font-medium bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded-full">
-                  {userNotifications.length}
+                  {notifications.length}
                 </span>
               )}
             </div>
@@ -299,7 +279,7 @@ export default function NotificationBell() {
 
           {/* Scrollable Notification List */}
           <div className="overflow-y-auto max-h-[380px] divide-y divide-zinc-100 dark:divide-zinc-800/60 scrollbar-none">
-            {userNotifications.length === 0 ? (
+            {notifications.length === 0 ? (
               /* Empty State */
               <div className="py-12 px-6 flex flex-col items-center justify-center text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
@@ -315,47 +295,50 @@ export default function NotificationBell() {
                 </div>
               </div>
             ) : (
-              userNotifications.map((notif: any) => (
-                <div
-                  key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={`flex items-start gap-3 p-3.5 cursor-pointer transition-all ${
-                    !notif.isRead
-                      ? "bg-blue-50/70 dark:bg-blue-950/30 border-l-4 border-blue-600 dark:border-blue-500"
-                      : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                  }`}
-                >
-                  {/* Action Type Icon Avatar */}
-                  <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 shrink-0 shadow-xs mt-0.5 border border-zinc-200/50 dark:border-zinc-700/50">
-                    {getIconForType(notif.type)}
-                  </div>
-
-                  {/* Message & Title */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                        {notif.title}
-                      </h4>
-                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0 font-medium">
-                        {formatTimeAgo(notif.createdAt)}
-                      </span>
+              notifications.map((notif: any, idx: number) => {
+                const isUnread = !notif.read && !notif.isRead;
+                return (
+                  <div
+                    key={notif._id || notif.id || idx}
+                    onClick={() => handleNotificationClick(notif)}
+                    className={`flex items-start gap-3 p-3.5 cursor-pointer transition-all ${
+                      isUnread
+                        ? "bg-blue-50/70 dark:bg-blue-950/30 border-l-4 border-blue-600 dark:border-blue-500"
+                        : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    {/* Action Type Icon Avatar */}
+                    <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 shrink-0 shadow-xs mt-0.5 border border-zinc-200/50 dark:border-zinc-700/50">
+                      {getIconForType(notif.type)}
                     </div>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5 line-clamp-2 leading-snug">
-                      {notif.message}
-                    </p>
-                  </div>
 
-                  {/* Unread Indicator Dot */}
-                  {!notif.isRead && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0 mt-2" />
-                  )}
-                </div>
-              ))
+                    {/* Message & Title */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                          {notif.title}
+                        </h4>
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0 font-medium">
+                          {formatTimeAgo(notif.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5 line-clamp-2 leading-snug">
+                        {notif.message}
+                      </p>
+                    </div>
+
+                    {/* Unread Indicator Dot */}
+                    {isUnread && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0 mt-2" />
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
 
           {/* Footer Options */}
-          {userNotifications.length > 0 && (
+          {notifications.length > 0 && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
               <button
                 onClick={handleClearAll}

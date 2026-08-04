@@ -4,6 +4,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { v2 as cloudinary } from "cloudinary";
+import { sendTargetedNotification } from "./notification.js";
+import user from "../Modals/auth.js";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,6 +14,45 @@ cloudinary.config({
   secure: true
 });
 
+
+const notifySubscribersAndUploader = async (req, savedFile) => {
+  try {
+    // 1. Notify Creator / Uploader
+    if (savedFile.uploader) {
+      await sendTargetedNotification(req, {
+        recipientUserId: savedFile.uploader,
+        type: "upload",
+        title: "🎬 Your upload is ready.",
+        message: `"${savedFile.videotitle}" uploaded successfully.`,
+        actionUrl: `/watch/${savedFile._id}`,
+      });
+    }
+
+    // 2. Find subscribers of this channel and notify each subscriber
+    const searchTerms = [savedFile.uploader, savedFile.videochanel].filter(Boolean);
+    if (searchTerms.length > 0) {
+      const subscribers = await user.find({
+        $or: [
+          { subscribedChannels: { $in: searchTerms } },
+          { subscriptions: { $in: searchTerms } },
+        ],
+        _id: { $ne: savedFile.uploader }
+      });
+
+      for (const sub of subscribers) {
+        await sendTargetedNotification(req, {
+          recipientUserId: sub._id.toString(),
+          type: "upload",
+          title: `🎬 ${savedFile.videochanel} uploaded a new video.`,
+          message: `"${savedFile.videotitle}"`,
+          actionUrl: `/watch/${savedFile._id}`,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Error sending targeted upload notifications:", err);
+  }
+};
 
 export const uploadvideo = async (req, res) => {
   // Check if filepath was uploaded directly to Firebase Storage and passed as a URL string in req.body
@@ -25,17 +66,20 @@ export const uploadvideo = async (req, res) => {
         filesize: req.body.filesize || "0 MB",
         videochanel: req.body.videochanel,
         uploader: req.body.uploader,
+        uploaderImage: req.body.uploaderImage || "",
         videoduration: req.body.videoduration,
         videocategory: req.body.videocategory || "All",
         isPremium: req.body.isPremium || false,
       });
       await file.save();
+      await notifySubscribersAndUploader(req, file);
+
       // Broadcast live event to all connected WebSockets
       const wss = req.app.get("wss");
       if (wss) {
         wss.clients.forEach((client) => {
           if (client.readyState === 1) {
-            client.send(JSON.stringify({ type: "global-video-uploaded" }));
+            client.send(JSON.stringify({ type: "global-video-uploaded", videoId: file._id }));
           }
         });
       }
@@ -61,17 +105,20 @@ export const uploadvideo = async (req, res) => {
         filesize: req.file.size,
         videochanel: req.body.videochanel,
         uploader: req.body.uploader,
+        uploaderImage: req.body.uploaderImage || "",
         videoduration: req.body.videoduration,
         videocategory: req.body.videocategory || "All",
         isPremium: req.body.isPremium || false,
       });
       await file.save();
+      await notifySubscribersAndUploader(req, file);
+
       // Broadcast live event to all connected WebSockets
       const wss = req.app.get("wss");
       if (wss) {
         wss.clients.forEach((client) => {
           if (client.readyState === 1) {
-            client.send(JSON.stringify({ type: "global-video-uploaded" }));
+            client.send(JSON.stringify({ type: "global-video-uploaded", videoId: file._id }));
           }
         });
       }
@@ -92,9 +139,29 @@ export const getallvideo = async (req, res) => {
       files.map(async (file) => {
         const likesCount = await like.countDocuments({ videoid: file._id });
         const dislikesCount = await dislike.countDocuments({ videoid: file._id });
+        let uploaderUser = null;
+        if (file.uploader || file.videochanel) {
+          const searchQueries = [];
+          if (file.uploader && mongoose.Types.ObjectId.isValid(file.uploader)) {
+            searchQueries.push({ _id: file.uploader });
+          }
+          if (file.uploader) {
+            searchQueries.push({ channelname: file.uploader });
+            searchQueries.push({ name: file.uploader });
+          }
+          if (file.videochanel) {
+            searchQueries.push({ channelname: file.videochanel });
+            searchQueries.push({ name: file.videochanel });
+          }
+          uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name");
+        }
         const obj = file.toObject();
         obj.Like = likesCount;
         obj.Dislike = dislikesCount;
+        obj.uploaderImage = uploaderUser?.image || file.uploaderImage || "";
+        if (uploaderUser?.channelname) {
+          obj.videochanel = uploaderUser.channelname;
+        }
         return obj;
       })
     );
@@ -117,9 +184,29 @@ export const getvideoById = async (req, res) => {
     }
     const likesCount = await like.countDocuments({ videoid: id });
     const dislikesCount = await dislike.countDocuments({ videoid: id });
+    let uploaderUser = null;
+    if (file.uploader || file.videochanel) {
+      const searchQueries = [];
+      if (file.uploader && mongoose.Types.ObjectId.isValid(file.uploader)) {
+        searchQueries.push({ _id: file.uploader });
+      }
+      if (file.uploader) {
+        searchQueries.push({ channelname: file.uploader });
+        searchQueries.push({ name: file.uploader });
+      }
+      if (file.videochanel) {
+        searchQueries.push({ channelname: file.videochanel });
+        searchQueries.push({ name: file.videochanel });
+      }
+      uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name");
+    }
     const fileObj = file.toObject();
     fileObj.Like = likesCount;
     fileObj.Dislike = dislikesCount;
+    fileObj.uploaderImage = uploaderUser?.image || file.uploaderImage || "";
+    if (uploaderUser?.channelname) {
+      fileObj.videochanel = uploaderUser.channelname;
+    }
     return res.status(200).send(fileObj);
   } catch (error) {
     console.error(" error:", error);

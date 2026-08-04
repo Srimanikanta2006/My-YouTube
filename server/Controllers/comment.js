@@ -1,6 +1,8 @@
 import comment from "../Modals/comment.js";
 import user from "../Modals/auth.js";
+import video from "../Modals/video.js";
 import mongoose from "mongoose";
+import { sendTargetedNotification } from "./notification.js";
 
 // List of profanity and abusive terms for server-side lexical evaluation
 const ABUSIVE_WORDS = [
@@ -167,6 +169,32 @@ export const postcomment = async (req, res) => {
     });
 
     await newComment.save();
+
+    // Trigger targeted notification to video owner
+    try {
+      const targetVideo = await video.findById(videoid);
+      if (targetVideo && targetVideo.uploader && targetVideo.uploader !== userid) {
+        let uploaderUserId = targetVideo.uploader;
+        if (!mongoose.Types.ObjectId.isValid(uploaderUserId)) {
+          const uploaderObj = await user.findOne({
+            $or: [{ channelname: targetVideo.uploader }, { name: targetVideo.uploader }]
+          });
+          if (uploaderObj) uploaderUserId = uploaderObj._id.toString();
+        }
+
+        await sendTargetedNotification(req, {
+          recipientUserId: uploaderUserId,
+          type: "comment",
+          title: `💬 ${authorChannelName} commented on your video.`,
+          message: `"${sanitizedText}"`,
+          actionUrl: `/watch/${videoid}`,
+          senderImage: commentingUser?.image || "",
+        });
+      }
+    } catch (notifErr) {
+      console.error("Error triggering comment notification:", notifErr);
+    }
+
     const populatedComment = await comment.findById(newComment._id).populate({
       path: "userid",
       select: "name image channelname",
@@ -197,7 +225,35 @@ export const getallcomment = async (req, res) => {
       .sort({ createdAt: -1 })
       .exec();
 
-    return res.status(200).json(comments);
+    const formattedComments = await Promise.all(
+      comments.map(async (c) => {
+        const cObj = c.toObject();
+        if (!cObj.userid || typeof cObj.userid === "string" || !cObj.userid.image) {
+          const searchQueries = [];
+          if (cObj.userid && typeof cObj.userid === "string" && mongoose.Types.ObjectId.isValid(cObj.userid)) {
+            searchQueries.push({ _id: cObj.userid });
+          }
+          if (cObj.usercommented) {
+            searchQueries.push({ channelname: cObj.usercommented });
+            searchQueries.push({ name: cObj.usercommented });
+          }
+          if (searchQueries.length > 0) {
+            const authorUser = await user.findOne({ $or: searchQueries }).select("name image channelname");
+            if (authorUser) {
+              cObj.userid = {
+                _id: authorUser._id,
+                name: authorUser.name,
+                channelname: authorUser.channelname,
+                image: authorUser.image || "",
+              };
+            }
+          }
+        }
+        return cObj;
+      })
+    );
+
+    return res.status(200).json(formattedComments);
   } catch (error) {
     console.error("Error in getallcomment:", error);
     return res.status(500).json({ message: "Server error fetching comments." });

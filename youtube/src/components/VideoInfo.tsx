@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
   Check,
@@ -147,24 +147,24 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     };
     fetchReactionStatus();
 
-    if (video?.uploader) {
-      axiosInstance
-        .get(`/user/${video.uploader}`)
-        .then((res) => {
-          if (res.data?.subscribers && Array.isArray(res.data.subscribers)) {
-            setSubscriberCount(res.data.subscribers.length);
-          } else {
-            const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-            const count = subscribedChannels.includes(video.videochanel) ? 1 : 0;
-            setSubscriberCount(count);
-          }
-        })
-        .catch(() => {
-          const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-          const count = subscribedChannels.includes(video.videochanel) ? 1 : 0;
-          setSubscriberCount(count);
-        });
-    }
+    const checkSubStatus = () => {
+      if (typeof window !== "undefined" && video) {
+        const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+        const isSub =
+          (video.videochanel && subscribedChannels.includes(video.videochanel)) ||
+          (video.uploader && subscribedChannels.includes(video.uploader));
+        setIsSubscribed(Boolean(isSub));
+        setSubscriberCount(isSub ? 1 : 0);
+      }
+    };
+
+    checkSubStatus();
+    window.addEventListener("subscription-changed", checkSubStatus);
+    window.addEventListener("storage", checkSubStatus);
+    return () => {
+      window.removeEventListener("subscription-changed", checkSubStatus);
+      window.removeEventListener("storage", checkSubStatus);
+    };
   }, [user?._id, video?._id, video?.uploader, video?.videochanel]);
 
   const handleLike = async () => {
@@ -425,8 +425,9 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
         <div className="flex items-center justify-between min-[1280px]:justify-start gap-3 sm:gap-4 w-full min-[1280px]:w-auto shrink-0 flex-nowrap">
           <Link href={`/channel/${video.uploader}`} className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer shrink-0">
             <Avatar className="w-10 h-10 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
-              <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
-                {((user && isVideoOwner ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]}
+              <AvatarImage src={(user && isVideoOwner ? user.image : video.uploaderImage) || ""} />
+              <AvatarFallback className="bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-sm border border-zinc-300/50 dark:border-zinc-700/50">
+                {((user && isVideoOwner ? (user.channelname || video.videochanel) : video.videochanel) || "V")?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="shrink-0">

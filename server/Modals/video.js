@@ -10,6 +10,7 @@ const videochema = mongoose.Schema(
     Like: { type: Number, default: 0 },
     views: { type: Number, default: 0 },
     uploader: { type: String },
+    uploaderImage: { type: String, default: "" },
     videoduration: { type: String },
     videocategory: { type: String, default: "All" },
     isPremium: { type: Boolean, default: false },

@@ -155,6 +155,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
         filesize: (videoFile.size / (1024 * 1024)).toFixed(2) + " MB",
         videochanel: user?.channelname || "Anonymous Channel",
         uploader: user?._id || "",
+        uploaderImage: user?.image || "",
         videoduration: videoDuration,
         videocategory: videoCategorySelected,
         isPremium: isPremiumVideo,
