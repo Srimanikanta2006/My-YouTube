@@ -142,6 +142,59 @@ const ChannelHeader = ({
     }
   };
 
+  // Membership Badge & Expiry Date Formatting Helper
+  const getBadgeDetails = () => {
+    const plan = channel?.plan || user?.plan || "Free";
+    const expiry = channel?.subscriptionExpiresAt || user?.subscriptionExpiresAt;
+    const planLower = plan.toLowerCase();
+
+    let expiryText = "";
+    if (expiry) {
+      try {
+        const expDate = new Date(expiry);
+        if (!isNaN(expDate.getTime())) {
+          expiryText = `Expires: ${expDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}`;
+        }
+      } catch (e) {}
+    }
+
+    if (planLower === "gold") {
+      return {
+        label: "Gold Creator",
+        bgClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40",
+        crownClass: "text-amber-500 fill-amber-500",
+        expiryText,
+      };
+    } else if (planLower === "silver") {
+      return {
+        label: "Silver Creator",
+        bgClass: "bg-slate-300/30 text-slate-700 dark:text-slate-200 border-slate-400/50",
+        crownClass: "text-slate-400 fill-slate-400",
+        expiryText,
+      };
+    } else if (planLower === "bronze") {
+      return {
+        label: "Bronze Creator",
+        bgClass: "bg-amber-800/15 text-amber-800 dark:text-amber-400 border-amber-800/40",
+        crownClass: "text-amber-700 fill-amber-700",
+        expiryText,
+      };
+    } else {
+      return {
+        label: "Free Creator",
+        bgClass: "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700",
+        crownClass: "text-zinc-400 fill-zinc-400",
+        expiryText,
+      };
+    }
+  };
+
+  const badgeInfo = getBadgeDetails();
+
   return (
     <div className="w-full text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
       {/* 1. Asymmetric Modern Channel Cover Banner */}
@@ -155,7 +208,7 @@ const ChannelHeader = ({
 
       {/* 2. Channel Info & Avatar Bar */}
       <div className="px-3 sm:px-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-3 sm:gap-6 relative">
+        <div className="flex flex-col md:flex-row items-start gap-3 sm:gap-6 relative">
           {/* Avatar: Exactly 1/4th above banner, 3/4th below */}
           <div className="relative -mt-5 md:-mt-7 flex-shrink-0 z-10">
             <Avatar className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 border-4 border-white dark:border-zinc-900 shadow-xl ring-2 ring-zinc-200/50 dark:ring-zinc-800/50">
@@ -166,16 +219,16 @@ const ChannelHeader = ({
             </Avatar>
           </div>
 
-          {/* Details & Action Controls */}
-          <div className="flex-1 text-center md:text-left space-y-1.5 pt-1 sm:pt-2 w-full">
+          {/* Details & Action Controls - Aligned Left on all screen sizes */}
+          <div className="flex-1 text-left space-y-1.5 pt-1 sm:pt-2 w-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white text-left">
                   {channel?.channelname || channel?.name || user?.channelname || "Channel Name"}
                 </h1>
                 
                 {/* Subline metadata: @handle • count subscribers • count videos */}
-                <div className="flex items-center justify-center md:justify-start gap-1.5 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium flex-wrap mt-0.5">
+                <div className="flex items-center justify-start gap-1.5 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium flex-wrap mt-0.5">
                   <span>@{channel?.channelname?.toLowerCase().replace(/\s+/g, "") || "username"}</span>
                   <span>•</span>
                   <span className="font-semibold text-zinc-700 dark:text-zinc-300">
@@ -202,16 +255,21 @@ const ChannelHeader = ({
               )}
             </div>
 
-            {/* Description */}
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl line-clamp-2 leading-relaxed pt-0.5 mx-auto md:mx-0">
+            {/* Description - Aligned Left */}
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl line-clamp-2 leading-relaxed pt-0.5 text-left">
               {channel?.description || "Welcome to the official channel. Enjoy watching all latest videos, watch parties, and high quality streams."}
             </p>
 
-            {/* Membership badge & Action buttons */}
-            <div className="flex items-center justify-center md:justify-start gap-3 pt-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300">
-                <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                {channel?.plan || "Free"} Creator
+            {/* Membership badge with Expiry Date & Action buttons - Aligned Left */}
+            <div className="flex items-center justify-start gap-3 pt-2 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-xs ${badgeInfo.bgClass}`}>
+                <Crown className={`w-3.5 h-3.5 ${badgeInfo.crownClass}`} />
+                <span>{badgeInfo.label}</span>
+                {badgeInfo.expiryText && (
+                  <span className="text-[11px] opacity-80 font-medium border-l border-current/20 pl-1.5 ml-0.5">
+                    {badgeInfo.expiryText}
+                  </span>
+                )}
               </span>
 
               {user && user._id !== channel?._id && (
