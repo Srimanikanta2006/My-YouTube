@@ -1,6 +1,22 @@
 import Notification from "../Modals/notification.js";
 import user from "../Modals/auth.js";
 
+// Helper function to broadcast any WebSocket event to all connected clients
+export const broadcastWebSocketMessage = (req, messageData) => {
+  try {
+    const wss = req?.app?.get("wss");
+    if (wss) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify(messageData));
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Error broadcasting WebSocket message:", err);
+  }
+};
+
 // Helper function to create and push a notification to a specific recipient user
 export const sendTargetedNotification = async (req, notifData) => {
   try {
@@ -20,21 +36,12 @@ export const sendTargetedNotification = async (req, notifData) => {
 
     await newNotif.save();
 
-    // Broadcast to online WebSockets
-    const wss = req.app.get("wss");
-    if (wss) {
-      wss.clients.forEach((client) => {
-        if (client.readyState === 1) {
-          client.send(
-            JSON.stringify({
-              type: "new-notification",
-              recipientUserId: notifData.recipientUserId,
-              notification: newNotif,
-            })
-          );
-        }
-      });
-    }
+    // Broadcast targeted notification event to online WebSockets
+    broadcastWebSocketMessage(req, {
+      type: "new-notification",
+      recipientUserId: notifData.recipientUserId,
+      notification: newNotif,
+    });
 
     return newNotif;
   } catch (err) {

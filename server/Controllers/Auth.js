@@ -603,7 +603,7 @@ export const toggleSubscription = async (req, res) => {
     // Broadcast WebSocket event to all active devices
     try {
       const { broadcastWebSocketMessage } = await import("./notification.js");
-      broadcastWebSocketMessage({
+      broadcastWebSocketMessage(req, {
         type: "subscribe-updated",
         targetChannelId: targetIdStr,
         subscriberCount: updatedSubCount,
