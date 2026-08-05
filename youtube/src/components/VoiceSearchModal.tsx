@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, X, RefreshCw, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Mic, X, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Search, ShieldAlert } from "lucide-react";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 interface VoiceSearchModalProps {
   isOpen: boolean;
@@ -16,9 +17,10 @@ export default function VoiceSearchModal({
   onSearch,
 }: VoiceSearchModalProps) {
   const [status, setStatus] = useState<
-    "listening" | "searching" | "success" | "denied" | "unsupported" | "no_speech"
+    "listening" | "searching" | "success" | "denied" | "unsupported" | "no_speech" | "brave_privacy_blocked"
   >("listening");
   const [transcript, setTranscript] = useState("");
+  const [fallbackText, setFallbackText] = useState("");
   const recognitionRef = useRef<any>(null);
 
   const startListening = () => {
@@ -47,6 +49,7 @@ export default function VoiceSearchModal({
       recognition.lang = "en-US";
 
       let finalResult = "";
+      let hasErrorOccurred = false;
 
       recognition.onresult = (event: any) => {
         let currentTranscript = "";
@@ -59,14 +62,21 @@ export default function VoiceSearchModal({
 
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
-        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        hasErrorOccurred = true;
+        if (event.error === "not-allowed") {
           setStatus("denied");
+        } else if (event.error === "network" || event.error === "service-not-allowed") {
+          // Brave Browser or Incognito mode disables Google Speech Services cloud endpoint
+          setStatus("brave_privacy_blocked");
         } else if (event.error === "no-speech") {
+          setStatus("no_speech");
+        } else {
           setStatus("no_speech");
         }
       };
 
       recognition.onend = () => {
+        if (hasErrorOccurred) return;
         if (finalResult.trim()) {
           setStatus("searching");
           setTimeout(() => {
@@ -84,7 +94,7 @@ export default function VoiceSearchModal({
       recognition.start();
     } catch (err) {
       console.error("Failed to start speech recognition:", err);
-      setStatus("no_speech");
+      setStatus("brave_privacy_blocked");
     }
   };
 
@@ -125,6 +135,14 @@ export default function VoiceSearchModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
+
+  const handleFallbackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (fallbackText.trim()) {
+      onSearch(fallbackText.trim());
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -203,33 +221,87 @@ export default function VoiceSearchModal({
 
         {/* 4. Didn't Catch That State */}
         {status === "no_speech" && (
-          <div className="py-6 flex flex-col items-center space-y-6 animate-in fade-in duration-200">
+          <div className="py-4 flex flex-col items-center space-y-5 animate-in fade-in duration-200 w-full max-w-sm">
             <button
               onClick={handleRequestMicAndStart}
-              className="w-24 h-24 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all transform hover:scale-105 cursor-pointer shadow-lg"
+              className="w-20 h-20 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all transform hover:scale-105 cursor-pointer shadow-lg"
               title="Tap to try again"
             >
-              <Mic className="w-12 h-12 opacity-80" />
+              <Mic className="w-10 h-10 opacity-80" />
             </button>
             <div className="space-y-1">
-              <h3 className="text-2xl font-bold text-white">
+              <h3 className="text-xl md:text-2xl font-bold text-white">
                 Didn't catch that. Try again.
               </h3>
-              <p className="text-sm text-white/60">
-                Tap the microphone to speak.
+              <p className="text-xs text-white/60">
+                Tap the microphone or type your search query below.
               </p>
             </div>
+
+            {/* Quick Type Fallback */}
+            <form onSubmit={handleFallbackSubmit} className="flex gap-2 w-full pt-1">
+              <Input
+                type="text"
+                value={fallbackText}
+                onChange={(e) => setFallbackText(e.target.value)}
+                placeholder="Type your search here..."
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-full text-xs"
+              />
+              <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 text-white rounded-full px-4 font-bold text-xs">
+                Search
+              </Button>
+            </form>
+
             <Button
               onClick={handleRequestMicAndStart}
-              className="rounded-full px-7 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm flex items-center gap-2 cursor-pointer shadow-md"
+              variant="outline"
+              className="rounded-full px-6 py-2 border-white/20 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2 cursor-pointer"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Try Again</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Voice</span>
             </Button>
           </div>
         )}
 
-        {/* 5. Permission Denied State */}
+        {/* 5. Brave Browser / Incognito Privacy Blocked State */}
+        {status === "brave_privacy_blocked" && (
+          <div className="py-4 flex flex-col items-center space-y-4 animate-in fade-in duration-200 w-full max-w-md">
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+              <ShieldAlert className="w-9 h-9" />
+            </div>
+            <div className="space-y-1.5 text-center">
+              <h3 className="text-xl md:text-2xl font-bold text-white">
+                Speech Recognition Blocked in Brave / Incognito
+              </h3>
+              <p className="text-xs text-white/70 leading-relaxed px-2">
+                Brave Browser & Incognito mode disable Google Cloud Speech Services by default for privacy reasons.
+              </p>
+            </div>
+
+            <div className="bg-white/10 rounded-2xl p-3.5 text-left text-xs text-white/80 space-y-1.5 w-full border border-white/10">
+              <p className="font-bold text-white">💡 How to enable in Brave:</p>
+              <p>1. Open <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-300">brave://settings/privacy</code></p>
+              <p>2. Enable <strong>"Use Google Speech Services for speech recognition"</strong></p>
+              <p>3. Or open in standard Google Chrome browser.</p>
+            </div>
+
+            {/* Quick Type Fallback for Brave users */}
+            <form onSubmit={handleFallbackSubmit} className="flex gap-2 w-full pt-1">
+              <Input
+                type="text"
+                value={fallbackText}
+                onChange={(e) => setFallbackText(e.target.value)}
+                placeholder="Type your search instead..."
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-full text-xs"
+              />
+              <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 text-white rounded-full px-4 font-bold text-xs">
+                Search
+              </Button>
+            </form>
+          </div>
+        )}
+
+        {/* 6. Permission Denied State */}
         {status === "denied" && (
           <div className="py-6 flex flex-col items-center space-y-5 animate-in fade-in duration-200">
             <div className="w-20 h-20 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
@@ -253,7 +325,7 @@ export default function VoiceSearchModal({
           </div>
         )}
 
-        {/* 6. Browser Unsupported State */}
+        {/* 7. Browser Unsupported State */}
         {status === "unsupported" && (
           <div className="py-6 flex flex-col items-center space-y-5 animate-in fade-in duration-200">
             <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-white/50">
