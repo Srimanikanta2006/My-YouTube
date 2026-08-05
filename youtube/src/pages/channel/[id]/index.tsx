@@ -75,9 +75,30 @@ const ChannelDetailPage = () => {
     };
     window.addEventListener("video-list-changed", handleListChange);
     window.addEventListener("user-profile-updated", handleListChange);
+
+    let ws: WebSocket | null = null;
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const wsUrl = backendUrl.replace(/^http/, "ws");
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (
+            data.type === "global-video-uploaded" ||
+            data.type === "global-video-updated" ||
+            data.type === "global-video-deleted"
+          ) {
+            fetchChannelVideos(false);
+          }
+        } catch (e) {}
+      };
+    } catch (e) {}
+
     return () => {
       window.removeEventListener("video-list-changed", handleListChange);
       window.removeEventListener("user-profile-updated", handleListChange);
+      if (ws) ws.close();
     };
   }, [id]);
 

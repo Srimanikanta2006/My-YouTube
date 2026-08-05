@@ -69,6 +69,7 @@ export const uploadvideo = async (req, res) => {
         uploaderImage: req.body.uploaderImage || "",
         videoduration: req.body.videoduration,
         videocategory: req.body.videocategory || "All",
+        description: typeof req.body.description === "string" ? req.body.description.trim().slice(0, 5000) : "",
         isPremium: req.body.isPremium || false,
       });
       await file.save();
@@ -108,6 +109,7 @@ export const uploadvideo = async (req, res) => {
         uploaderImage: req.body.uploaderImage || "",
         videoduration: req.body.videoduration,
         videocategory: req.body.videocategory || "All",
+        description: typeof req.body.description === "string" ? req.body.description.trim().slice(0, 5000) : "",
         isPremium: req.body.isPremium || false,
       });
       await file.save();
@@ -258,7 +260,7 @@ export const deletevideo = async (req, res) => {
 
 export const updatevideo = async (req, res) => {
   const { id } = req.params;
-  const { videotitle } = req.body;
+  const { videotitle, description } = req.body;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ message: "Video not found" });
   }
@@ -268,14 +270,25 @@ export const updatevideo = async (req, res) => {
       return res.status(404).json({ message: "Video not found" });
     }
 
-    const updated = await video.findByIdAndUpdate(id, { videotitle }, { returnDocument: "after" });
+    const updateFields = {};
+    if (videotitle !== undefined) updateFields.videotitle = videotitle.trim();
+    if (description !== undefined) {
+      updateFields.description = typeof description === "string" ? description.trim().slice(0, 5000) : "";
+    }
+
+    const updated = await video.findByIdAndUpdate(id, { $set: updateFields }, { returnDocument: "after" });
 
     // Broadcast live event to all connected WebSockets
     const wss = req.app.get("wss");
     if (wss) {
       wss.clients.forEach((client) => {
         if (client.readyState === 1) {
-          client.send(JSON.stringify({ type: "global-video-updated", videoId: id, videotitle }));
+          client.send(JSON.stringify({
+            type: "global-video-updated",
+            videoId: id,
+            videotitle: updated.videotitle,
+            description: updated.description,
+          }));
         }
       });
     }

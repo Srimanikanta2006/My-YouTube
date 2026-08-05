@@ -16,6 +16,7 @@ export default function VideoCard({ video, horizontal }: any) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(video?.videotitle || "");
+  const [editDescription, setEditDescription] = useState(video?.description || video?.videodescription || "");
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
 
@@ -55,6 +56,8 @@ export default function VideoCard({ video, horizontal }: any) {
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(false);
+    setEditTitle(video?.videotitle || "");
+    setEditDescription(video?.description || video?.videodescription || "");
     setIsEditing(true);
   };
 
@@ -73,13 +76,18 @@ export default function VideoCard({ video, horizontal }: any) {
       setLoadingAction(true);
       await axiosInstance.patch(`/video/update/${video._id}`, {
         videotitle: editTitle.trim(),
+        description: editDescription.trim().slice(0, 5000),
       });
+      video.videotitle = editTitle.trim();
+      video.description = editDescription.trim().slice(0, 5000);
+      video.videodescription = editDescription.trim().slice(0, 5000);
       setIsEditing(false);
       window.dispatchEvent(new CustomEvent("video-list-changed"));
+      window.dispatchEvent(new Event("storage"));
     } catch (err: any) {
-      console.error("Save title error:", err);
+      console.error("Save details error:", err);
       const errMsg = err.response?.data?.message || err.message || "Unknown error";
-      alert("Failed to update video title: " + errMsg);
+      alert("Failed to update video details: " + errMsg);
     } finally {
       setLoadingAction(false);
     }
@@ -159,21 +167,41 @@ export default function VideoCard({ video, horizontal }: any) {
   if (isEditing) {
     return (
       <div className="space-y-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl shadow-md">
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Edit Video Title</label>
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Title (required)</label>
           <input
             type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             className="w-full text-sm border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl p-2.5 focus:border-zinc-900 dark:focus:border-white outline-none transition-colors"
-            placeholder="Enter new title"
+            placeholder="Enter title"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
           />
         </div>
-        <div className="flex gap-2 justify-end">
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Description (optional)</label>
+            <span className="text-[10px] text-zinc-400 font-mono">{editDescription.length}/5000</span>
+          </div>
+          <textarea
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            rows={3}
+            maxLength={5000}
+            className="w-full text-xs border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl p-2.5 focus:border-zinc-900 dark:focus:border-white outline-none transition-colors resize-y"
+            placeholder="Enter video description (optional)"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          />
+        </div>
+
+        <div className="flex gap-2 justify-end pt-1">
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -189,7 +217,7 @@ export default function VideoCard({ video, horizontal }: any) {
             onClick={handleSaveTitle}
             className="px-4 py-1.5 text-xs bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 disabled:opacity-50 rounded-full font-bold transition-colors cursor-pointer shadow"
           >
-            {loadingAction ? "Saving..." : "Save"}
+            {loadingAction ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
@@ -310,7 +338,7 @@ export default function VideoCard({ video, horizontal }: any) {
                 onClick={handleEditClick}
                 className="w-full text-left px-3.5 py-2 text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors first:rounded-t-xl"
               >
-                <span>✏️</span> Edit Title
+                <span>✏️</span> Edit Details
               </button>
               <button
                 onClick={handleDeleteClick}

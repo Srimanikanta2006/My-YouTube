@@ -15,6 +15,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
+  const [videoDescription, setVideoDescription] = useState("");
   const [videoDuration, setVideoDuration] = useState("00:00");
   const [videoCategorySelected, setVideoCategorySelected] = useState("All");
   const [isPremiumVideo, setIsPremiumVideo] = useState(false);
@@ -91,6 +92,7 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
   const resetForm = () => {
     setVideoFile(null);
     setVideoTitle("");
+    setVideoDescription("");
     setVideoDuration("00:00");
     setVideoCategorySelected("All");
     setIsUploading(false);
@@ -158,10 +160,13 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
         uploaderImage: user?.image || "",
         videoduration: videoDuration,
         videocategory: videoCategorySelected,
+        description: videoDescription.trim(),
         isPremium: isPremiumVideo,
       });
 
       setUploadComplete(true);
+      window.dispatchEvent(new CustomEvent("video-list-changed"));
+      window.dispatchEvent(new Event("storage"));
       addNotification({
         type: "upload",
         title: "🎬 Your upload is ready.",
@@ -259,6 +264,23 @@ const VideoUploader = ({ onUploadSuccess }: any) => {
                   placeholder="Add a title that describes your video"
                   disabled={isUploading || uploadComplete}
                   className="mt-1 bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description" className="font-semibold text-xs text-zinc-700 dark:text-zinc-300">Description (optional)</Label>
+                  <span className="text-[11px] text-zinc-400 font-mono">{videoDescription.length}/5000</span>
+                </div>
+                <textarea
+                  id="description"
+                  value={videoDescription}
+                  onChange={(e) => setVideoDescription(e.target.value)}
+                  placeholder="Tell viewers about your video (optional)"
+                  rows={3}
+                  maxLength={5000}
+                  disabled={isUploading || uploadComplete}
+                  className="mt-1 flex w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 resize-y"
                 />
               </div>
 

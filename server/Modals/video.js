@@ -13,6 +13,7 @@ const videochema = mongoose.Schema(
     uploaderImage: { type: String, default: "" },
     videoduration: { type: String },
     videocategory: { type: String, default: "All" },
+    description: { type: String, default: "" },
     isPremium: { type: Boolean, default: false },
   },
   {
