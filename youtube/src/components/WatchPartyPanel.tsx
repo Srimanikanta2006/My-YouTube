@@ -99,7 +99,7 @@ export default function WatchPartyPanel({
   const [showLagBanner, setShowLagBanner] = useState("");
 
   // Enlarged Webcam Lightbox State
-  const [activeEnlargedFeed, setActiveEnlargedFeed] = useState<{ uid: string; name: string; stream: MediaStream | null; videoOff: boolean } | null>(null);
+  const [activeEnlargedFeed, setActiveEnlargedFeed] = useState<{ uid: string; name: string; stream: MediaStream | null; videoOff: boolean; isScreenSharing?: boolean } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [lastTap, setLastTap] = useState<{ [uid: string]: number }>({});
   const [touchStartDist, setTouchStartDist] = useState<number | null>(null);
@@ -148,11 +148,15 @@ export default function WatchPartyPanel({
     isHostRef.current = isHost;
   }, [isHost]);
 
-  const handleTap = (uid: string, name: string, stream: MediaStream | null, videoOff: boolean) => {
+  const handleTap = (uid: string, name: string, stream: MediaStream | null, videoOff: boolean, isSharing: boolean = false) => {
     const now = Date.now();
     const DOUBLE_PRESS_DELAY = 300;
     if (lastTap[uid] && (now - lastTap[uid]) < DOUBLE_PRESS_DELAY) {
-      setActiveEnlargedFeed({ uid, name, stream, videoOff });
+      let streamToUse = stream;
+      if (isSharing && (uid === "local" || uid === myUidRef.current) && screenStreamRef.current) {
+        streamToUse = screenStreamRef.current;
+      }
+      setActiveEnlargedFeed({ uid, name, stream: streamToUse, videoOff: !isSharing && videoOff, isScreenSharing: isSharing });
       setZoomLevel(1);
     } else {
       setLastTap(prev => ({ ...prev, [uid]: now }));
@@ -1312,7 +1316,7 @@ export default function WatchPartyPanel({
             {/* Local participant webcam tile */}
             <div 
               className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
-              onClick={() => handleTap("local", "You", localStreamRef.current || null, !!isVideoOff)}
+              onClick={() => handleTap("local", "You", isScreenSharing ? (screenStreamRef.current || localStreamRef.current) : (localStreamRef.current || null), !isScreenSharing && !!isVideoOff, !!isScreenSharing)}
             >
               {(!isVideoOff || isScreenSharing) ? (
                 <video
@@ -1340,7 +1344,7 @@ export default function WatchPartyPanel({
                 <div 
                   key={p.uid} 
                   className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm aspect-video w-[210px] sm:w-[260px] flex-shrink-0 flex items-center justify-center cursor-pointer"
-                  onClick={() => handleTap(p.uid, p.name, stream || null, !!p.videoOff)}
+                  onClick={() => handleTap(p.uid, p.name, stream || null, !p.isScreenSharing && !!p.videoOff, !!p.isScreenSharing)}
                 >
                   {(!p.videoOff || p.isScreenSharing) && stream ? (
                     <VideoCardKey stream={stream} name={p.name} uid={p.uid} isScreenSharing={!!p.isScreenSharing} />
@@ -1894,7 +1898,7 @@ export default function WatchPartyPanel({
             className="w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-auto shadow-2xl relative border border-white/10 flex items-center justify-center select-none"
             style={{ cursor: zoomLevel > 1 ? (isPanning ? "grabbing" : "grab") : "default" }}
           >
-            {activeEnlargedFeed.videoOff || !activeEnlargedFeed.stream ? (
+            {(!activeEnlargedFeed.isScreenSharing && activeEnlargedFeed.videoOff) || !activeEnlargedFeed.stream ? (
               <div className="w-32 h-32 rounded-full bg-gray-700 text-white flex items-center justify-center font-bold text-5xl border border-gray-600 select-none flex-shrink-0">
                 {activeEnlargedFeed.name?.[0]?.toUpperCase() || "G"}
               </div>
