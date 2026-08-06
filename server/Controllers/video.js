@@ -156,6 +156,14 @@ export const getallvideo = async (req, res) => {
             searchQueries.push({ name: file.videochanel });
           }
           uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name subscribers");
+          if (!uploaderUser && file.videochanel) {
+            uploaderUser = await user.findOne({
+              $or: [
+                { channelname: { $regex: new RegExp(`^${file.videochanel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") } },
+                { name: { $regex: new RegExp(`^${file.videochanel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") } },
+              ],
+            }).select("image channelname name subscribers");
+          }
         }
         const obj = file.toObject();
         obj.Like = likesCount;
@@ -202,6 +210,14 @@ export const getvideoById = async (req, res) => {
         searchQueries.push({ name: file.videochanel });
       }
       uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name subscribers");
+      if (!uploaderUser && file.videochanel) {
+        uploaderUser = await user.findOne({
+          $or: [
+            { channelname: { $regex: new RegExp(`^${file.videochanel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") } },
+            { name: { $regex: new RegExp(`^${file.videochanel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") } },
+          ],
+        }).select("image channelname name subscribers");
+      }
     }
     const fileObj = file.toObject();
     fileObj.Like = likesCount;
