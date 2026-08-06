@@ -142,6 +142,7 @@ export const postcomment = async (req, res) => {
       });
     }
 
+    const commentingUser = await user.findById(userid).select("name channelname image");
     const authorChannelName = commentingUser?.channelname || usercommented || commentingUser?.name || "Channel";
     const newComment = new comment({
       videoid,
