@@ -16,8 +16,7 @@
 ## 🔗 Live Application Demo
 
 🔗 **Live Production App:** [https://psmk-youtube.vercel.app](https://psmk-youtube.vercel.app)  
-⚙️ **Backend API Server:** `http://localhost:5000`  
-📄 **Issue & Bugfix Trajectory:** See [`bugs.md`](./bugs.md) (96+ verified fixes documented)
+⚙️ **Backend API Server:** `http://localhost:5000`
 
 ---
 
@@ -63,7 +62,7 @@
 - **Membership Tiers**: Free, Bronze (₹99/mo), Silver (₹199/mo), and Gold (₹499/mo).
 - **Benefit Unlocks**: Ad-free viewing, longer watch times, exclusive premium videos, and higher download quotas.
 - **Razorpay Payments**: Integrated Razorpay Checkout flow for test/live transactions.
-- **Automated Email Invoices**: Sends transaction confirmation emails and official PDF-styled invoices with transaction IDs via Nodemailer upon successful payment.
+- **Automated Email Invoices**: Sends transaction confirmation emails and official PDF-styled invoices with transaction IDs via Brevo / Nodemailer upon successful payment.
 
 ### 4. 🎬 Custom Video Player & Mobile Touch Gestures
 - **Modern Controls**: Custom play/pause, volume slider/mute, full-screen toggle, and duration display.
@@ -96,6 +95,7 @@
 - **Framework**: [Next.js 16](https://nextjs.org/) (Pages Router, Turbopack)
 - **UI Library**: [React 19](https://react.dev/), [TailwindCSS 3.4](https://tailwindcss.com/)
 - **Icons & Components**: Lucide React, Shadcn/ui primitives (`@base-ui/react`)
+- **Authentication**: Firebase Auth (Google Sign-In) & Custom JWT
 - **HTTP Client**: Axios with custom interceptors
 - **Real-Time Client**: Native WebSockets API & WebRTC (`RTCPeerConnection`)
 
@@ -105,7 +105,8 @@
 - **Database**: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) with [Mongoose ORM](https://mongoosejs.com/)
 - **Real-Time Communication**: `ws` WebSocket Server (attached to HTTP server for live broadcasts and WebRTC signaling)
 - **Payments**: Razorpay Node.js SDK
-- **Email Service**: Nodemailer (SMTP OTP & Email Invoices)
+- **Email Service**: Brevo Email API / Nodemailer (SMTP OTP & Email Invoices)
+- **Media Storage**: Local Disk Storage / Cloudinary Backup
 
 ---
 
@@ -113,45 +114,58 @@
 
 ```mermaid
 flowchart TD
-  subgraph Client_Host ["Next.js Client (Host Device)"]
-    A1[Custom Video Player + Gesture Controls]
-    A2[Watch Party Host Node]
-    A3[Razorpay Payment Checkout Modal]
+  %% Layer 1: Frontend Clients
+  subgraph Tier1 ["🖥️ Tier 1: Frontend Application Layer (Next.js 16)"]
+    ClientHost["Host Client (Next.js)\n• Custom Player + Gestures\n• Watch Party Host Studio\n• Razorpay Checkout Modal"]
+    ClientGuest["Guest Client (Next.js)\n• Real-Time Video Player\n• Watch Party Guest Node\n• Live Chat & Reaction UI"]
   end
 
-  subgraph Client_Peer ["Next.js Client (Guest Peer Device)"]
-    P2[Watch Party Guest Node]
+  %% Layer 2: Express Backend Services
+  subgraph Tier2 ["⚙️ Tier 2: Backend Microservices & API Layer (Express.js / Node.js)"]
+    direction TB
+    AuthService["Authentication & Security Controller\n• JWT Token Management\n• City / Device OTP Verification"]
+    VideoService["Video Management & Processing\n• Video Metadata & Stream Feeds\n• Upload Handlers"]
+    CommentService["Comment Moderation & Translation\n• Abusive Language Filter\n• 1-Click Translation Engine"]
+    DownloadService["Download Controller & Quotas\n• Tier Quota Tracking (Free/Paid)\n• Tokenized Media Downloads"]
+    SignalingService["Watch Party & Live Signaling Server\n• WebSocket Real-Time Sync\n• WebRTC Offer/Answer Exchange"]
+    PaymentService["Payment & Subscription Controller\n• Razorpay Order & Signature Verification\n• Plan Upgrade State Sync"]
+    NotificationService["Notification & Dispatch Service\n• Cross-User In-App Notifications\n• Event Triggers (Sub/Comment/Upload)"]
   end
 
-  subgraph Server ["Express.js Backend Server (Port 5000)"]
-    B[Express REST API Router]
-    C[WebSocket Signaling & Live Sync Server]
-    D[Auth & Location Security Controller]
-    E[Comment Moderation & Translation Controller]
-    F[Video & Download Tracking Controller]
-    G[Razorpay Payment Verification Controller]
+  %% Layer 3: External Services & Database Storage
+  subgraph Tier3 ["☁️ Tier 3: Database, Cloud Storage & External API Infrastructure"]
+    MongoDB[("MongoDB Atlas Database\n• User Profiles & Subscriptions\n• Videos, Comments & Downloads")]
+    Firebase["Firebase Authentication\n• OAuth 2.0 Google Sign-In"]
+    BrevoEmail["Brevo Email API / Nodemailer\n• Security OTP Emails\n• Razorpay Payment Invoices"]
+    LocationAPI["BigDataCloud & IP Location APIs\n• HTML5 GPS Reverse Geocoding\n• IP City/Country Resolution"]
+    RazorpayAPI["Razorpay Payment Gateway\n• Order Creation & Signature Verification"]
+    MediaStorage["Video & Media Storage\n• Local File Directory / Cloudinary"]
   end
 
-  subgraph External ["External Cloud Services & Database"]
-    H[(MongoDB Atlas Database)]
-    I[Nodemailer Email SMTP Service]
-    J[BigDataCloud / IP Location APIs]
-    K[Razorpay Payment Gateway API]
-  end
+  %% Connections between Tier 1 and Tier 2
+  ClientHost -->|HTTP REST API| AuthService & VideoService & CommentService & DownloadService & PaymentService & NotificationService
+  ClientGuest -->|HTTP REST API| AuthService & VideoService & CommentService & DownloadService & PaymentService & NotificationService
 
-  A1 -->|HTTP REST Requests| B
-  A2 -->|WebSocket Connection| C
-  P2 -->|WebSocket Connection| C
-  A2 <-->|Peer-to-Peer WebRTC Audio/Video & Screen Media Streams| P2
-  
-  B --> D & E & F & G
-  D -->|Verify New City/Device| J
-  D -->|Send OTP Security Verification Email| I
-  G -->|Verify Signature & Generate Invoice| K
-  G -->|Send Payment Receipt Email| I
-  
-  B <-->|Mongoose Queries| H
-  C <-->|Broadcast Live Subscriptions & Video Updates| A1
+  ClientHost <-->|WebSocket WS| SignalingService
+  ClientGuest <-->|WebSocket WS| SignalingService
+
+  %% Direct P2P WebRTC Connection between Clients
+  ClientHost <-->|WebRTC P2P Media Streams Audio / Video / Screen| ClientGuest
+
+  %% Connections between Tier 2 and Tier 3
+  AuthService <-->|Mongoose Queries| MongoDB
+  VideoService <-->|Mongoose Queries| MongoDB
+  CommentService <-->|Mongoose Queries| MongoDB
+  DownloadService <-->|Mongoose Queries| MongoDB
+  PaymentService <-->|Mongoose Queries| MongoDB
+  NotificationService <-->|Mongoose Queries| MongoDB
+
+  AuthService -->|HTTPS API| Firebase
+  AuthService -->|HTTPS API| LocationAPI
+  AuthService -->|HTTPS API| BrevoEmail
+  PaymentService -->|HTTPS API| RazorpayAPI
+  PaymentService -->|HTTPS API| BrevoEmail
+  VideoService -->|Disk I/O / HTTPS| MediaStorage
 ```
 
 ---
@@ -207,7 +221,8 @@ MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/myyoutube?ret
 # JWT Authentication Secret
 JWT_SECRET=your_super_secret_jwt_key_here
 
-# Nodemailer Email Configuration (For OTP & Invoices)
+# Email Configuration (Brevo API Key or Nodemailer SMTP)
+BREVO_API_KEY=your_brevo_api_key_here
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_gmail_app_password
 
@@ -301,8 +316,9 @@ My YouTube/
 │   │   ├── Auth.js                   # Authentication & Location Security OTP
 │   │   ├── video.js                  # Video Fetching, Upload & Downloads
 │   │   ├── Comment.js                # Moderation Guard & Translation
+│   │   ├── notification.js           # Real-Time Notification Dispatcher
 │   │   └── Payment.js                # Razorpay Order Creation & Email Invoices
-│   ├── models/                       # MongoDB Schemas (User, Video, Comment, Download)
+│   ├── models/                       # MongoDB Schemas (User, Video, Comment, Download, Notification)
 │   ├── routes/                       # Express Route Handlers
 │   ├── utils/                        # Email Transporter & Helper Functions
 │   ├── index.js                      # Express App & WebSocket Server Entry Point
@@ -321,6 +337,7 @@ My YouTube/
 │   │   │   └── MembershipContent.tsx # Razorpay Subscriptions & Tier Upgrade
 │   │   ├── lib/                      # Auth Context & Axios Helpers
 │   │   │   ├── AuthContext.js        # Global User State & GPS Geocoding
+│   │   │   ├── firebase.js           # Firebase Auth Config
 │   │   │   ├── axiosinstance.ts      # Axios Instance with Backend Interceptor
 │   │   │   └── urlHelper.ts          # URL Normalizer & WebSocket Resolver
 │   │   └── pages/                    # Next.js Page Routes
@@ -332,7 +349,6 @@ My YouTube/
 │   │       └── channel/[id]/index.tsx# Channel Details & Video Upload
 │   └── package.json
 │
-├── bugs.md                           # Exhaustive Trajectory Log of 96+ Verified Bugfixes
 ├── LICENSE                           # Official MIT License File
 └── README.md                         # Project Master Documentation
 ```
@@ -353,7 +369,7 @@ My YouTube/
 1. Go to [Render](https://render.com/) or [Railway](https://railway.app/).
 2. Create a new **Web Service** pointing to the `server` directory.
 3. Set **Build Command** to `npm install` and **Start Command** to `node index.js`.
-4. Fill in all Environment Variables (`MONGO_URI`, `JWT_SECRET`, `EMAIL_USER`, `EMAIL_PASS`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`).
+4. Fill in all Environment Variables (`MONGO_URI`, `JWT_SECRET`, `EMAIL_USER`, `EMAIL_PASS`, `BREVO_API_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`).
 5. Deploy the backend and copy the live HTTP/WS URL to your frontend configuration.
 
 ---
@@ -362,7 +378,7 @@ My YouTube/
 
 1. **WebRTC NAT Traversal**: Watch Party video calls use public STUN servers for peer connection establishment. On strict corporate firewalls or symmetric NATs, a TURN relay server (e.g., Coturn or Xirsys) may be required for 100% connectivity.
 2. **Mobile Screen Sharing Policies**: Screen sharing is natively supported on desktop browsers and Android Chrome. iOS Safari restricts browser-based screen capturing due to Apple operating system security policies (the application alerts users gracefully).
-3. **SMTP Email Rate Limits**: Automated OTP and transaction invoice emails use Nodemailer. Free Gmail SMTP accounts are subject to daily sending limits (up to 500 emails/day).
+3. **SMTP Email Rate Limits**: Automated OTP and transaction invoice emails use Brevo API / Nodemailer. Free email accounts are subject to daily sending quotas.
 
 ---
 
