@@ -7,6 +7,7 @@ import {
   Crown,
   Download,
   MoreHorizontal,
+  MoreVertical,
   Share,
   ShieldAlert,
   Sparkles,
@@ -34,12 +35,13 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   const [likeAnimating, setLikeAnimating] = useState(false);
   const [dislikeAnimating, setDislikeAnimating] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const { user } = useUser();
+  const { user, isSidebarCollapsed } = useUser();
   const [isWatchLater, setIsWatchLater] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [downloadState, setDownloadState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isShareCopied, setIsShareCopied] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   // Sync videoData state with prop changes
   useEffect(() => {
@@ -496,13 +498,13 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           )}
         </div>
 
-        {/* Right Section: Action Buttons */}
-        <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 flex-wrap w-full min-[1280px]:w-auto">
+        {/* Right Section: Action Buttons (Always 1 Single Horizontal Row, Never Wraps into Vertical Stack) */}
+        <div className="flex items-center flex-row flex-nowrap gap-1.5 sm:gap-2 w-full min-[1280px]:w-auto shrink-0 py-0.5 relative z-30">
           {/* Watch Party Button */}
           {onStartWatchParty && (
             <button
               onClick={onStartWatchParty}
-              className="flex-1 min-[1280px]:flex-none bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3.5 font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 hover:scale-105 active:scale-95 whitespace-nowrap"
+              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3 sm:px-3.5 font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 hover:scale-105 active:scale-95 whitespace-nowrap"
               title="Start Watch Party with Friends"
             >
               <Users className="w-4 h-4 shrink-0" />
@@ -549,7 +551,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Watch Later / Save Button */}
           <button
-            className={`flex-1 min-[1280px]:flex-none min-w-[40px] sm:min-w-[110px] md:min-w-[125px] flex items-center justify-center gap-1.5 h-9 md:h-10 px-2.5 sm:px-3.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full font-semibold text-xs md:text-sm shrink-0 cursor-pointer transition-all select-none whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1.5 h-9 md:h-10 px-3 sm:px-3.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full font-semibold text-xs md:text-sm shrink-0 cursor-pointer transition-all select-none whitespace-nowrap ${
               isWatchLater ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold" : ""
             }`}
             onClick={handleWatchLater}
@@ -565,7 +567,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Share Button */}
           <button
-            className="flex-1 min-[1280px]:flex-none min-w-[40px] sm:min-w-[80px] md:min-w-[90px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold flex items-center justify-center gap-1.5 transition-all select-none whitespace-nowrap"
+            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3 sm:px-3.5 font-semibold flex items-center justify-center gap-1.5 transition-all select-none whitespace-nowrap"
             onClick={handleShare}
             title="Share Video"
           >
@@ -577,53 +579,116 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
             <span className="hidden sm:inline">{isShareCopied ? "Copied" : "Share"}</span>
           </button>
 
-          {/* Download Button */}
-          <button
-            className={`flex-1 min-[1280px]:flex-none bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer min-w-[40px] sm:min-w-[110px] md:min-w-[125px] h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold text-center flex items-center justify-center select-none whitespace-nowrap ${
-              downloadState === "success" ? "bg-green-100 dark:bg-green-950/80 text-green-800 dark:text-green-300 border border-green-300/50 dark:border-green-800/50" : ""
-            }`}
-            onClick={handleDownload}
-            disabled={downloadState === "loading"}
-            title="Download Video"
-          >
-            {downloadState === "idle" && (
-              <>
-                <Download className="w-4 h-4 mr-0 sm:mr-1.5 shrink-0" />
-                <span className="hidden sm:inline">Download</span>
-              </>
-            )}
-            {downloadState === "loading" && (
-              <>
-                <div className="relative w-4 h-4 mr-0 sm:mr-2 flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4 transform -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      className="text-zinc-300 dark:text-zinc-700"
-                      strokeWidth="4"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
-                      className="text-red-600 dark:text-red-500 transition-all duration-150 ease-out"
-                      strokeDasharray={`${downloadProgress}, 100`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
+          {/* Download Button (Visible outside ONLY when sidebar is COLLAPSED i.e. isSidebarCollapsed === true) */}
+          {isSidebarCollapsed && (
+            <button
+              className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3 sm:px-3.5 font-semibold text-center flex items-center justify-center select-none whitespace-nowrap ${
+                downloadState === "success" ? "bg-green-100 dark:bg-green-950/80 text-green-800 dark:text-green-300 border border-green-300/50 dark:border-green-800/50" : ""
+              }`}
+              onClick={handleDownload}
+              disabled={downloadState === "loading"}
+              title="Download Video"
+            >
+              {downloadState === "idle" && (
+                <>
+                  <Download className="w-4 h-4 mr-1.5 shrink-0" />
+                  <span>Download</span>
+                </>
+              )}
+              {downloadState === "loading" && (
+                <>
+                  <div className="relative w-4 h-4 mr-2 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 transform -rotate-90" viewBox="0 0 36 36">
+                      <path
+                        className="text-zinc-300 dark:text-zinc-700"
+                        strokeWidth="4"
+                        stroke="currentColor"
+                        fill="none"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                      <path
+                        className="text-red-600 dark:text-red-500 transition-all duration-150 ease-out"
+                        strokeDasharray={`${downloadProgress}, 100`}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="none"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                    </svg>
+                  </div>
+                  <span>Downloading...</span>
+                </>
+              )}
+              {downloadState === "success" && (
+                <>
+                  <Check className="w-4 h-4 mr-1.5 text-green-600 dark:text-green-400 animate-in zoom-in-75 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] shrink-0" />
+                  <span>Saved!</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Vertical 3-Dots Menu Button (Visible ONLY when sidebar is EXPANDED i.e. isSidebarCollapsed === false) */}
+          {!isSidebarCollapsed && (
+            <div className="relative shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMoreMenuOpen(!isMoreMenuOpen);
+                }}
+                className="w-9 h-9 md:w-10 md:h-10 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
+                title="More options"
+                aria-label="More options"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+
+              {isMoreMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl py-1.5 w-52 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsMoreMenuOpen(false);
+                      handleDownload();
+                    }}
+                    disabled={downloadState === "loading"}
+                    className="w-full text-left px-4 py-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-3 cursor-pointer transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
+                    <span>{downloadState === "loading" ? "Downloading..." : downloadState === "success" ? "Downloaded & Saved" : "Download Video"}</span>
+                  </button>
+                  {onStartWatchParty && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMoreMenuOpen(false);
+                        onStartWatchParty();
+                      }}
+                      className="w-full text-left px-4 py-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-3 cursor-pointer transition-colors border-t border-zinc-100 dark:border-zinc-800/80"
+                    >
+                      <Users className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                      <span>Watch Party</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsMoreMenuOpen(false);
+                      handleShare();
+                    }}
+                    className="w-full text-left px-4 py-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-3 cursor-pointer transition-colors border-t border-zinc-100 dark:border-zinc-800/80"
+                  >
+                    <Share className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
+                    <span>Copy Link</span>
+                  </button>
                 </div>
-                <span className="hidden sm:inline">Downloading...</span>
-              </>
-            )}
-            {downloadState === "success" && (
-              <>
-                <Check className="w-4 h-4 mr-0 sm:mr-1.5 text-green-600 dark:text-green-400 animate-in zoom-in-75 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] shrink-0" />
-                <span className="hidden sm:inline">Saved!</span>
-              </>
-            )}
-          </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
