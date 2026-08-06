@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/router";
 import { useUser } from "@/lib/AuthContext";
+import Channeldialogue from "./channeldialogue";
 import axiosInstance from "@/lib/axiosinstance";
 import { addNotification } from "@/lib/notificationHelper";
 import {
@@ -141,10 +142,17 @@ const Comments = ({ videoId }: { videoId: string }) => {
     }
   };
 
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+
   // 1. Submit Comment with Moderation Pipeline
   const handleSubmitComment = async () => {
     if (!user) {
       showModerationAlert("Please sign in to post comments.");
+      return;
+    }
+    if (!user.channelname) {
+      showModerationAlert("You must create a YouTube channel before posting comments!");
+      setIsCreateChannelOpen(true);
       return;
     }
     if (!newComment.trim()) return;
@@ -177,6 +185,9 @@ const Comments = ({ videoId }: { videoId: string }) => {
         actionUrl: `/watch/${videoId}`,
       });
     } catch (error: any) {
+      if (error.response?.data?.requireChannel) {
+        setIsCreateChannelOpen(true);
+      }
       const errorMsg = error.response?.data?.message || "Failed to post comment. Please try again.";
       showModerationAlert(errorMsg);
     } finally {
@@ -410,6 +421,25 @@ const Comments = ({ videoId }: { videoId: string }) => {
           {comments.length} Comments
         </h2>
       </div>
+
+      {/* Banner for signed-in accounts without a channel */}
+      {user && !user.channelname && (
+        <div className="flex items-center justify-between gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-4 text-zinc-900 dark:text-zinc-100">
+          <div className="flex items-center gap-3 min-w-0">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-bold text-sm">Create a channel to comment</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">You need to create a YouTube channel before posting comments on videos.</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setIsCreateChannelOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full px-4 shrink-0 cursor-pointer"
+          >
+            Create Channel
+          </Button>
+        </div>
+      )}
 
       {/* Comment Input Box for Signed-In Users */}
       {user ? (
@@ -800,6 +830,10 @@ const Comments = ({ videoId }: { videoId: string }) => {
           <span>{toastMessage}</span>
         </div>,
         document.body
+      )}
+
+      {isCreateChannelOpen && (
+        <Channeldialogue setisdialogeopen={setIsCreateChannelOpen} />
       )}
     </div>
   );

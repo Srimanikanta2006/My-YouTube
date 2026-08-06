@@ -143,7 +143,14 @@ export const postcomment = async (req, res) => {
     }
 
     const commentingUser = await user.findById(userid).select("name channelname image");
-    const authorChannelName = commentingUser?.channelname || usercommented || commentingUser?.name || "Channel";
+    if (!commentingUser || !commentingUser.channelname || !commentingUser.channelname.trim()) {
+      return res.status(400).json({
+        message: "You must create a YouTube channel before posting comments!",
+        requireChannel: true,
+      });
+    }
+
+    const authorChannelName = commentingUser.channelname;
     const newComment = new comment({
       videoid,
       userid,
