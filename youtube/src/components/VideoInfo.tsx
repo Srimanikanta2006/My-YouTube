@@ -42,6 +42,26 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isShareCopied, setIsShareCopied] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close 3-dots dropdown menu when clicking anywhere outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setIsMoreMenuOpen(false);
+      }
+    };
+
+    if (isMoreMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMoreMenuOpen]);
 
   // Sync videoData state with prop changes
   useEffect(() => {
@@ -498,22 +518,22 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           )}
         </div>
 
-        {/* Right Section: Action Buttons (Always 1 Single Horizontal Row, Never Wraps into Vertical Stack) */}
+        {/* Right Section: Action Buttons (Always 1 Single Horizontal Row, Fills Evenly Without Text on Mobile) */}
         <div className="flex items-center flex-row flex-nowrap gap-1.5 sm:gap-2 w-full min-[1280px]:w-auto shrink-0 py-0.5 relative z-30">
           {/* Watch Party Button */}
           {onStartWatchParty && (
             <button
               onClick={onStartWatchParty}
-              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3 sm:px-3.5 font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 hover:scale-105 active:scale-95 whitespace-nowrap"
+              className="flex-1 min-[1280px]:flex-none bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 hover:scale-105 active:scale-95 whitespace-nowrap"
               title="Start Watch Party with Friends"
             >
               <Users className="w-4 h-4 shrink-0" />
-              <span className="inline">Watch Party</span>
+              <span className="hidden sm:inline">Watch Party</span>
             </button>
           )}
 
-          {/* Pill Container: Like & Dislike */}
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full border border-zinc-200/80 dark:border-zinc-700/80 overflow-hidden shrink-0">
+          {/* Pill Container: Like & Dislike (Always 100% visible, count & icons never hidden/squeezed) */}
+          <div className="flex-none flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full border border-zinc-200/80 dark:border-zinc-700/80 overflow-hidden shrink-0">
             <button
               className="hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 cursor-pointer h-9 md:h-10 px-3 sm:px-3.5 text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all select-none whitespace-nowrap shrink-0"
               onClick={handleLike}
@@ -551,7 +571,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Watch Later / Save Button */}
           <button
-            className={`flex items-center justify-center gap-1.5 h-9 md:h-10 px-3 sm:px-3.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full font-semibold text-xs md:text-sm shrink-0 cursor-pointer transition-all select-none whitespace-nowrap ${
+            className={`flex-1 min-[1280px]:flex-none flex items-center justify-center gap-1.5 h-9 md:h-10 px-2.5 sm:px-3.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full font-semibold text-xs md:text-sm shrink-0 cursor-pointer transition-all select-none whitespace-nowrap ${
               isWatchLater ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold" : ""
             }`}
             onClick={handleWatchLater}
@@ -567,7 +587,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Share Button */}
           <button
-            className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3 sm:px-3.5 font-semibold flex items-center justify-center gap-1.5 transition-all select-none whitespace-nowrap"
+            className="flex-1 min-[1280px]:flex-none bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold flex items-center justify-center gap-1.5 transition-all select-none whitespace-nowrap"
             onClick={handleShare}
             title="Share Video"
           >
@@ -582,7 +602,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           {/* Download Button (Visible outside ONLY when sidebar is COLLAPSED i.e. isSidebarCollapsed === true) */}
           {isSidebarCollapsed && (
             <button
-              className={`bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-3 sm:px-3.5 font-semibold text-center flex items-center justify-center select-none whitespace-nowrap ${
+              className={`flex-1 min-[1280px]:flex-none bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full shrink-0 transition-all duration-300 cursor-pointer h-9 md:h-10 text-xs md:text-sm px-2.5 sm:px-3.5 font-semibold text-center flex items-center justify-center select-none whitespace-nowrap ${
                 downloadState === "success" ? "bg-green-100 dark:bg-green-950/80 text-green-800 dark:text-green-300 border border-green-300/50 dark:border-green-800/50" : ""
               }`}
               onClick={handleDownload}
@@ -591,13 +611,13 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
             >
               {downloadState === "idle" && (
                 <>
-                  <Download className="w-4 h-4 mr-1.5 shrink-0" />
-                  <span>Download</span>
+                  <Download className="w-4 h-4 mr-0 sm:mr-1.5 shrink-0" />
+                  <span className="hidden sm:inline">Download</span>
                 </>
               )}
               {downloadState === "loading" && (
                 <>
-                  <div className="relative w-4 h-4 mr-2 flex items-center justify-center shrink-0">
+                  <div className="relative w-4 h-4 mr-0 sm:mr-2 flex items-center justify-center shrink-0">
                     <svg className="w-4 h-4 transform -rotate-90" viewBox="0 0 36 36">
                       <path
                         className="text-zinc-300 dark:text-zinc-700"
@@ -617,13 +637,13 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
                       />
                     </svg>
                   </div>
-                  <span>Downloading...</span>
+                  <span className="hidden sm:inline">Downloading...</span>
                 </>
               )}
               {downloadState === "success" && (
                 <>
-                  <Check className="w-4 h-4 mr-1.5 text-green-600 dark:text-green-400 animate-in zoom-in-75 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] shrink-0" />
-                  <span>Saved!</span>
+                  <Check className="w-4 h-4 mr-0 sm:mr-1.5 text-green-600 dark:text-green-400 animate-in zoom-in-75 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] shrink-0" />
+                  <span className="hidden sm:inline">Saved!</span>
                 </>
               )}
             </button>
@@ -631,11 +651,11 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
           {/* Vertical 3-Dots Menu Button (Visible ONLY when sidebar is EXPANDED i.e. isSidebarCollapsed === false) */}
           {!isSidebarCollapsed && (
-            <div className="relative shrink-0">
+            <div ref={moreMenuRef} className="relative shrink-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsMoreMenuOpen(!isMoreMenuOpen);
+                  setIsMoreMenuOpen((prev) => !prev);
                 }}
                 className="w-9 h-9 md:w-10 md:h-10 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
                 title="More options"
