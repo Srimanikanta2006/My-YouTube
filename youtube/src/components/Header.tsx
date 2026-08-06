@@ -476,14 +476,14 @@ const Header = () => {
                   <DropdownMenuItem 
                     className="cursor-pointer font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                     onClick={() => {
-                      if (user._id) {
+                      if (user?.channelname) {
                         router.push(`/channel/${user._id}`);
                       } else {
                         setisdialogeopen(true);
                       }
                     }}
                   >
-                    Your Channel
+                    {user?.channelname ? "Your Channel" : "Create Channel"}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="cursor-pointer font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
