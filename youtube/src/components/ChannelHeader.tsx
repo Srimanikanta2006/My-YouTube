@@ -5,13 +5,17 @@ import { Crown, Bell, BellOff, Upload, Check } from "lucide-react";
 import { addNotification } from "@/lib/notificationHelper";
 import axiosInstance from "@/lib/axiosinstance";
 import { getBackendUrl } from "@/lib/urlHelper";
+import { useUser } from "@/lib/AuthContext";
 
 const ChannelHeader = ({
   channel,
-  user,
+  user: propUser,
   videoCount = 0,
   onUploadClick,
 }: any) => {
+  const { user: authUser, isChannelSubscribed, toggleSubscriptionGlobal } = useUser();
+  const user = authUser || propUser;
+
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -26,33 +30,10 @@ const ChannelHeader = ({
   const checkSubscribed = () => {
     if (!channel) return;
 
-    if (!user) {
-      setIsSubscribed(false);
-      const baseCount = channel?.subscribers
-        ? (Array.isArray(channel.subscribers) ? channel.subscribers.length : Number(channel.subscribers) || 0)
-        : (typeof channel?.subscribersCount === "number" ? channel.subscribersCount : 0);
-      setSubscriberCount(Math.max(0, baseCount));
-      return;
-    }
+    const channelId = channel._id ? channel._id.toString() : "";
+    const channelName = channel.channelname ? channel.channelname.toString() : "";
 
-    let isSub = false;
-    if (user?.subscriptions && Array.isArray(user.subscriptions)) {
-      const channelId = channel._id ? channel._id.toString() : "";
-      const channelName = channel.channelname ? channel.channelname.toString() : "";
-      const userName = channel.name ? channel.name.toString() : "";
-      isSub = user.subscriptions.some(
-        (id: any) => id.toString() === channelId || id.toString() === channelName || id.toString() === userName
-      );
-    }
-
-    // Fallback check localStorage for signed-in user
-    if (!isSub && typeof window !== "undefined") {
-      const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-      isSub =
-        (channel?.channelname && subscribedChannels.includes(channel.channelname)) ||
-        (channel?._id && subscribedChannels.includes(channel._id));
-    }
-
+    const isSub = isChannelSubscribed(channelId, channelName);
     setIsSubscribed(Boolean(isSub));
 
     // Initial subscriber count from MongoDB
@@ -65,14 +46,28 @@ const ChannelHeader = ({
 
   useEffect(() => {
     checkSubscribed();
-    const handleSubChange = () => checkSubscribed();
+    const handleSubChange = (e: any) => {
+      const channelId = channel?._id ? channel._id.toString() : "";
+      const channelName = channel?.channelname ? channel.channelname.toString() : "";
+      if (e?.detail?.targetChannelId || e?.detail?.targetChannelName) {
+        if (
+          e.detail.targetChannelId === channelId ||
+          e.detail.targetChannelName === channelName
+        ) {
+          setIsSubscribed(Boolean(e.detail.subscribed));
+          setSubscriberCount((prev) => (e.detail.subscribed ? prev + 1 : Math.max(0, prev - 1)));
+        }
+      } else {
+        checkSubscribed();
+      }
+    };
     window.addEventListener("subscription-changed", handleSubChange);
     window.addEventListener("storage", handleSubChange);
     return () => {
       window.removeEventListener("subscription-changed", handleSubChange);
       window.removeEventListener("storage", handleSubChange);
     };
-  }, [channel, user]);
+  }, [channel, user, isChannelSubscribed]);
 
   // Real-time Cross-Device WebSocket Listener for Live Subscriber Count
   useEffect(() => {
@@ -87,8 +82,8 @@ const ChannelHeader = ({
         try {
           const data = JSON.parse(event.data);
           if (data.type === "subscribe-updated") {
-            const targetId = channel._id?.toString();
-            const targetName = channel.channelname;
+            const targetId = channel?._id?.toString();
+            const targetName = channel?.channelname;
             if (
               data.targetChannelId === targetId ||
               data.targetChannelId === targetName ||
@@ -115,40 +110,23 @@ const ChannelHeader = ({
     }
 
     if (channel) {
-      const nextSubState = !isSubscribed;
+      const channelId = channel._id;
+      const name = channel.channelname;
+
+      const prevSubState = isSubscribed;
+      const nextSubState = !prevSubState;
       setIsSubscribed(nextSubState);
       setSubscriberCount((prev) => (nextSubState ? prev + 1 : Math.max(0, prev - 1)));
 
-      // Sync to localStorage
-      let subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-      const name = channel.channelname;
-      const channelId = channel._id;
-
-      if (nextSubState) {
-        if (name && !subscribedChannels.includes(name)) subscribedChannels.push(name);
-        if (channelId && !subscribedChannels.includes(channelId)) subscribedChannels.push(channelId);
-      } else {
-        subscribedChannels = subscribedChannels.filter((c: string) => c !== name && c !== channelId);
-      }
-      localStorage.setItem("subscribedChannels", JSON.stringify(subscribedChannels));
-      window.dispatchEvent(new Event("subscription-changed"));
-
-      // Send to Backend API for permanent MongoDB persistence & cross-device notification
-      try {
-        const res = await axiosInstance.post("/user/subscribe", {
-          subscriberId: user._id,
-          targetChannelId: channel._id,
-          targetChannelName: channel.channelname,
-        });
-
-        if (res.data) {
-          setIsSubscribed(Boolean(res.data.subscribed));
-          if (typeof res.data.subscriberCount === "number") {
-            setSubscriberCount(res.data.subscriberCount);
-          }
+      const res = await toggleSubscriptionGlobal(channelId, name);
+      if (res.success && res.data) {
+        setIsSubscribed(Boolean(res.data.subscribed));
+        if (typeof res.data.subscriberCount === "number") {
+          setSubscriberCount(res.data.subscriberCount);
         }
-      } catch (err) {
-        console.error("Error saving subscription:", err);
+      } else if (!res.success) {
+        setIsSubscribed(prevSubState);
+        setSubscriberCount((prev) => (prevSubState ? prev + 1 : Math.max(0, prev - 1)));
       }
 
       // Also trigger in-app notification dispatcher fallback

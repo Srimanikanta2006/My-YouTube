@@ -87,7 +87,20 @@ export default function WatchPage() {
     );
   }
 
-  const isPremiumLocked = video?.isPremium && (!user || user.plan === "Free");
+  const isVideoOwner = Boolean(
+    user &&
+    video &&
+    (
+      (video.uploader && (video.uploader === user._id || video.uploader._id === user._id)) ||
+      (video.videochanel && (video.videochanel === user.channelname || video.videochanel === user.name))
+    )
+  );
+
+  const isPremiumLocked = Boolean(
+    video?.isPremium &&
+    !isVideoOwner &&
+    (!user || !user.plan || user.plan === "Free" || user.plan.toLowerCase() === "free")
+  );
 
   return (
     <div className="max-w-[1750px] mx-auto p-0 sm:p-4 lg:p-5 pt-0 sm:pt-3 lg:pt-3">

@@ -61,20 +61,109 @@ export const UserProvider = ({ children }) => {
   const toggleTheme = async () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-    if (user?._id) {
-      setUser((prev) => (prev ? { ...prev, theme: nextTheme } : null));
-      if (typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", nextTheme);
+      if (user?._id) {
+        if (user) user.theme = nextTheme;
         const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
         if (savedUser._id) {
           savedUser.theme = nextTheme;
           localStorage.setItem("user", JSON.stringify(savedUser));
         }
       }
+    }
+    if (user?._id) {
       try {
         await axiosInstance.patch(`/user/update/${user._id}`, { theme: nextTheme });
       } catch (err) {
         console.error("Error updating saved theme on server:", err);
       }
+    }
+  };
+
+  const isChannelSubscribed = (channelId, channelName) => {
+    const cIdStr = channelId ? channelId.toString() : "";
+    const cNameStr = channelName ? channelName.toString() : "";
+
+    if (!user) {
+      if (typeof window !== "undefined") {
+        const stored = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+        return (
+          (cIdStr && stored.includes(cIdStr)) ||
+          (cNameStr && stored.includes(cNameStr))
+        );
+      }
+      return false;
+    }
+    const userSubs = Array.isArray(user.subscriptions) ? user.subscriptions.map((s) => s.toString()) : [];
+    
+    if ((cIdStr && userSubs.includes(cIdStr)) || (cNameStr && userSubs.includes(cNameStr))) {
+      return true;
+    }
+    if (typeof window !== "undefined") {
+      const stored = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+      return (
+        (cIdStr && stored.includes(cIdStr)) ||
+        (cNameStr && stored.includes(cNameStr))
+      );
+    }
+    return false;
+  };
+
+  const toggleSubscriptionGlobal = async (channelId, channelName) => {
+    if (!user) return { success: false, message: "Please sign in to subscribe." };
+
+    const cIdStr = channelId ? channelId.toString() : "";
+    const cNameStr = channelName ? channelName.toString() : "";
+
+    const currentlySubbed = isChannelSubscribed(cIdStr, cNameStr);
+    const nextSubState = !currentlySubbed;
+
+    let updatedSubs = Array.isArray(user.subscriptions) ? [...user.subscriptions.map(s => s.toString())] : [];
+    if (nextSubState) {
+      if (cIdStr && !updatedSubs.includes(cIdStr)) updatedSubs.push(cIdStr);
+      if (cNameStr && !updatedSubs.includes(cNameStr)) updatedSubs.push(cNameStr);
+    } else {
+      updatedSubs = updatedSubs.filter((s) => s !== cIdStr && s !== cNameStr);
+    }
+
+    const updatedUserObj = { ...user, subscriptions: updatedSubs };
+    setUser(updatedUserObj);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("subscribedChannels", JSON.stringify(updatedSubs));
+      localStorage.setItem("user", JSON.stringify(updatedUserObj));
+      window.dispatchEvent(
+        new CustomEvent("subscription-changed", {
+          detail: {
+            targetChannelId: cIdStr,
+            targetChannelName: cNameStr,
+            subscribed: nextSubState,
+          },
+        })
+      );
+    }
+
+    try {
+      const res = await axiosInstance.post("/user/subscribe", {
+        subscriberId: user._id,
+        targetChannelId: cIdStr,
+        targetChannelName: cNameStr,
+      });
+
+      if (res.data && Array.isArray(res.data.subscriptions)) {
+        const finalSubs = res.data.subscriptions.map((s) => s.toString());
+        const finalUserObj = { ...user, subscriptions: finalSubs };
+        setUser(finalUserObj);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("subscribedChannels", JSON.stringify(finalSubs));
+          localStorage.setItem("user", JSON.stringify(finalUserObj));
+        }
+      }
+      return { success: true, subscribed: nextSubState, data: res.data };
+    } catch (err) {
+      console.error("Error in toggleSubscriptionGlobal:", err);
+      return { success: false, error: err };
     }
   };
 
@@ -410,7 +499,8 @@ export const UserProvider = ({ children }) => {
         isSidebarCollapsed,
         setIsSidebarCollapsed,
         toggleSidebar,
-        updateUserData,
+        isChannelSubscribed,
+        toggleSubscriptionGlobal,
         otpData,
         setOtpData,
         cancelOtp,

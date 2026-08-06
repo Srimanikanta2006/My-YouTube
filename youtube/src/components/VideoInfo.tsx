@@ -36,7 +36,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
   const [likeAnimating, setLikeAnimating] = useState(false);
   const [dislikeAnimating, setDislikeAnimating] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const { user, isSidebarCollapsed } = useUser();
+  const { user, isChannelSubscribed, toggleSubscriptionGlobal, isSidebarCollapsed } = useUser();
   const [isWatchLater, setIsWatchLater] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [downloadState, setDownloadState] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -55,10 +55,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
     if (isMoreMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -73,8 +70,6 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
   // Live WebSocket & Event Listener for Real-Time Title & Description Updates
   useEffect(() => {
-    if (!video?._id) return;
-
     const fetchLatest = async () => {
       try {
         const res = await axiosInstance.get(`/video/get/${video._id}`);
@@ -132,26 +127,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setIsLiked(false);
     setIsDisliked(false);
     setIsWatchLater(false);
-    setIsSubscribed(false);
 
     if (!video?._id) return;
 
-    if (user) {
-      const userSubs = Array.isArray(user.subscriptions) ? user.subscriptions.map((s: any) => s.toString()) : [];
-      const uploaderId = video.uploader ? video.uploader.toString() : "";
-      const channelName = video.videochanel ? video.videochanel.toString() : "";
-      const isSub = Boolean(
-        (uploaderId && userSubs.includes(uploaderId)) ||
-        (channelName && userSubs.includes(channelName))
-      );
-      setIsSubscribed(isSub);
-    } else if (typeof window !== "undefined") {
-      const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-      setIsSubscribed(
-        subscribedChannels.includes(video.videochanel) ||
-        subscribedChannels.includes(video.uploader)
-      );
-    }
+    const uploaderId = video.uploader ? video.uploader.toString() : "";
+    const channelName = video.videochanel ? video.videochanel.toString() : "";
+    setIsSubscribed(isChannelSubscribed(uploaderId, channelName));
 
     if (typeof window !== "undefined") {
       const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
@@ -180,7 +161,27 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     };
 
     fetchVideoUserStates();
-  }, [user?._id, user?.subscriptions, video?._id, video?.uploader, video?.videochanel]);
+  }, [user?._id, user?.subscriptions, video?._id, video?.uploader, video?.videochanel, isChannelSubscribed]);
+
+  useEffect(() => {
+    const handleSubChange = (e: any) => {
+      const uploaderId = video?.uploader ? video.uploader.toString() : "";
+      const channelName = video?.videochanel ? video.videochanel.toString() : "";
+      if (e?.detail?.targetChannelId || e?.detail?.targetChannelName) {
+        if (
+          e.detail.targetChannelId === uploaderId ||
+          e.detail.targetChannelName === channelName
+        ) {
+          setIsSubscribed(Boolean(e.detail.subscribed));
+        }
+      } else {
+        setIsSubscribed(isChannelSubscribed(uploaderId, channelName));
+      }
+    };
+
+    window.addEventListener("subscription-changed", handleSubChange);
+    return () => window.removeEventListener("subscription-changed", handleSubChange);
+  }, [video?.uploader, video?.videochanel, isChannelSubscribed]);
 
   const likeActionSeqRef = useRef<number>(0);
 
@@ -304,54 +305,36 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       showToast("Please sign in to subscribe to channels.");
       return;
     }
-    if (video?.videochanel || video?.uploader) {
-      const nextSubState = !isSubscribed;
-      setIsSubscribed(nextSubState);
-      setSubscriberCount((prev: number) => (nextSubState ? prev + 1 : Math.max(0, prev - 1)));
+    const uploaderId = video?.uploader;
+    const name = video?.videochanel;
 
-      let subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-      const name = video.videochanel;
-      const uploaderId = video.uploader;
+    const prevSubState = isSubscribed;
+    const nextSubState = !prevSubState;
+    setIsSubscribed(nextSubState);
+    setSubscriberCount((prev: number) => (nextSubState ? prev + 1 : Math.max(0, prev - 1)));
 
-      if (nextSubState) {
-        if (name && !subscribedChannels.includes(name)) subscribedChannels.push(name);
-        if (uploaderId && !subscribedChannels.includes(uploaderId)) subscribedChannels.push(uploaderId);
-      } else {
-        subscribedChannels = subscribedChannels.filter(
-          (c: string) => c !== name && c !== uploaderId
-        );
+    const res = await toggleSubscriptionGlobal(uploaderId, name);
+    if (res.success && res.data) {
+      setIsSubscribed(Boolean(res.data.subscribed));
+      if (typeof res.data.subscriberCount === "number") {
+        setSubscriberCount(res.data.subscriberCount);
       }
-      localStorage.setItem("subscribedChannels", JSON.stringify(subscribedChannels));
-      window.dispatchEvent(new Event("subscription-changed"));
-
-      try {
-        const res = await axiosInstance.post("/user/subscribe", {
-          subscriberId: user._id,
-          targetChannelId: uploaderId,
-          targetChannelName: name,
-        });
-        if (res.data) {
-          setIsSubscribed(Boolean(res.data.subscribed));
-          if (typeof res.data.subscriberCount === "number") {
-            setSubscriberCount(res.data.subscriberCount);
-          }
-        }
-      } catch (err) {
-        console.error("Error saving subscription:", err);
-      }
-
-      if (nextSubState) {
-        addNotification({
-          recipientUserId: uploaderId,
-          type: "subscribe",
-          title: `🔥 ${user.channelname || user.name || "User"} subscribed to your channel.`,
-          message: "Someone subscribed to your channel",
-          actionUrl: uploaderId ? `/channel/${uploaderId}` : "/",
-          avatar: user.image || "",
-        });
-      }
+    } else if (!res.success) {
+      setIsSubscribed(prevSubState);
+      setSubscriberCount((prev: number) => (prevSubState ? prev + 1 : Math.max(0, prev - 1)));
     }
-  };
+
+    if (nextSubState && uploaderId) {
+      addNotification({
+        recipientUserId: uploaderId,
+        type: "subscribe",
+        title: `🔥 ${user.channelname || user.name || "User"} subscribed to your channel.`,
+        message: "Someone subscribed to your channel",
+        actionUrl: `/channel/${user._id}`,
+        avatar: user.image || "",
+      });
+    }
+  }; 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
