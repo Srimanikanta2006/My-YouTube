@@ -674,17 +674,6 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
                       <span>Watch Party</span>
                     </button>
                   )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsMoreMenuOpen(false);
-                      handleShare();
-                    }}
-                    className="w-full text-left px-4 py-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-3 cursor-pointer transition-colors border-t border-zinc-100 dark:border-zinc-800/80"
-                  >
-                    <Share className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
-                    <span>Copy Link</span>
-                  </button>
                 </div>
               )}
             </div>
