@@ -1137,9 +1137,7 @@ export default function WatchPartyPanel({
           >
             {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
           </Button>
-          <span className="bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 text-red-700 dark:text-red-300 px-2.5 py-1 rounded-lg text-xs font-mono select-all">
-            {roomId}
-          </span>
+
           <Button
             onClick={handleCopyLink}
             size="sm"
@@ -1305,7 +1303,7 @@ export default function WatchPartyPanel({
       </div>
 
       {/* COLUMN 2: CENTER STAGE */}
-      <div className="flex-1 bg-gray-50 dark:bg-zinc-950 overflow-y-auto p-2 sm:p-4 md:p-5 pt-2 sm:pt-4 md:pt-5 flex flex-col gap-2.5 min-w-0 h-full transition-colors">
+      <div className="flex-1 bg-gray-50 dark:bg-zinc-950 overflow-y-auto p-1 sm:p-4 md:p-5 pt-1 sm:pt-4 md:pt-5 flex flex-col gap-2.5 min-w-0 h-full transition-colors">
         
         {/* Theater Stage layout wrapper */}
         <div className="flex flex-col gap-2.5 flex-shrink-0 justify-start min-h-0">
@@ -1457,6 +1455,7 @@ export default function WatchPartyPanel({
               <ScreenShare className="w-4 h-4" />
             </Button>
 
+
             {/* Recording indicator button */}
             <Button 
               variant="outline" 
@@ -1563,23 +1562,12 @@ export default function WatchPartyPanel({
           
           {/* Mobile Room Code & Stream Catalog Container */}
           <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-3 shadow-sm mb-3 flex flex-col gap-2.5 md:hidden">
-            {/* Row 1: Room Code + Copy Button */}
-            <div className="flex items-center justify-between gap-2 w-full">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-xs text-gray-900 dark:text-white shrink-0">Room Code:</span>
-                <span className="bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-lg text-xs font-mono select-all truncate">
-                  {roomId}
-                </span>
-              </div>
-              <Button
-                onClick={handleCopyLink}
-                size="sm"
-                variant="outline"
-                className="h-7 px-2.5 rounded-lg text-[11px] flex items-center gap-1 shrink-0 cursor-pointer bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200"
-              >
-                {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
-                {copied ? "Copied" : "Copy Link"}
-              </Button>
+            {/* Row 1: Room Code Information Only */}
+            <div className="flex items-center gap-2 w-full">
+              <span className="font-bold text-xs text-gray-900 dark:text-white shrink-0">Room Code:</span>
+              <span className="bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 text-red-700 dark:text-red-300 px-2.5 py-1 rounded-lg text-xs font-mono select-all truncate">
+                {roomId}
+              </span>
             </div>
 
             {/* Row 2: Stream Catalog Dropdown (Host) or Video Details (Viewer) */}
