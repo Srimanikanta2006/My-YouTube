@@ -27,25 +27,25 @@ const ChannelHeader = ({
     }, 3000);
   };
 
-  const checkSubscribed = () => {
+  // 1. Initialize subscriber count ONCE when channel loads
+  useEffect(() => {
     if (!channel) return;
-
-    const channelId = channel._id ? channel._id.toString() : "";
-    const channelName = channel.channelname ? channel.channelname.toString() : "";
-
-    const isSub = isChannelSubscribed(channelId, channelName);
-    setIsSubscribed(Boolean(isSub));
-
-    // Initial subscriber count from MongoDB
     const baseCount = channel?.subscribers
       ? (Array.isArray(channel.subscribers) ? channel.subscribers.length : Number(channel.subscribers) || 0)
       : (typeof channel?.subscribersCount === "number" ? channel.subscribersCount : 0);
-
     setSubscriberCount(Math.max(0, baseCount));
-  };
+  }, [channel?._id, channel?.subscribersCount, channel?.subscribers?.length]);
 
+  // 2. Sync subscription boolean status with user profile without wiping subscriberCount
   useEffect(() => {
-    checkSubscribed();
+    if (!channel) return;
+    const channelId = channel._id ? channel._id.toString() : "";
+    const channelName = channel.channelname ? channel.channelname.toString() : "";
+    setIsSubscribed(Boolean(isChannelSubscribed(channelId, channelName)));
+  }, [user?.subscriptions, channel?._id, isChannelSubscribed]);
+
+  // 3. Listen to global subscription-changed events
+  useEffect(() => {
     const handleSubChange = (e: any) => {
       const channelId = channel?._id ? channel._id.toString() : "";
       const channelName = channel?.channelname ? channel.channelname.toString() : "";
@@ -56,17 +56,13 @@ const ChannelHeader = ({
         ) {
           setIsSubscribed(Boolean(e.detail.subscribed));
         }
-      } else {
-        checkSubscribed();
       }
     };
     window.addEventListener("subscription-changed", handleSubChange);
-    window.addEventListener("storage", handleSubChange);
     return () => {
       window.removeEventListener("subscription-changed", handleSubChange);
-      window.removeEventListener("storage", handleSubChange);
     };
-  }, [channel, user, isChannelSubscribed]);
+  }, [channel?._id, channel?.channelname]);
 
   // Real-time Cross-Device WebSocket Listener for Live Subscriber Count
   useEffect(() => {
