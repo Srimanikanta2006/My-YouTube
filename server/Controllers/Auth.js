@@ -243,7 +243,8 @@ export const login = async (req, res) => {
     let existingUser = await users.findOne({ email });
 
     if (!existingUser) {
-      // First-time user creation: Auto-trust initial location/device
+      // First-time user creation: Require Security OTP Verification on initial registration!
+      const otp = generateSecureOtp();
       const newUser = await users.create({
         email,
         name,
@@ -251,10 +252,25 @@ export const login = async (req, res) => {
         plan: "Free",
         theme: calculatedTheme,
         lastLocation: currentLocation,
-        knownLocations: [{ ...currentLocation, verifiedAt: new Date() }],
-        knownDevices: deviceId ? [deviceId] : [],
+        loginOtp: otp,
+        otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        pendingLoginLocation: currentLocation,
+        knownLocations: [],
+        knownDevices: [],
       });
-      return res.status(201).json({ result: newUser });
+
+      sendSecurityOtpEmail(
+        newUser.email,
+        newUser.name,
+        otp,
+        currentLocation
+      ).catch((err) => console.error("Brevo Email Error:", err));
+
+      return res.status(200).json({
+        requireOtp: true,
+        userId: newUser._id,
+        message: "First-time security verification code sent to your email.",
+      });
     } else {
       let updateFields = {};
 

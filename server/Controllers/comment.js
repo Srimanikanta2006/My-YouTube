@@ -113,13 +113,7 @@ export const postcomment = async (req, res) => {
   }
 
   try {
-    // 0. Premium Plan Guard: Only paid tier members (Bronze, Silver, Gold) can post comments
-    const commentingUser = await user.findById(userid);
-    if (!commentingUser || !commentingUser.plan || commentingUser.plan === "Free") {
-      return res.status(403).json({
-        message: "Commenting is a Premium Plan feature. Upgrade your account to Bronze, Silver, or Gold to post comments on videos!",
-      });
-    }
+    // Commenting is allowed for all signed-in users
 
     // 3. Time-Based Rate Limiting (Lightweight MongoDB Temporal Query: 1 comment every 10 seconds per user)
     const recentPostingCount = await comment.countDocuments({

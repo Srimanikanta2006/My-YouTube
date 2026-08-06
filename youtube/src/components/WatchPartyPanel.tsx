@@ -445,9 +445,13 @@ export default function WatchPartyPanel({
             });
             break;
 
-          case "new-host":
+          case "new-host": {
             setRoomHostUid(data.hostUid);
+            if (data.hostUid && data.hostUid === myUidRef.current) {
+              showToast("👑 You are now the Watch Party Host! You have full playback controls.");
+            }
             break;
+          }
 
           case "host-sync-state":
             if (videosListRef.current) {

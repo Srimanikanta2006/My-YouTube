@@ -429,24 +429,40 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       });
 
       const targetUrl = trackRes.data?.downloadUrl || videoSrc;
-      const response = await fetch(targetUrl);
-      if (!response.ok) {
-        window.open(targetUrl, "_blank");
-      } else {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+      try {
+        const response = await fetch(targetUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          
+          const cleanTitle = (videoData.videotitle || "video")
+            .replace(/[^a-z0-9]/gi, "_")
+            .toLowerCase();
+          a.download = `${cleanTitle}.mp4`;
+          document.body.appendChild(a);
+          a.click();
+          
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        } else {
+          const a = document.createElement("a");
+          a.href = targetUrl;
+          a.target = "_blank";
+          a.download = `${(videoData.videotitle || "video").replace(/[^a-z0-9]/gi, "_")}.mp4`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+      } catch (corsErr) {
         const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = url;
-        
-        const cleanTitle = (videoData.videotitle || "video")
-          .replace(/[^a-z0-9]/gi, "_")
-          .toLowerCase();
-        a.download = `${cleanTitle}.mp4`;
+        a.href = targetUrl;
+        a.target = "_blank";
+        a.download = `${(videoData.videotitle || "video").replace(/[^a-z0-9]/gi, "_")}.mp4`;
         document.body.appendChild(a);
         a.click();
-        
-        window.URL.revokeObjectURL(url);
         a.remove();
       }
 

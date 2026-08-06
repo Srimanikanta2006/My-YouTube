@@ -31,22 +31,6 @@ export default function WatchPage() {
         const videoRes = await axiosInstance.get(`/video/get/${id}`);
         setVideo(videoRes.data);
 
-        // Record Watch History in MongoDB if user is logged in
-        if (user && user._id) {
-          try {
-            await axiosInstance.post(`/history/${id}`, { userId: user._id });
-          } catch (histErr) {
-            console.error("Error recording watch history:", histErr);
-          }
-        } else {
-          // Increment view count for guest users
-          try {
-            await axiosInstance.post(`/history/views/${id}`);
-          } catch (viewErr) {
-            console.error("Error incrementing view count:", viewErr);
-          }
-        }
-
         // Fetch all videos for related section
         const allRes = await axiosInstance.get("/video/getall");
         const filtered = allRes.data.filter((v: any) => v._id !== id);
@@ -60,7 +44,20 @@ export default function WatchPage() {
     };
 
     fetchVideoData();
-  }, [id, user?._id, router.isReady]);
+  }, [id, router.isReady]);
+
+  // Dedicated Watch History Recording Trigger for Logged-In Users
+  useEffect(() => {
+    if (!id || !user?._id) return;
+    const recordHistory = async () => {
+      try {
+        await axiosInstance.post(`/history/${id}`, { userId: user._id });
+      } catch (histErr) {
+        console.error("Error recording watch history:", histErr);
+      }
+    };
+    recordHistory();
+  }, [id, user?._id]);
 
   if (!router.isReady || loading) {
     return (
