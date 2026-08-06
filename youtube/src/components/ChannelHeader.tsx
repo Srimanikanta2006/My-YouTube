@@ -30,16 +30,19 @@ const ChannelHeader = ({
       setIsSubscribed(false);
       const baseCount = channel?.subscribers
         ? (Array.isArray(channel.subscribers) ? channel.subscribers.length : Number(channel.subscribers) || 0)
-        : (channel?.subscribersCount || 0);
+        : (typeof channel?.subscribersCount === "number" ? channel.subscribersCount : 0);
       setSubscriberCount(Math.max(0, baseCount));
       return;
     }
 
     let isSub = false;
-    if (user?.subscriptions) {
-      const channelId = channel._id;
-      const channelName = channel.channelname;
-      isSub = user.subscriptions.some((id: string) => id === channelId || id === channelName);
+    if (user?.subscriptions && Array.isArray(user.subscriptions)) {
+      const channelId = channel._id ? channel._id.toString() : "";
+      const channelName = channel.channelname ? channel.channelname.toString() : "";
+      const userName = channel.name ? channel.name.toString() : "";
+      isSub = user.subscriptions.some(
+        (id: any) => id.toString() === channelId || id.toString() === channelName || id.toString() === userName
+      );
     }
 
     // Fallback check localStorage for signed-in user
@@ -55,9 +58,9 @@ const ChannelHeader = ({
     // Initial subscriber count from MongoDB
     const baseCount = channel?.subscribers
       ? (Array.isArray(channel.subscribers) ? channel.subscribers.length : Number(channel.subscribers) || 0)
-      : (channel?.subscribersCount || 0);
+      : (typeof channel?.subscribersCount === "number" ? channel.subscribersCount : 0);
 
-    setSubscriberCount(isSub ? Math.max(1, baseCount) : Math.max(0, baseCount));
+    setSubscriberCount(Math.max(0, baseCount));
   };
 
   useEffect(() => {

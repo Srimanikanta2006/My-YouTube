@@ -544,15 +544,28 @@ export const toggleSubscription = async (req, res) => {
 
     const targetIdStr = targetUser ? targetUser._id.toString() : targetChannelId || targetChannelName;
 
-    const isSubbed = Array.isArray(subscriberUser.subscriptions) && subscriberUser.subscriptions.includes(targetIdStr);
+    const possibleKeys = [
+      targetUser ? targetUser._id.toString() : null,
+      targetChannelId ? targetChannelId.toString() : null,
+      targetChannelName ? targetChannelName : null,
+      targetUser?.channelname ? targetUser.channelname : null,
+      targetUser?.name ? targetUser.name : null,
+    ].filter(Boolean);
+
+    const isSubbed = Array.isArray(subscriberUser.subscriptions) && 
+      subscriberUser.subscriptions.some((subKey) => possibleKeys.includes(subKey.toString()));
 
     if (isSubbed) {
       // Unsubscribe
-      subscriberUser.subscriptions = (subscriberUser.subscriptions || []).filter((id) => id !== targetIdStr);
+      subscriberUser.subscriptions = (subscriberUser.subscriptions || []).filter(
+        (id) => !possibleKeys.includes(id.toString())
+      );
       await subscriberUser.save();
 
       if (targetUser) {
-        targetUser.subscribers = (targetUser.subscribers || []).filter((id) => id !== subscriberId);
+        targetUser.subscribers = (targetUser.subscribers || []).filter(
+          (id) => id.toString() !== subscriberId.toString()
+        );
         await targetUser.save();
       }
     } else {
@@ -565,8 +578,8 @@ export const toggleSubscription = async (req, res) => {
 
       if (targetUser) {
         if (!targetUser.subscribers) targetUser.subscribers = [];
-        if (!targetUser.subscribers.includes(subscriberId)) {
-          targetUser.subscribers.push(subscriberId);
+        if (!targetUser.subscribers.some((id) => id.toString() === subscriberId.toString())) {
+          targetUser.subscribers.push(subscriberId.toString());
         }
         await targetUser.save();
 
@@ -588,8 +601,8 @@ export const toggleSubscription = async (req, res) => {
       }
     }
 
-    const updatedSubCount = targetUser
-      ? (targetUser.subscribers ? targetUser.subscribers.length : 0)
+    const updatedSubCount = targetUser && Array.isArray(targetUser.subscribers)
+      ? targetUser.subscribers.length
       : (isSubbed ? 0 : 1);
 
     // Broadcast WebSocket event to all active devices

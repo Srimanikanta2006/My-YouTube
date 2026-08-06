@@ -96,6 +96,12 @@ export const UserProvider = ({ children }) => {
   const login = (userdata) => {
     setUser(userdata);
     localStorage.setItem("user", JSON.stringify(userdata));
+    if (typeof window !== "undefined") {
+      if (Array.isArray(userdata?.subscriptions)) {
+        localStorage.setItem("subscribedChannels", JSON.stringify(userdata.subscriptions));
+      }
+      window.dispatchEvent(new Event("subscription-changed"));
+    }
     if (userdata?.theme) {
       setTheme(userdata.theme);
     }
@@ -105,6 +111,10 @@ export const UserProvider = ({ children }) => {
     setUser(null);
     setOtpData(null);
     localStorage.removeItem("user");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("subscribedChannels");
+      window.dispatchEvent(new Event("subscription-changed"));
+    }
     try {
       await signOut(auth);
     } catch (error) {

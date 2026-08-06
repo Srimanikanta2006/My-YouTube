@@ -134,16 +134,32 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setIsWatchLater(false);
     setIsSubscribed(false);
 
-    if (!user || !video?._id) return;
+    if (!video?._id) return;
+
+    if (user) {
+      const userSubs = Array.isArray(user.subscriptions) ? user.subscriptions.map((s: any) => s.toString()) : [];
+      const uploaderId = video.uploader ? video.uploader.toString() : "";
+      const channelName = video.videochanel ? video.videochanel.toString() : "";
+      const isSub = Boolean(
+        (uploaderId && userSubs.includes(uploaderId)) ||
+        (channelName && userSubs.includes(channelName))
+      );
+      setIsSubscribed(isSub);
+    } else if (typeof window !== "undefined") {
+      const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+      setIsSubscribed(
+        subscribedChannels.includes(video.videochanel) ||
+        subscribedChannels.includes(video.uploader)
+      );
+    }
 
     if (typeof window !== "undefined") {
       const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
       const currentDisliked = dislikedVids.includes(video._id);
       setIsDisliked(currentDisliked);
-
-      const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
-      setIsSubscribed(subscribedChannels.includes(video.videochanel));
     }
+
+    if (!user) return;
 
     const fetchVideoUserStates = async () => {
       try {
@@ -164,7 +180,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     };
 
     fetchVideoUserStates();
-  }, [user?._id, video?._id, video?.uploader, video?.videochanel]);
+  }, [user?._id, user?.subscriptions, video?._id, video?.uploader, video?.videochanel]);
 
   const likeActionSeqRef = useRef<number>(0);
 
