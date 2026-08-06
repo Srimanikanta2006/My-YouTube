@@ -55,7 +55,6 @@ const ChannelHeader = ({
           e.detail.targetChannelName === channelName
         ) {
           setIsSubscribed(Boolean(e.detail.subscribed));
-          setSubscriberCount((prev) => (e.detail.subscribed ? prev + 1 : Math.max(0, prev - 1)));
         }
       } else {
         checkSubscribed();
