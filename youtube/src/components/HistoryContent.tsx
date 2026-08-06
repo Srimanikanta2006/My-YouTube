@@ -23,7 +23,7 @@ export default function HistoryContent() {
     if (user) {
       loadHistory();
     } else {
-      setLoading(true);
+      setLoading(false);
     }
     const handleListChange = () => {
       if (user) loadHistory();

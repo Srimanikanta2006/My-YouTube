@@ -23,6 +23,8 @@ export default function LikedVideosContent() {
   useEffect(() => {
     if (user) {
       loadLikedVideos();
+    } else {
+      setLoading(false);
     }
     const handleListChange = () => {
       if (user) loadLikedVideos();

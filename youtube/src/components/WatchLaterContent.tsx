@@ -23,6 +23,8 @@ export default function WatchLaterContent() {
   useEffect(() => {
     if (user) {
       loadWatchLater();
+    } else {
+      setLoading(false);
     }
     const handleListChange = () => {
       if (user) loadWatchLater();

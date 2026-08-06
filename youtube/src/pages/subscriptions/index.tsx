@@ -6,7 +6,7 @@ import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
 
 export default function SubscriptionsPage() {
-  const { user, handlegooglesignin } = useUser();
+  const { user, handlegooglesignin, isChannelSubscribed } = useUser();
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,16 +28,22 @@ export default function SubscriptionsPage() {
     try {
       const res = await axiosInstance.get("/video/getall");
       
-      // Load subscribed channels from localStorage
-      let subscribedChannels: string[] = [];
+      // Load subscribed channels from localStorage as backup
+      let localSubscribedChannels: string[] = [];
       if (typeof window !== "undefined") {
-        subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
+        localSubscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
       }
       
-      // Filter videos to only show uploads from channels the user has subscribed to
-      const feed = res.data.filter((vid: any) => 
-        subscribedChannels.includes(vid.videochanel)
-      );
+      // Filter videos using AuthContext isChannelSubscribed + localStorage backup
+      const feed = res.data.filter((vid: any) => {
+        const uploaderId = vid.uploader ? vid.uploader.toString() : "";
+        const channelName = vid.videochanel ? vid.videochanel.toString() : "";
+        
+        if (isChannelSubscribed(uploaderId, channelName)) return true;
+        if (localSubscribedChannels.includes(uploaderId) || localSubscribedChannels.includes(channelName)) return true;
+        
+        return false;
+      });
       setVideos(feed);
     } catch (error) {
       console.error("Error fetching subscription feed:", error);

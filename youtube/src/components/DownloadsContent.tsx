@@ -40,7 +40,10 @@ export default function DownloadsContent() {
   };
 
   const fetchDownloads = async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await axiosInstance.get(`/download/user/${user._id}`);
