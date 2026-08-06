@@ -598,6 +598,7 @@ export const toggleSubscription = async (req, res) => {
       broadcastWebSocketMessage(req, {
         type: "subscribe-updated",
         targetChannelId: targetIdStr,
+        targetChannelName: targetUser?.channelname || targetUser?.name || "",
         subscriberCount: updatedSubCount,
         subscribed: !isSubbed,
       });

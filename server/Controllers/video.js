@@ -155,12 +155,13 @@ export const getallvideo = async (req, res) => {
             searchQueries.push({ channelname: file.videochanel });
             searchQueries.push({ name: file.videochanel });
           }
-          uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name");
+          uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name subscribers");
         }
         const obj = file.toObject();
         obj.Like = likesCount;
         obj.Dislike = dislikesCount;
         obj.uploaderImage = uploaderUser?.image || file.uploaderImage || "";
+        obj.subscribersCount = uploaderUser?.subscribers ? (Array.isArray(uploaderUser.subscribers) ? uploaderUser.subscribers.length : 0) : (file.subscribersCount || 0);
         if (uploaderUser?.channelname) {
           obj.videochanel = uploaderUser.channelname;
         }
@@ -200,12 +201,13 @@ export const getvideoById = async (req, res) => {
         searchQueries.push({ channelname: file.videochanel });
         searchQueries.push({ name: file.videochanel });
       }
-      uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name");
+      uploaderUser = await user.findOne({ $or: searchQueries }).select("image channelname name subscribers");
     }
     const fileObj = file.toObject();
     fileObj.Like = likesCount;
     fileObj.Dislike = dislikesCount;
     fileObj.uploaderImage = uploaderUser?.image || file.uploaderImage || "";
+    fileObj.subscribersCount = uploaderUser?.subscribers ? (Array.isArray(uploaderUser.subscribers) ? uploaderUser.subscribers.length : 0) : (file.subscribersCount || 0);
     if (uploaderUser?.channelname) {
       fileObj.videochanel = uploaderUser.channelname;
     }

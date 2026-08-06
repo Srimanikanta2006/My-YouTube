@@ -18,15 +18,23 @@ const ChannelHeader = ({
   const checkSubscribed = () => {
     if (!channel) return;
 
-    // Check DB user subscriptions first if user is logged in
+    if (!user) {
+      setIsSubscribed(false);
+      const baseCount = channel?.subscribers
+        ? (Array.isArray(channel.subscribers) ? channel.subscribers.length : Number(channel.subscribers) || 0)
+        : (channel?.subscribersCount || 0);
+      setSubscriberCount(Math.max(0, baseCount));
+      return;
+    }
+
     let isSub = false;
-    if (user && Array.isArray(user.subscriptions)) {
-      const channelId = channel._id?.toString();
+    if (user?.subscriptions) {
+      const channelId = channel._id;
       const channelName = channel.channelname;
       isSub = user.subscriptions.some((id: string) => id === channelId || id === channelName);
     }
 
-    // Fallback check localStorage
+    // Fallback check localStorage for signed-in user
     if (!isSub && typeof window !== "undefined") {
       const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
       isSub =
@@ -70,7 +78,11 @@ const ChannelHeader = ({
           if (data.type === "subscribe-updated") {
             const targetId = channel._id?.toString();
             const targetName = channel.channelname;
-            if (data.targetChannelId === targetId || data.targetChannelId === targetName) {
+            if (
+              data.targetChannelId === targetId ||
+              data.targetChannelId === targetName ||
+              (data.targetChannelName && data.targetChannelName === targetName)
+            ) {
               if (typeof data.subscriberCount === "number") {
                 setSubscriberCount(data.subscriberCount);
               }

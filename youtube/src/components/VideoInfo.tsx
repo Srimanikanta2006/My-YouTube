@@ -104,6 +104,18 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
               description: data.description !== undefined ? data.description : prev.description,
             }));
           }
+          if (data.type === "subscribe-updated") {
+            const targetId = video?.uploader?.toString();
+            const targetName = video?.videochanel;
+            if (
+              (data.targetChannelId && (data.targetChannelId === targetId || data.targetChannelId === targetName)) ||
+              (data.targetChannelName && data.targetChannelName === targetName)
+            ) {
+              if (typeof data.subscriberCount === "number") {
+                setSubscriberCount(data.subscriberCount);
+              }
+            }
+          }
         } catch (err) {}
       };
     } catch (err) {}
@@ -121,7 +133,9 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setIsWatchLater(false);
     setIsSubscribed(false);
 
-    if (typeof window !== "undefined" && video?._id) {
+    if (!user || !video?._id) return;
+
+    if (typeof window !== "undefined") {
       const dislikedVids = JSON.parse(localStorage.getItem("dislikedVideos") || "[]");
       const currentDisliked = dislikedVids.includes(video._id);
       setIsDisliked(currentDisliked);
@@ -129,8 +143,6 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
       const subscribedChannels = JSON.parse(localStorage.getItem("subscribedChannels") || "[]");
       setIsSubscribed(subscribedChannels.includes(video.videochanel));
     }
-
-    if (!user || !video?._id) return;
 
     const fetchVideoUserStates = async () => {
       try {
@@ -254,9 +266,21 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     }
   };
 
-  const [subscriberCount, setSubscriberCount] = useState(
-    video?.subscribersCount || (video?.subscribers ? video.subscribers.length : 0)
+  const [subscriberCount, setSubscriberCount] = useState<number>(
+    typeof video?.subscribersCount === "number"
+      ? video.subscribersCount
+      : (video?.subscribers ? video.subscribers.length : 0)
   );
+
+  useEffect(() => {
+    const currentObj = videoData || video;
+    if (currentObj) {
+      const count = typeof currentObj.subscribersCount === "number"
+        ? currentObj.subscribersCount
+        : (Array.isArray(currentObj.subscribers) ? currentObj.subscribers.length : 0);
+      setSubscriberCount(count);
+    }
+  }, [videoData, video]);
 
   const handleSubscribe = async () => {
     if (!user) {
