@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { Crown, Bell, BellOff, Upload } from "lucide-react";
+import { Crown, Bell, BellOff, Upload, Check } from "lucide-react";
 import { addNotification } from "@/lib/notificationHelper";
 import axiosInstance from "@/lib/axiosinstance";
 import { getBackendUrl } from "@/lib/urlHelper";
@@ -14,6 +14,14 @@ const ChannelHeader = ({
 }: any) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
 
   const checkSubscribed = () => {
     if (!channel) return;
@@ -99,7 +107,7 @@ const ChannelHeader = ({
 
   const handleSubscribeToggle = async () => {
     if (!user) {
-      alert("Please sign in to subscribe to channels.");
+      showToast("Please sign in to subscribe to channels.");
       return;
     }
 
@@ -323,6 +331,13 @@ const ChannelHeader = ({
           </div>
         </div>
       </div>
+
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-50 flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200">
+          <Check className="w-4 h-4 text-green-400 dark:text-green-600 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 };

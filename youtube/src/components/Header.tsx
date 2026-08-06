@@ -174,7 +174,11 @@ const Header = () => {
                   value={searchQuery}
                   onFocus={() => setIsFocused(true)}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="rounded-l-full border border-gray-300 dark:border-zinc-700 border-r-0 focus-visible:ring-0 w-full h-full bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm pl-4 pr-10"
+                  className={`rounded-l-full border border-r-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full h-full bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm pl-4 pr-10 transition-all duration-200 ${
+                    isFocused
+                      ? "border-zinc-400 dark:border-zinc-500 shadow-sm"
+                      : "border-gray-300 dark:border-zinc-700"
+                  }`}
                 />
                 {searchQuery && (
                   <button
@@ -188,7 +192,11 @@ const Header = () => {
               </div>
               <Button
                 type="submit"
-                className="rounded-r-full px-5 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-600 dark:text-zinc-300 border border-gray-300 dark:border-zinc-700 border-l-0 h-10 flex items-center justify-center cursor-pointer shrink-0"
+                className={`rounded-r-full px-5 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-600 dark:text-zinc-300 border border-l-0 h-10 flex items-center justify-center cursor-pointer shrink-0 transition-all duration-200 ${
+                  isFocused
+                    ? "border-zinc-400 dark:border-zinc-500 shadow-sm"
+                    : "border-gray-300 dark:border-zinc-700"
+                }`}
               >
                 <Search className="w-5 h-5" />
               </Button>
@@ -206,7 +214,7 @@ const Header = () => {
           </form>
 
           {/* Search Dropdown Modal for Mobile */}
-          {isFocused && (
+          {isFocused && (searchQuery.trim() || searchHistory.length > 0) && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl z-50 overflow-hidden text-sm">
               {searchQuery.trim() ? (
                 /* Live Suggestions */
@@ -311,7 +319,11 @@ const Header = () => {
                   value={searchQuery}
                   onFocus={() => setIsFocused(true)}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="rounded-l-full border border-gray-300 dark:border-zinc-700 border-r-0 focus-visible:ring-0 w-full h-full bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm pl-4 pr-10"
+                  className={`rounded-l-full border border-r-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full h-full bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm pl-4 pr-10 transition-all duration-200 ${
+                    isFocused
+                      ? "border-zinc-400 dark:border-zinc-500 shadow-sm"
+                      : "border-gray-300 dark:border-zinc-700"
+                  }`}
                 />
                 {searchQuery && (
                   <button
@@ -325,7 +337,11 @@ const Header = () => {
               </div>
               <Button
                 type="submit"
-                className="rounded-r-full px-6 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 border border-gray-300 dark:border-zinc-700 border-l-0 h-10 flex items-center justify-center cursor-pointer shrink-0"
+                className={`rounded-r-full px-6 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 border border-l-0 h-10 flex items-center justify-center cursor-pointer shrink-0 transition-all duration-200 ${
+                  isFocused
+                    ? "border-zinc-400 dark:border-zinc-500 shadow-sm"
+                    : "border-gray-300 dark:border-zinc-700"
+                }`}
               >
                 <Search className="w-5 h-5" />
               </Button>
@@ -343,7 +359,7 @@ const Header = () => {
           </form>
 
           {/* Search Dropdown Modal for Desktop */}
-          {isFocused && (
+          {isFocused && (searchQuery.trim() || searchHistory.length > 0) && (
             <div className="absolute top-full left-0 right-14 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl z-50 overflow-hidden text-sm animate-in fade-in zoom-in-95 duration-150">
               {searchQuery.trim() ? (
                 /* Live Suggestions */

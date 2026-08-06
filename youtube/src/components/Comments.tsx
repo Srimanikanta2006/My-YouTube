@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
@@ -23,6 +24,7 @@ import {
   ShieldAlert,
   Sparkles,
   Crown,
+  Check,
 } from "lucide-react";
 
 interface CommentLocation {
@@ -79,10 +81,6 @@ const Comments = ({ videoId }: { videoId: string }) => {
     country: "India",
   });
 
-  // Toast / Moderation Alert
-  const [moderationError, setModerationError] = useState<string | null>(null);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
-
   // Translation State: Map of commentId -> { translatedText, isTranslating, isTranslated, originalLanguage }
   const [translations, setTranslations] = useState<{
     [key: string]: { text: string; loading: boolean; active: boolean; lang?: string };
@@ -92,6 +90,19 @@ const Comments = ({ videoId }: { videoId: string }) => {
   const [reportModalCommentId, setReportModalCommentId] = useState<string | null>(null);
   const [selectedReason, setSelectedReason] = useState<string>(REPORT_REASONS[0]);
   const [isReporting, setIsReporting] = useState(false);
+
+  // Toast Alert
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
+
+  const showModerationAlert = (msg: string) => showToast(msg);
+  const showSuccessMsg = (msg: string) => showToast(msg);
 
   useEffect(() => {
     loadComments();
@@ -119,16 +130,6 @@ const Comments = ({ videoId }: { videoId: string }) => {
     return () => clearInterval(interval);
   }, [videoId]);
 
-  const showModerationAlert = (msg: string) => {
-    setModerationError(msg);
-    setTimeout(() => setModerationError(null), 7000);
-  };
-
-  const showSuccessMsg = (msg: string) => {
-    setSuccessToast(msg);
-    setTimeout(() => setSuccessToast(null), 4000);
-  };
-
   const loadComments = async () => {
     try {
       const res = await axiosInstance.get(`/comment/${videoId}`);
@@ -143,13 +144,12 @@ const Comments = ({ videoId }: { videoId: string }) => {
   // 1. Submit Comment with Moderation Pipeline
   const handleSubmitComment = async () => {
     if (!user) {
-      alert("Please sign in to post comments.");
+      showModerationAlert("Please sign in to post comments.");
       return;
     }
     if (!newComment.trim()) return;
 
     setIsSubmitting(true);
-    setModerationError(null);
 
     try {
       const displayAuthorName = user.channelname || user.name || "Channel";
@@ -187,7 +187,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
   // 2. Like Comment (Optimistic UI update)
   const handleLike = async (commentId: string) => {
     if (!user) {
-      alert("Please sign in to like comments.");
+      showModerationAlert("Please sign in to like comments.");
       return;
     }
 
@@ -221,7 +221,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
   // 3. Dislike Comment (Optimistic UI update)
   const handleDislike = async (commentId: string) => {
     if (!user) {
-      alert("Please sign in to dislike comments.");
+      showModerationAlert("Please sign in to dislike comments.");
       return;
     }
 
@@ -359,7 +359,6 @@ const Comments = ({ videoId }: { videoId: string }) => {
   // 6. Update Comment (Edit)
   const handleUpdateComment = async () => {
     if (!editText.trim() || !editingCommentId) return;
-    setModerationError(null);
 
     try {
       const res = await axiosInstance.post(`/comment/editcomment/${editingCommentId}`, {
@@ -411,25 +410,6 @@ const Comments = ({ videoId }: { videoId: string }) => {
           {comments.length} Comments
         </h2>
       </div>
-
-      {/* Moderation Warning Toast / Banner */}
-      {moderationError && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-          <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-semibold text-red-700 dark:text-red-300">Comment Moderation Guard</p>
-            <p className="mt-0.5">{moderationError}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Success Toast */}
-      {successToast && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{successToast}</span>
-        </div>
-      )}
 
       {/* Comment Input Box (Only rendered for Paid Membership Tier Accounts - Read-Only for Free Tier) */}
       {user && user.plan && user.plan !== "Free" && (
@@ -808,6 +788,14 @@ const Comments = ({ videoId }: { videoId: string }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {toastMessage && typeof window !== "undefined" && createPortal(
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-[9999] flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200 pointer-events-none">
+          <Check className="w-4 h-4 text-green-400 dark:text-green-600 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>,
+        document.body
       )}
     </div>
   );

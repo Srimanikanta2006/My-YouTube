@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -169,7 +170,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
   const handleLike = async () => {
     if (!user) {
-      alert("Please sign in to like videos.");
+      showToast("Please sign in to like videos.");
       return;
     }
 
@@ -209,7 +210,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
   const handleWatchLater = async () => {
     if (!user) {
-      alert("Please sign in to save videos to Watch Later.");
+      showToast("Please sign in to save videos to Watch Later.");
       return;
     }
     const nextWatchLater = !isWatchLater;
@@ -228,7 +229,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
   const handleDislike = async () => {
     if (!user) {
-      alert("Please sign in to dislike videos.");
+      showToast("Please sign in to dislike videos.");
       return;
     }
 
@@ -284,7 +285,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
   const handleSubscribe = async () => {
     if (!user) {
-      alert("Please sign in to subscribe to channels.");
+      showToast("Please sign in to subscribe to channels.");
       return;
     }
     if (video?.videochanel || video?.uploader) {
@@ -397,7 +398,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
 
   const handleDownload = async () => {
     if (!user) {
-      alert("Please sign in to download videos.");
+      showToast("Please sign in to download videos.");
       return;
     }
 
@@ -520,7 +521,7 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
               </AvatarFallback>
             </Avatar>
             <div className="leading-tight">
-              <p className="font-bold text-sm sm:text-base hover:underline">{video.videochanel}</p>
+              <p className="font-bold text-sm sm:text-base">{video.videochanel}</p>
               <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium">
                 {subscriberCount} subscriber{subscriberCount === 1 ? "" : "s"}
               </p>
@@ -746,11 +747,12 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
         )}
       </div>
       
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-50 flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200">
+      {toastMessage && typeof window !== "undefined" && createPortal(
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-[9999] flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200 pointer-events-none">
           <Check className="w-4 h-4 text-green-400 dark:text-green-600 shrink-0" />
           <span>{toastMessage}</span>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Daily Download Limit Exceeded Modal */}

@@ -39,6 +39,14 @@ export default function WatchPartyPanel({
   const [activeRightPanel, setActiveRightPanel] = useState<"chat" | "members">("chat");
   const [unreadCount, setUnreadCount] = useState(0);
   const [openVolumeSliders, setOpenVolumeSliders] = useState<{ [uid: string]: boolean }>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
 
   // Chat messages persisted in sessionStorage
   const [messages, setMessages] = useState<any[]>(() => {
@@ -381,7 +389,7 @@ export default function WatchPartyPanel({
 
         switch (data.type) {
           case "error":
-            alert(data.message);
+            showToast(data.message);
             onLeave();
             break;
 
@@ -798,7 +806,7 @@ export default function WatchPartyPanel({
         }));
       } else {
         if (typeof navigator === "undefined" || !navigator.mediaDevices) {
-          alert("Your browser does not support media devices.");
+          showToast("Your browser does not support media devices.");
           return;
         }
 
@@ -807,7 +815,7 @@ export default function WatchPartyPanel({
           (navigator as any).getDisplayMedia;
 
         if (!getDisplayMediaFn) {
-          alert("Screen sharing is restricted by your mobile operating system (e.g. iOS Safari). Please try Google Chrome on Android or use a laptop/desktop computer.");
+          showToast("Screen sharing is restricted on mobile operating systems. Please try Google Chrome on Android or a laptop/desktop.");
           return;
         }
 
@@ -870,7 +878,7 @@ export default function WatchPartyPanel({
           }));
         } catch (screenErr: any) {
           console.error("Screen sharing activation failed:", screenErr);
-          alert("Could not start screen sharing: " + (screenErr.message || "Permission denied or cancelled"));
+          showToast("Could not start screen sharing: " + (screenErr.message || "Permission denied or cancelled"));
         }
       }
     } catch (err) {
@@ -1877,6 +1885,13 @@ export default function WatchPartyPanel({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-50 flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200">
+          <Check className="w-4 h-4 text-green-400 dark:text-green-600 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

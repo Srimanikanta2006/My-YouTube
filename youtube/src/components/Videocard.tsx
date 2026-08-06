@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { getBackendUrl } from "../lib/urlHelper";
 import { useUser } from "../lib/AuthContext";
 import axiosInstance from "../lib/axiosinstance";
-import { Crown, MoreVertical } from "lucide-react";
+import { Crown, MoreVertical, Check } from "lucide-react";
 import { useRouter } from "next/router";
 
 export default function VideoCard({ video, horizontal }: any) {
@@ -19,6 +19,14 @@ export default function VideoCard({ video, horizontal }: any) {
   const [editDescription, setEditDescription] = useState(video?.description || video?.videodescription || "");
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
 
   const backendUrl = getBackendUrl();
   const normalizedPath = video?.filepath ? video.filepath.replace(/\\/g, "/") : "";
@@ -87,7 +95,7 @@ export default function VideoCard({ video, horizontal }: any) {
     } catch (err: any) {
       console.error("Save details error:", err);
       const errMsg = err.response?.data?.message || err.message || "Unknown error";
-      alert("Failed to update video details: " + errMsg);
+      showToast("Failed to update video details: " + errMsg);
     } finally {
       setLoadingAction(false);
     }
@@ -104,7 +112,7 @@ export default function VideoCard({ video, horizontal }: any) {
     } catch (err: any) {
       console.error("Delete video error:", err);
       const errMsg = err.response?.data?.message || err.message || "Unknown error";
-      alert("Failed to delete video: " + errMsg);
+      showToast("Failed to delete video: " + errMsg);
     } finally {
       setLoadingAction(false);
     }
@@ -348,6 +356,13 @@ export default function VideoCard({ video, horizontal }: any) {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-50 flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200">
+          <Check className="w-4 h-4 text-green-400 dark:text-green-600 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

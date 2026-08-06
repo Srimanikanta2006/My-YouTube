@@ -6,7 +6,7 @@ import { useUser } from "@/lib/AuthContext";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import axiosInstance from "@/lib/axiosinstance";
-import { X, Upload, Settings } from "lucide-react";
+import { X, Upload, Settings, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,14 @@ const ChannelDetailPage = () => {
   const [videos, setVideos] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("home");
   const [loading, setLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
 
   // Video uploader modal trigger
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -147,7 +155,7 @@ const ChannelDetailPage = () => {
   const handleSaveChannelDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editChannelName.trim()) {
-      alert("Channel name is required.");
+      showToast("Channel name is required.");
       return;
     }
 
@@ -167,10 +175,10 @@ const ChannelDetailPage = () => {
       }
 
       setChannel(res.data);
-      alert("Channel details saved successfully!");
+      showToast("Channel details saved successfully!");
     } catch (err) {
       console.error("Error saving channel settings:", err);
-      alert("Failed to save channel details.");
+      showToast("Failed to save channel details.");
     } finally {
       setSavingSettings(false);
     }
@@ -314,6 +322,13 @@ const ChannelDetailPage = () => {
               }}
             />
           </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold px-5 py-3 rounded-full shadow-2xl z-50 flex items-center gap-2.5 border border-zinc-800 dark:border-zinc-200 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-200">
+          <Check className="w-4 h-4 text-green-400 dark:text-green-600 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>
