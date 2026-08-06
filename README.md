@@ -13,11 +13,11 @@
 
 ---
 
-## 🔗 Quick Links & Live Preview
+## 🔗 Live Application Demo
 
-- 🌐 **Live Demo Frontend:** [Deploy on Vercel / Netlify](https://youtube-clone-demo.vercel.app)
-- ⚙️ **Backend API Server:** `http://localhost:5000`
-- 📄 **Issue & Bugfix History:** See [`bugs.md`](./bugs.md) (96+ verified fixes documented)
+🔗 **Live Production App:** [https://psmk-youtube.vercel.app](https://psmk-youtube.vercel.app)  
+⚙️ **Backend API Server:** `http://localhost:5000`  
+📄 **Issue & Bugfix Trajectory:** See [`bugs.md`](./bugs.md) (96+ verified fixes documented)
 
 ---
 
@@ -32,6 +32,7 @@
 - [📡 API Documentation](#-api-documentation)
 - [📂 Project Folder Structure](#-project-folder-structure)
 - [🌐 Deployment Guide](#-deployment-guide)
+- [⚠️ Known Limitations & Edge Cases](#️-known-limitations--edge-cases)
 - [🗺️ Project Roadmap & Verified Enhancements](#️-project-roadmap--verified-enhancements)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -111,12 +112,15 @@
 ### System Architecture Flowmap
 
 ```mermaid
-flowgraph TD
-  subgraph Client ["Next.js Frontend Client (Port 3000)"]
-    A[User Browser / Mobile Device]
-    A1[Custom Video Player + Double Tap]
-    A2[Watch Party WebRTC Call + Screen Share]
-    A3[Razorpay Payment Gateway Modal]
+flowchart TD
+  subgraph Client_Host ["Next.js Client (Host Device)"]
+    A1[Custom Video Player + Gesture Controls]
+    A2[Watch Party Host Node]
+    A3[Razorpay Payment Checkout Modal]
+  end
+
+  subgraph Client_Peer ["Next.js Client (Guest Peer Device)"]
+    P2[Watch Party Guest Node]
   end
 
   subgraph Server ["Express.js Backend Server (Port 5000)"]
@@ -128,25 +132,26 @@ flowgraph TD
     G[Razorpay Payment Verification Controller]
   end
 
-  subgraph External ["External Services & Database"]
+  subgraph External ["External Cloud Services & Database"]
     H[(MongoDB Atlas Database)]
     I[Nodemailer Email SMTP Service]
     J[BigDataCloud / IP Location APIs]
     K[Razorpay Payment Gateway API]
   end
 
-  A -->|HTTP REST Requests| B
-  A -->|WebSocket Connections| C
-  A2 <-->|Peer-to-Peer WebRTC Media Streams| A2
+  A1 -->|HTTP REST Requests| B
+  A2 -->|WebSocket Connection| C
+  P2 -->|WebSocket Connection| C
+  A2 <-->|Peer-to-Peer WebRTC Audio/Video & Screen Media Streams| P2
   
   B --> D & E & F & G
   D -->|Verify New City/Device| J
-  D -->|Send OTP Verification Email| I
+  D -->|Send OTP Security Verification Email| I
   G -->|Verify Signature & Generate Invoice| K
-  G -->|Send Payment Invoice Email| I
+  G -->|Send Payment Receipt Email| I
   
   B <-->|Mongoose Queries| H
-  C <-->|Broadcast Live Subscriptions & Video State| A
+  C <-->|Broadcast Live Subscriptions & Video Updates| A1
 ```
 
 ---
@@ -187,7 +192,9 @@ Follow these steps to run the project locally on your machine.
 
 ### Environment Variables Configuration
 
-Create a `.env` file in the `server/` directory:
+> ⚠️ **Security Notice:** Never commit your actual `.env` or `.env.local` files to Git. Keep private credentials secret and ensure `.env` is listed in your `.gitignore` file.
+
+Create a `.env` file in the `server/` directory (see [`server/.env.example`](./server/.env.example) for placeholder template):
 
 ```env
 # Server Configuration
@@ -212,7 +219,7 @@ RAZORPAY_KEY_SECRET=YourKeySecretHere
 CLIENT_URL=http://localhost:3000
 ```
 
-Create a `.env.local` file in the `youtube/` directory:
+Create a `.env.local` file in the `youtube/` directory (see [`youtube/.env.local.example`](./youtube/.env.local.example) for placeholder template):
 
 ```env
 # Public Backend Base URL
@@ -326,6 +333,7 @@ My YouTube/
 │   └── package.json
 │
 ├── bugs.md                           # Exhaustive Trajectory Log of 96+ Verified Bugfixes
+├── LICENSE                           # Official MIT License File
 └── README.md                         # Project Master Documentation
 ```
 
@@ -347,6 +355,14 @@ My YouTube/
 3. Set **Build Command** to `npm install` and **Start Command** to `node index.js`.
 4. Fill in all Environment Variables (`MONGO_URI`, `JWT_SECRET`, `EMAIL_USER`, `EMAIL_PASS`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`).
 5. Deploy the backend and copy the live HTTP/WS URL to your frontend configuration.
+
+---
+
+## ⚠️ Known Limitations & Edge Cases
+
+1. **WebRTC NAT Traversal**: Watch Party video calls use public STUN servers for peer connection establishment. On strict corporate firewalls or symmetric NATs, a TURN relay server (e.g., Coturn or Xirsys) may be required for 100% connectivity.
+2. **Mobile Screen Sharing Policies**: Screen sharing is natively supported on desktop browsers and Android Chrome. iOS Safari restricts browser-based screen capturing due to Apple operating system security policies (the application alerts users gracefully).
+3. **SMTP Email Rate Limits**: Automated OTP and transaction invoice emails use Nodemailer. Free Gmail SMTP accounts are subject to daily sending limits (up to 500 emails/day).
 
 ---
 
@@ -378,7 +394,7 @@ Contributions are welcome! If you'd like to improve features or report issues:
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
 
 ---
 
@@ -386,4 +402,5 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 **Srimanikanta**
 - **GitHub:** [@Srimanikanta2006](https://github.com/Srimanikanta2006)
+- **Live Application:** [psmk-youtube.vercel.app](https://psmk-youtube.vercel.app)
 - **Repository:** [My-YouTube](https://github.com/Srimanikanta2006/My-YouTube)
