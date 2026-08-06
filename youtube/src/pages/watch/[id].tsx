@@ -60,7 +60,7 @@ export default function WatchPage() {
     };
 
     fetchVideoData();
-  }, [id, user, router.isReady]);
+  }, [id, user?._id, router.isReady]);
 
   if (!router.isReady || loading) {
     return (

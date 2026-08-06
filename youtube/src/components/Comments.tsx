@@ -70,7 +70,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const { user } = useUser();
+  const { user, handlegooglesignin } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
@@ -411,8 +411,8 @@ const Comments = ({ videoId }: { videoId: string }) => {
         </h2>
       </div>
 
-      {/* Comment Input Box (Only rendered for Paid Membership Tier Accounts - Read-Only for Free Tier) */}
-      {user && user.plan && user.plan !== "Free" && (
+      {/* Comment Input Box for Signed-In Users */}
+      {user ? (
         <div className="flex gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800">
           <Avatar className="w-10 h-10 border border-zinc-200 dark:border-zinc-700">
             <AvatarImage src={user.image || ""} />
@@ -473,6 +473,10 @@ const Comments = ({ videoId }: { videoId: string }) => {
               </div>
             </div>
           </div>
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-center text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
+          Want to join the discussion? <button onClick={handlegooglesignin} className="text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer">Sign in</button> to post comments.
         </div>
       )}
 

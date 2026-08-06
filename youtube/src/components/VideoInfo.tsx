@@ -300,11 +300,17 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     }
   }, [videoData, video]);
 
+  const subLockRef = useRef(false);
+
   const handleSubscribe = async () => {
     if (!user) {
       showToast("Please sign in to subscribe to channels.");
       return;
     }
+
+    if (subLockRef.current) return;
+    subLockRef.current = true;
+
     const uploaderId = video?.uploader;
     const name = video?.videochanel;
 
@@ -313,26 +319,34 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
     setIsSubscribed(nextSubState);
     setSubscriberCount((prev: number) => (nextSubState ? prev + 1 : Math.max(0, prev - 1)));
 
-    const res = await toggleSubscriptionGlobal(uploaderId, name);
-    if (res.success && res.data) {
-      setIsSubscribed(Boolean(res.data.subscribed));
-      if (typeof res.data.subscriberCount === "number") {
-        setSubscriberCount(res.data.subscriberCount);
+    try {
+      const res = await toggleSubscriptionGlobal(uploaderId, name);
+      if (res.success && res.data) {
+        setIsSubscribed(Boolean(res.data.subscribed));
+        if (typeof res.data.subscriberCount === "number") {
+          setSubscriberCount(res.data.subscriberCount);
+        }
+      } else if (!res.success) {
+        setIsSubscribed(prevSubState);
+        setSubscriberCount((prev: number) => (prevSubState ? prev + 1 : Math.max(0, prev - 1)));
       }
-    } else if (!res.success) {
-      setIsSubscribed(prevSubState);
-      setSubscriberCount((prev: number) => (prevSubState ? prev + 1 : Math.max(0, prev - 1)));
-    }
 
-    if (nextSubState && uploaderId) {
-      addNotification({
-        recipientUserId: uploaderId,
-        type: "subscribe",
-        title: `🔥 ${user.channelname || user.name || "User"} subscribed to your channel.`,
-        message: "Someone subscribed to your channel",
-        actionUrl: `/channel/${user._id}`,
-        avatar: user.image || "",
-      });
+      if (nextSubState && uploaderId) {
+        addNotification({
+          recipientUserId: uploaderId,
+          type: "subscribe",
+          title: `🔥 ${user.channelname || user.name || "User"} subscribed to your channel.`,
+          message: "Someone subscribed to your channel",
+          actionUrl: `/channel/${user._id}`,
+          avatar: user.image || "",
+        });
+      }
+    } catch (err) {
+      console.error("Error toggling subscription:", err);
+    } finally {
+      setTimeout(() => {
+        subLockRef.current = false;
+      }, 400);
     }
   }; 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
