@@ -167,9 +167,46 @@ export const UserProvider = ({ children }) => {
   };
 
   const fetchClientLocation = async () => {
+    // 1. Try HTML5 Device Geolocation (GPS) with 2.5s timeout & reverse geocoding
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      try {
+        const geoPosition = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(null),
+            { timeout: 2500, enableHighAccuracy: true }
+          );
+        });
+
+        if (geoPosition && geoPosition.coords) {
+          const { latitude, longitude } = geoPosition.coords;
+          const revRes = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          );
+          if (revRes.ok) {
+            const revData = await revRes.json();
+            const city =
+              revData.city ||
+              revData.locality ||
+              revData.localityInfo?.administrative?.[2]?.name ||
+              revData.localityInfo?.administrative?.[1]?.name;
+            const state =
+              revData.principalSubdivision ||
+              revData.localityInfo?.administrative?.[1]?.name ||
+              city;
+            const country = revData.countryName || "India";
+            if (city) {
+              return { city, state, country };
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Provider 1: IP Geolocation (https://ipwho.is/) with 2.5s timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 600);
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       const res = await fetch("https://ipwho.is/", { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
@@ -183,6 +220,25 @@ export const UserProvider = ({ children }) => {
         }
       }
     } catch (e) {}
+
+    // 3. Provider 2: IP Geolocation (https://ipapi.co/json/) with 2.5s timeout
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.city) {
+          return {
+            city: data.city,
+            state: data.region || data.region_code || data.city,
+            country: data.country_name || "India",
+          };
+        }
+      }
+    } catch (e) {}
+
     return null;
   };
 

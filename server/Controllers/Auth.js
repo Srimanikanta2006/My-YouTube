@@ -31,8 +31,17 @@ const parseUserAgentDetailed = (uaString = "") => {
   return `${browser} on ${os}`;
 };
 
-// Real Location Resolver: Server-side Geo-IP lookup is primary source of truth
+// Real Location Resolver: Client location (GPS/Reverse-Geo/IP) with Geo-IP fallback
 const resolveRealLocation = async (req) => {
+  // Use client payload whenever present
+  if (req.body?.location?.city && req.body.location.city !== "Unknown") {
+    return {
+      city: req.body.location.city,
+      state: req.body.location.state || req.body.location.city,
+      country: req.body.location.country || "India",
+    };
+  }
+
   let ip =
     req.headers["x-forwarded-for"] || req.socket?.remoteAddress || req.ip || "";
   if (typeof ip === "string" && ip.includes(",")) {
@@ -47,7 +56,6 @@ const resolveRealLocation = async (req) => {
     ip.startsWith("192.168.") ||
     ip.startsWith("10.");
 
-  // If public remote IP, server-side Geo-IP is the sole source of truth (prevents client spoofing)
   if (!isLocal) {
     // Provider 1: ipwho.is
     try {
@@ -72,22 +80,6 @@ const resolveRealLocation = async (req) => {
         };
       }
     } catch (err) {}
-
-    // For public IPs, if both Geo-IP services fail, fall back directly to server default (NEVER client hint)
-    return {
-      city: "Hyderabad",
-      state: "Telangana",
-      country: "India",
-    };
-  }
-
-  // Use client payload hint ONLY for local/dev environments
-  if (req.body?.location?.city && req.body.location.city !== "Unknown") {
-    return {
-      city: req.body.location.city,
-      state: req.body.location.state || req.body.location.city,
-      country: req.body.location.country || "India",
-    };
   }
 
   return {
