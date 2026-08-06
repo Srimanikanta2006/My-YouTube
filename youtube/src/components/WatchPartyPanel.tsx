@@ -830,7 +830,18 @@ export default function WatchPartyPanel({
               video: true,
               audio: false
             });
-          } catch (firstErr) {
+          } catch (firstErr: any) {
+            // If user explicitly cancelled or denied permission, do not prompt a 2nd time!
+            if (
+              firstErr.name === "NotAllowedError" ||
+              firstErr.name === "AbortError" ||
+              (firstErr.message && (
+                firstErr.message.toLowerCase().includes("permission denied") ||
+                firstErr.message.toLowerCase().includes("cancel")
+              ))
+            ) {
+              return;
+            }
             screenStream = await getDisplayMediaFn.call(navigator.mediaDevices, {
               video: true
             });
@@ -881,6 +892,16 @@ export default function WatchPartyPanel({
             isScreenSharing: true
           }));
         } catch (screenErr: any) {
+          if (
+            screenErr.name === "NotAllowedError" ||
+            screenErr.name === "AbortError" ||
+            (screenErr.message && (
+              screenErr.message.toLowerCase().includes("permission denied") ||
+              screenErr.message.toLowerCase().includes("cancel")
+            ))
+          ) {
+            return;
+          }
           console.error("Screen sharing activation failed:", screenErr);
           showToast("Could not start screen sharing: " + (screenErr.message || "Permission denied or cancelled"));
         }
