@@ -294,20 +294,18 @@ export const login = async (req, res) => {
       const knownLocationsList = existingUser.knownLocations || [];
       const knownDevicesList = existingUser.knownDevices || [];
 
-      // A login is TRUSTED ONLY IF:
-      // 1. deviceId matches an entry in knownDevices, OR
-      // 2. Both exact City AND State match a previously verified knownLocation entry
-      const isKnownDevice =
-        (deviceId && knownDevicesList.includes(deviceId)) ||
-        knownLocationsList.some(
-          (loc) =>
-            (deviceId && loc.deviceId === deviceId) ||
-            (loc.city?.toLowerCase() === currentLocation.city.toLowerCase() &&
-              loc.state?.toLowerCase() === currentLocation.state.toLowerCase())
-        );
+      // A login is TRUSTED ONLY IF BOTH the Device AND exact City/State Location match previously verified records
+      const isKnownDevice = Boolean(deviceId && knownDevicesList.includes(deviceId));
+      const isKnownLocation = knownLocationsList.some(
+        (loc) =>
+          loc.city?.toLowerCase() === currentLocation.city.toLowerCase() &&
+          loc.state?.toLowerCase() === currentLocation.state.toLowerCase()
+      );
 
-      if (!isKnownDevice) {
-        // UNKNOWN DEVICE / NEW LOCATION: Require Security OTP Verification!
+      const isTrustedLogin = isKnownDevice && isKnownLocation;
+
+      if (!isTrustedLogin) {
+        // UNKNOWN DEVICE OR NEW LOCATION: Require Security OTP Verification!
         const isRecentOtp =
           existingUser.loginOtp &&
           existingUser.otpExpiresAt &&
