@@ -3,6 +3,8 @@ import video from "../Modals/video.js";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import https from "https";
+import http from "http";
 import { v2 as cloudinary } from "cloudinary";
 import { sendTargetedNotification } from "./notification.js";
 import user from "../Modals/auth.js";
@@ -387,13 +389,35 @@ export const streamDownloadVideo = async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
     res.setHeader("Content-Type", videoDoc.filetype || "video/mp4");
 
-    // Redirect or stream file (Inject fl_attachment for Cloudinary hosted URLs)
+    // Stream remote file (Cloudinary / HTTPS) through backend to avoid CORS and 302 redirects
     if (videoDoc.filepath.startsWith("http://") || videoDoc.filepath.startsWith("https://")) {
       let targetUrl = videoDoc.filepath;
       if (targetUrl.includes("cloudinary.com") && targetUrl.includes("/upload/")) {
         targetUrl = targetUrl.replace("/upload/", "/upload/fl_attachment/");
       }
-      return res.redirect(targetUrl);
+
+      const getStream = (url) => {
+        const client = url.startsWith("https") ? https : http;
+        client.get(url, (remoteRes) => {
+          if (remoteRes.statusCode >= 300 && remoteRes.statusCode < 400 && remoteRes.headers.location) {
+            return getStream(remoteRes.headers.location);
+          }
+          if (remoteRes.headers["content-type"]) {
+            res.setHeader("Content-Type", remoteRes.headers["content-type"]);
+          }
+          if (remoteRes.headers["content-length"]) {
+            res.setHeader("Content-Length", remoteRes.headers["content-length"]);
+          }
+          remoteRes.pipe(res);
+        }).on("error", (err) => {
+          console.error("Error streaming remote video:", err);
+          if (!res.headersSent) {
+            return res.redirect(targetUrl);
+          }
+        });
+      };
+
+      return getStream(targetUrl);
     } else {
       const filePath = path.resolve(videoDoc.filepath);
       if (fs.existsSync(filePath)) {

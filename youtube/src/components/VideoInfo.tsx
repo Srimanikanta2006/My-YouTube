@@ -448,22 +448,20 @@ const VideoInfo = ({ video, onStartWatchParty }: any) => {
           window.URL.revokeObjectURL(url);
           a.remove();
         } else {
-          const a = document.createElement("a");
-          a.href = targetUrl;
-          a.target = "_blank";
-          a.download = `${(videoData.videotitle || "video").replace(/[^a-z0-9]/gi, "_")}.mp4`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
+          // Fallback: trigger file download via hidden iframe without navigating away or opening a new tab
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = targetUrl;
+          document.body.appendChild(iframe);
+          setTimeout(() => iframe.remove(), 60000);
         }
       } catch (corsErr) {
-        const a = document.createElement("a");
-        a.href = targetUrl;
-        a.target = "_blank";
-        a.download = `${(videoData.videotitle || "video").replace(/[^a-z0-9]/gi, "_")}.mp4`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        // Fallback: trigger file download via hidden iframe without navigating away or opening a new tab
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = targetUrl;
+        document.body.appendChild(iframe);
+        setTimeout(() => iframe.remove(), 60000);
       }
 
       clearInterval(progressTimer);
