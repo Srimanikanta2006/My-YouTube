@@ -13,10 +13,7 @@
 
 ---
 
-## 🔗 Live Application Demo
-
 🔗 **Live Production App:** [https://psmk-youtube.vercel.app](https://psmk-youtube.vercel.app)  
-⚙️ **Backend API Server:** `http://localhost:5000`
 
 ---
 
@@ -418,5 +415,4 @@ This project is licensed under the **MIT License** — see the [LICENSE](./LICEN
 
 **Srimanikanta**
 - **GitHub:** [@Srimanikanta2006](https://github.com/Srimanikanta2006)
-- **Live Application:** [psmk-youtube.vercel.app](https://psmk-youtube.vercel.app)
 - **Repository:** [My-YouTube](https://github.com/Srimanikanta2006/My-YouTube)
