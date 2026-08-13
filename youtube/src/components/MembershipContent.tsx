@@ -178,64 +178,31 @@ export default function MembershipContent() {
             plan: plan.name,
           });
 
-          if (verifyRes.data?.user) {
+          if (verifyRes.data?.success && verifyRes.data?.user) {
             if (updateUserData) {
               updateUserData(verifyRes.data.user);
             } else if (login) {
               login(verifyRes.data.user);
             }
+
+            setCurrentPlan(plan.name);
+            setInvoice(verifyRes.data.invoice);
+            setShowInvoiceModal(true);
+            showToast(`✅ ${plan.name} Membership activated!`);
+            addNotification({
+              type: "payment",
+              title: `✅ ${plan.name} Membership activated.`,
+              message: `Premium payment verified for ${plan.name} plan. All features unlocked!`,
+              actionUrl: "/membership",
+            });
+          } else {
+            const errorMsg = verifyRes.data?.message || "Payment verification failed.";
+            showToast(`❌ ${errorMsg}`);
           }
-
-          setCurrentPlan(plan.name);
-          addNotification({
-            type: "payment",
-            title: `✅ ${plan.name} Membership activated.`,
-            message: `Premium payment succeeded for ${plan.name} plan. All features unlocked!`,
-            actionUrl: "/membership",
-          });
-
-          // Construct bulletproof invoice data (from API response or fallback)
-          const invoiceData = verifyRes.data?.invoice || {
-            invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-            transactionId: paymentId || `pay_test_${Date.now()}`,
-            orderId,
-            userEmail: user?.email,
-            userName: user?.name || user?.channelname || "Subscriber",
-            plan: plan.name,
-            amount: plan.price,
-            currency: "INR",
-            gstAmount: Math.round(plan.price * 0.18),
-            totalAmount: Math.round(plan.price * 1.18),
-            paidAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          };
-
-          setInvoice(invoiceData);
-          setVerifyingPayment(false);
-          setShowInvoiceModal(true);
         } catch (err: any) {
           console.error("Error verifying payment:", err);
-          showToast("Payment completed! Upgrading your membership...");
-
-          const fallbackInvoice = {
-            invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-            transactionId: paymentId || `pay_test_${Date.now()}`,
-            orderId,
-            userEmail: user?.email,
-            userName: user?.name || user?.channelname || "Subscriber",
-            plan: plan.name,
-            amount: plan.price,
-            currency: "INR",
-            gstAmount: Math.round(plan.price * 0.18),
-            totalAmount: Math.round(plan.price * 1.18),
-            paidAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          };
-
-          setCurrentPlan(plan.name);
-          setInvoice(fallbackInvoice);
-          setVerifyingPayment(false);
-          setShowInvoiceModal(true);
+          const errorMsg = err.response?.data?.message || "Payment verification failed on server. Membership plan was not upgraded.";
+          showToast(`❌ ${errorMsg}`);
         } finally {
           setVerifyingPayment(false);
           setLoadingPlan(null);

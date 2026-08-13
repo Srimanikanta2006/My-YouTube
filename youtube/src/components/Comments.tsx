@@ -65,6 +65,23 @@ const REPORT_REASONS = [
   "⚡ Symbol or special character spam",
 ];
 
+const TARGET_LANGUAGES = [
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "fr", name: "French", flag: "🇫🇷" },
+  { code: "de", name: "German", flag: "🇩🇪" },
+  { code: "hi", name: "Hindi", flag: "🇮🇳" },
+  { code: "te", name: "Telugu", flag: "🇮🇳" },
+  { code: "ta", name: "Tamil", flag: "🇮🇳" },
+  { code: "zh-CN", name: "Chinese (Simplified)", flag: "🇨🇳" },
+  { code: "ja", name: "Japanese", flag: "🇯🇵" },
+  { code: "ar", name: "Arabic", flag: "🇦🇪" },
+  { code: "pt", name: "Portuguese", flag: "🇵🇹" },
+  { code: "ru", name: "Russian", flag: "🇷🇺" },
+  { code: "it", name: "Italian", flag: "🇮🇹" },
+  { code: "ko", name: "Korean", flag: "🇰🇷" },
+];
+
 const Comments = ({ videoId }: { videoId: string }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -75,6 +92,14 @@ const Comments = ({ videoId }: { videoId: string }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
+  // Preferred Target Language Selection
+  const [preferredTargetLang, setPreferredTargetLang] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("user_preferred_target_lang") || "en";
+    }
+    return "en";
+  });
+
   // Privacy & Location
   const [shareLocation, setShareLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ city: string; country: string }>({
@@ -82,9 +107,9 @@ const Comments = ({ videoId }: { videoId: string }) => {
     country: "India",
   });
 
-  // Translation State: Map of commentId -> { translatedText, isTranslating, isTranslated, originalLanguage }
+  // Translation State: Map of commentId -> { text, loading, active, targetCode, targetName, targetFlag }
   const [translations, setTranslations] = useState<{
-    [key: string]: { text: string; loading: boolean; active: boolean; lang?: string };
+    [key: string]: { text: string; loading: boolean; active: boolean; targetCode?: string; targetName?: string; targetFlag?: string };
   }>({});
 
   // Report Modal State
@@ -263,13 +288,15 @@ const Comments = ({ videoId }: { videoId: string }) => {
     }
   };
 
-  // 4. Translate Comment (Only 1 active translation box open at once)
-  const handleTranslate = async (comment: Comment) => {
+  // 4. Translate Comment into User's Preferred Target Language
+  const handleTranslate = async (comment: Comment, targetLangOverride?: string) => {
     const commentId = comment._id;
     const currentTrans = translations[commentId];
+    const targetCode = targetLangOverride || preferredTargetLang;
+    const targetObj = TARGET_LANGUAGES.find((l) => l.code === targetCode) || TARGET_LANGUAGES[0];
 
-    // Toggle off if already translated and active
-    if (currentTrans && currentTrans.active) {
+    // Toggle off if already translated and active with same target language (and no explicit language change requested)
+    if (currentTrans && currentTrans.active && currentTrans.targetCode === targetCode && !targetLangOverride) {
       setTranslations((prev) => ({
         ...prev,
         [commentId]: { ...prev[commentId], active: false },
@@ -277,7 +304,6 @@ const Comments = ({ videoId }: { videoId: string }) => {
       return;
     }
 
-    // Helper to deactivate all other translation boxes so only 1 remains open
     const deactivateOthers = (prev: any) => {
       const next: any = {};
       Object.keys(prev).forEach((key) => {
@@ -286,47 +312,54 @@ const Comments = ({ videoId }: { videoId: string }) => {
       return next;
     };
 
-    // Toggle on if text already cached
-    if (currentTrans && currentTrans.text) {
-      setTranslations((prev) => ({
-        ...deactivateOthers(prev),
-        [commentId]: { ...prev[commentId], active: true },
-      }));
-      return;
-    }
-
-    // Fetch translation
     setTranslations((prev) => ({
       ...deactivateOthers(prev),
-      [commentId]: { text: "", loading: true, active: false },
+      [commentId]: { text: "", loading: true, active: false, targetCode, targetName: targetObj.name, targetFlag: targetObj.flag },
     }));
 
     try {
       const encodedText = encodeURIComponent(comment.commentbody);
-      const res = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=autodetect|en`
-      );
-      const data = await res.json();
+      let translatedText = "";
 
-      let translated = data?.responseData?.translatedText || comment.commentbody;
-      if (
-        !translated ||
-        translated.toUpperCase().includes("PLEASE SELECT TWO DISTINCT LANGUAGES") ||
-        data?.responseStatus === "403" ||
-        data?.responseStatus === 403
-      ) {
-        translated = comment.commentbody;
+      // Primary: Google GTX Translation API (Supports all target languages)
+      try {
+        const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetCode}&dt=t&q=${encodedText}`;
+        const res = await fetch(googleUrl);
+        const data = await res.json();
+
+        if (Array.isArray(data) && Array.isArray(data[0])) {
+          translatedText = data[0].map((item: any) => item[0] || "").join("");
+        }
+      } catch (gErr) {
+        console.warn("Google translate fallback trigger:", gErr);
       }
 
-      const detectedLang = data?.responseData?.detectedLanguage || "auto";
+      // Fallback: MyMemory Translation API
+      if (!translatedText || translatedText.trim() === "") {
+        const fallbackRes = await fetch(
+          `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=autodetect|${targetCode}`
+        );
+        const fallbackData = await fallbackRes.json();
+        let fallbackResult = fallbackData?.responseData?.translatedText;
+        if (
+          fallbackResult &&
+          !fallbackResult.toUpperCase().includes("PLEASE SELECT TWO DISTINCT LANGUAGES") &&
+          fallbackData?.responseStatus !== "403" &&
+          fallbackData?.responseStatus !== 403
+        ) {
+          translatedText = fallbackResult;
+        }
+      }
 
       setTranslations((prev) => ({
         ...deactivateOthers(prev),
         [commentId]: {
-          text: translated,
+          text: translatedText || comment.commentbody,
           loading: false,
           active: true,
-          lang: detectedLang,
+          targetCode,
+          targetName: targetObj.name,
+          targetFlag: targetObj.flag,
         },
       }));
     } catch (err) {
@@ -337,7 +370,9 @@ const Comments = ({ videoId }: { videoId: string }) => {
           text: comment.commentbody,
           loading: false,
           active: true,
-          lang: "en",
+          targetCode,
+          targetName: targetObj.name,
+          targetFlag: targetObj.flag,
         },
       }));
     }
@@ -415,11 +450,34 @@ const Comments = ({ videoId }: { videoId: string }) => {
 
   return (
     <div className="space-y-6 text-zinc-900 dark:text-zinc-100 max-w-4xl px-3 sm:px-0">
-      {/* Header & Comment Count */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+      {/* Header & Comment Count + Preferred Target Language Selection */}
+      <div className="flex items-center justify-between flex-wrap gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-3">
         <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 pl-2 sm:pl-0">
           {comments.length} Comments
         </h2>
+
+        {/* User-Selectable Preferred Target Language */}
+        <div className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl">
+          <Languages className="w-4 h-4 text-red-600 dark:text-red-500 shrink-0" />
+          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Target Language:</span>
+          <select
+            value={preferredTargetLang}
+            onChange={(e) => {
+              const newLang = e.target.value;
+              setPreferredTargetLang(newLang);
+              if (typeof window !== "undefined") {
+                localStorage.setItem("user_preferred_target_lang", newLang);
+              }
+            }}
+            className="bg-transparent text-zinc-900 dark:text-zinc-100 font-semibold focus:outline-none cursor-pointer"
+          >
+            {TARGET_LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                {l.flag} {l.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Banner for signed-in accounts without a channel */}
@@ -620,11 +678,25 @@ const Comments = ({ videoId }: { videoId: string }) => {
                       {/* Active Translation or Original Text */}
                       <div className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed font-normal">
                         {transState?.active ? (
-                          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 my-1">
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1 flex items-center gap-1">
-                              <Sparkles className="w-3 h-3" /> Translated to English:
-                            </p>
-                            <p className="text-sm text-zinc-900 dark:text-white">
+                          <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 my-1 space-y-1">
+                            <div className="flex items-center justify-between gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                              <span className="flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5" />
+                                Translated to {transState.targetFlag || "🌐"} {transState.targetName || "Preferred Language"}:
+                              </span>
+                              <select
+                                value={transState.targetCode || preferredTargetLang}
+                                onChange={(e) => handleTranslate(comment, e.target.value)}
+                                className="bg-white/80 dark:bg-zinc-800/80 border border-blue-500/30 rounded px-2 py-0.5 text-[11px] text-blue-700 dark:text-blue-300 focus:outline-none cursor-pointer font-medium"
+                              >
+                                {TARGET_LANGUAGES.map((l) => (
+                                  <option key={l.code} value={l.code} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                                    {l.flag} {l.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <p className="text-sm text-zinc-900 dark:text-white font-normal pt-0.5">
                               {transState.text}
                             </p>
                           </div>
@@ -663,62 +735,24 @@ const Comments = ({ videoId }: { videoId: string }) => {
                           <span>{dislikesCount > 0 ? dislikesCount : ""}</span>
                         </button>
 
-                        {/* Translate Toggle (Disabled for pure English or Emojis) */}
-                        {(() => {
-                          const isOnlyEnglishOrEmoji = (text: string) => {
-                            if (!text || !text.trim()) return true;
-
-                            // 1. Check for non-ASCII foreign characters (e.g. á, é, í, ó, ú, ñ, ¿, ¡, or non-Latin scripts)
-                            const nonEmojiText = text.replace(/[\p{Emoji}\p{Extended_Pictographic}]/gu, "");
-                            if (/[^\x00-\x7F]/.test(nonEmojiText)) {
-                              return false;
-                            }
-
-                            // 2. Extract normalized words
-                            const words = text.toLowerCase().match(/[a-z]+/g) || [];
-                            if (words.length === 0) return true;
-
-                            // Spanish & non-English indicator words
-                            const nonEnglishWords = new Set([
-                              "como", "el", "la", "los", "las", "del", "un", "una", "unos", "unas",
-                              "poderosa", "poderoso", "infierno", "que", "para", "por", "con", "sin",
-                              "hola", "gracias", "mucho", "amigo", "amiga", "bien", "todo", "toda",
-                              "todos", "todas", "pero", "mas", "estoy", "esta", "este", "muy",
-                              "tambien", "siempre", "nunca", "hacer", "hace", "tiempo", "vida", "amor",
-                              "bueno", "buena", "sobre", "entre", "cuando", "donde", "quien", "porque",
-                              "asi", "aqui", "alli", "alla", "mismo", "misma", "otro", "otra", "nada",
-                              "nadie", "algo", "alguien", "chapeau", "bonjour", "merci", "gut", "danke",
-                              "ciao", "bella", "grazie"
-                            ]);
-
-                            const hasForeignWord = words.some((w) => nonEnglishWords.has(w));
-                            if (hasForeignWord) return false;
-
-                            return true;
-                          };
-
-                          const isEnglishOrEmoji = isOnlyEnglishOrEmoji(comment.commentbody);
-
-                          return (
-                            <button
-                              onClick={() => !isEnglishOrEmoji && handleTranslate(comment)}
-                              disabled={isEnglishOrEmoji || transState?.loading}
-                              title={isEnglishOrEmoji ? "Comment is in English / Emojis (No translation needed)" : "Translate comment to English"}
-                              className={`flex items-center gap-1 transition-colors ${
-                                isEnglishOrEmoji
-                                  ? "text-zinc-400 dark:text-zinc-600 cursor-not-allowed opacity-50"
-                                  : "text-zinc-500 dark:text-zinc-400 hover:text-blue-500 cursor-pointer font-medium"
-                              }`}
-                            >
-                              {transState?.loading ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Languages className="w-3.5 h-3.5" />
-                              )}
-                              <span>{transState?.active ? "Show Original" : "Translate"}</span>
-                            </button>
-                          );
-                        })()}
+                        {/* Translate Action Button into User-Selected Target Language */}
+                        <button
+                          onClick={() => handleTranslate(comment)}
+                          disabled={transState?.loading}
+                          title={`Translate comment into ${TARGET_LANGUAGES.find((l) => l.code === preferredTargetLang)?.name || "Preferred Language"}`}
+                          className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors cursor-pointer font-medium"
+                        >
+                          {transState?.loading ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                          ) : (
+                            <Languages className="w-3.5 h-3.5 text-blue-500" />
+                          )}
+                          <span>
+                            {transState?.active
+                              ? "Show Original"
+                              : `Translate (${TARGET_LANGUAGES.find((l) => l.code === preferredTargetLang)?.name || "Preferred Language"})`}
+                          </span>
+                        </button>
 
                         {/* Report Button */}
                         {user && !isAuthor && (
